@@ -104,6 +104,7 @@ export const addTaggerEvents = (
         const INITPATHS = new Map<string, number>()
 
         let lastProgress
+        const lastPaths = []
         console.time('DB ->')
         for (let i = 0; i < flatDirTree.length; i++) {
             /* 
@@ -115,13 +116,18 @@ export const addTaggerEvents = (
             if (!lastProgress || newProgress !== lastProgress) {
                 updateProgress({
                     key: 'start',
-                    value: newProgress,
+                    value: {
+                        value: newProgress,
+                        lastPaths: lastPaths.slice(-2),
+                    },
                 })
 
                 lastProgress = newProgress
             }
 
             const filePath = flatDirTree[i]
+            lastPaths.push(filePath)
+
             const fileHash = await hashFileAsync(filePath)
 
             const foundPath = await Path.findOne({

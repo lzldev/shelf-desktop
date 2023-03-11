@@ -33,7 +33,7 @@ function App(): JSX.Element {
   }, [])
 
   return (
-    <Body>
+    <div className='max-w-screen overflow-hidden p-10'>
       <Query
         tags={tags}
         selected={selected}
@@ -52,11 +52,9 @@ function App(): JSX.Element {
           })
         }}
       />
-      <div className='grid grid-cols-4'>
+      <div className='grid w-auto grid-cols-4'>
         {isLoading ? (
-          <h1 className='col-auto col-span-full text-center text-9xl'>
-            LOADING
-          </h1>
+          <h1 className='col-span-full text-center text-9xl'>LOADING</h1>
         ) : (
           files.map((value) => {
             if (!value.paths || !value.paths[0]) {
@@ -70,7 +68,7 @@ function App(): JSX.Element {
               <div key={value.id} className='p-4'>
                 {value.extension === '.mp4' ? (
                   <video
-                    className='h-full border-2 border-red-500 bg-white bg-opacity-5 object-contain'
+                    className='h-full border-2 border-red-500 bg-black bg-opacity-20 object-contain'
                     src={url.toString()}
                     muted={true}
                     onClick={(evt) => {
@@ -93,7 +91,7 @@ function App(): JSX.Element {
                   />
                 ) : (
                   <img
-                    className='h-full bg-white bg-opacity-5 object-contain'
+                    className='h-full bg-black bg-opacity-5 object-contain'
                     src={'tagger://' + value.paths[0].path}
                   />
                 )}
@@ -108,7 +106,7 @@ function App(): JSX.Element {
           })
         )}
       </div>
-    </Body>
+    </div>
   )
 }
 
@@ -136,12 +134,11 @@ const Query = (props: {
 
   return (
     <>
-      <form className='flex w-full place-content-stretch  border-red-500 bg-white align-middle'>
+      <form className='mb-5 flex w-full place-content-stretch  border-red-500 bg-white align-middle ring'>
         <input
           className='
-            w-full
-           bg-transparent p-2 text-pink-500 
-           outline-none
+           w-full bg-transparent
+           p-2 text-pink-500 outline-none 
            ring-pink-500
            selection:bg-pink-200
            hover:border-none focus:ring-2 active:border-none'
@@ -166,14 +163,14 @@ const Query = (props: {
         </button>
       </form>
       <div
-        className={'absolute mx-auto self-center bg-white'}
+        className={'border-x-2 border-b-2 border-black bg-white'}
         hidden={!hideDrop}
       >
         {DropTags.map((tag) => {
           return (
             <a
               key={tag.id}
-              className='p2 mx-2 my-1 inline-block '
+              className='p2 mx-2 my-1 inline-block hover:underline'
               onClick={() => {
                 setQuery('')
                 addSelected(tag)
@@ -184,7 +181,7 @@ const Query = (props: {
           )
         })}
       </div>
-      <div className='my-2'>
+      <div className='my-2 bg-gray-200'>
         {selectedTags.map((tag) => {
           return (
             <a
@@ -192,7 +189,8 @@ const Query = (props: {
               onClick={() => {
                 removeSelected(tag)
               }}
-              className='m-3 inline-block animate-gradient_xy rounded-full bg-gradient-to-tl from-fuchsia-400 to-cyan-400  p-4  text-black text-opacity-80'
+              className='m-1 inline-block animate-gradient_xy rounded-full bg-gradient-to-tl
+               from-fuchsia-400 to-cyan-400  p-1.5  font-bold text-white text-opacity-90'
             >
               {tag.name}
             </a>
@@ -200,26 +198,6 @@ const Query = (props: {
         })}
       </div>
     </>
-  )
-}
-
-const Body = (props: PropsWithChildren): JSX.Element => {
-  const { progress } = useProgress()
-  return (
-    <div className='mx-auto w-4/5 overflow-hidden'>
-      <Versions />
-      <svg className='hero-logo' viewBox='0 0 900 300'>
-        <use xlinkHref={`${icons}#electron`} />
-      </svg>
-      <h2
-        className='unselectable text-center text-9xl uppercase'
-        onSelect={() => false}
-      >
-        Tagger
-        {progress}
-      </h2>
-      {props?.children || <></>}
-    </div>
   )
 }
 

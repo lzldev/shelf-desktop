@@ -1,15 +1,26 @@
 import { useEffect, useState } from 'react'
 
+export class ProgressMap<
+    TK extends keyof ProgressType,
+    TR extends ProgressType[TK],
+> extends Map<TK, TR> {}
+
 const useProgress = () => {
-    const [progress, setProgress] = useState<Map<string, number>>(new Map())
+    const [progress, setProgress] = useState(new ProgressMap())
 
     useEffect(() => {
         window.api.ipcRendererHandle('updateProgress', (_, args) => {
-            setProgress(new Map(progress.set(args.key, args.value)))
+            setProgress(new ProgressMap(progress.set(args.key, args.value)))
         })
     }, [])
 
     return { progress }
 }
 
+type ProgressType = {
+    start: {
+        value: number
+        lastPaths: [string, string, string]
+    }
+}
 export { useProgress }
