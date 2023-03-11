@@ -1,7 +1,16 @@
-import { Sequelize, DataTypes } from 'sequelize'
-import { Content, Path, Tag } from './models'
+import { Sequelize } from 'sequelize-typescript'
+import { Content, ContentTag, Path, Tag, TagParents } from './models'
 
 const __DBFILENAME = 'taggerdb.tagger'
+
+/* 
+    TODO:
+    If you need to minify your code, you need to set tableName and modelName 
+    in the DefineOptions for @Table annotation.
+    sequelize-typescript uses the class name as default name for tableName and modelName.
+    When the code is minified the class name will no longer be the originally
+    defined one (So that class User will become class b for example).
+*/
 
 const createSQLiteDB = (dbPath: string) => {
     return new Sequelize({
@@ -14,95 +23,12 @@ const createSQLiteDB = (dbPath: string) => {
 export const createTaggerDB = async (dbPath: string) => {
     const TaggerDB = createSQLiteDB(dbPath)
 
-    const TaggerContent = Content.init(
-        {
-            id: {
-                type: DataTypes.INTEGER,
-                autoIncrement: true,
-                primaryKey: true,
-            },
-            extension: {
-                type: DataTypes.STRING,
-            },
-            hash: {
-                type: DataTypes.STRING,
-                unique: true,
-            },
-        },
-        {
-            sequelize: TaggerDB,
-            indexes: [
-                {
-                    unique: true,
-                    fields: ['hash'],
-                },
-            ],
-        },
-    )
-
-    const TaggerTag = Tag.init(
-        {
-            id: {
-                type: DataTypes.INTEGER,
-                autoIncrement: true,
-                primaryKey: true,
-            },
-            name: {
-                type: DataTypes.STRING,
-            },
-            parentOnly: {
-                type: DataTypes.BOOLEAN,
-            },
-        },
-        {
-            sequelize: TaggerDB,
-        },
-    )
-
-    const TaggerPath = Path.init(
-        {
-            id: {
-                type: DataTypes.INTEGER,
-                autoIncrement: true,
-                primaryKey: true,
-            },
-            path: {
-                type: DataTypes.STRING,
-                unique: true,
-            },
-        },
-        {
-            sequelize: TaggerDB,
-            indexes: [
-                {
-                    unique: true,
-                    fields: ['path'],
-                },
-            ],
-        },
-    )
-
-    Content.hasMany(Path, { sourceKey: 'id' })
-    Path.belongsTo(Content, { targetKey: 'id' })
-
-    Content.belongsToMany(Tag, {
-        through: 'FileParents',
-    })
-
-    Tag.belongsToMany(Content, {
-        through: 'FileParents',
-    })
-    Tag.belongsToMany(Tag, {
-        through: 'TagParents',
-        as: 'Parent',
-    })
+    TaggerDB.addModels([Content, Path, Tag, ContentTag, TagParents])
 
     await TaggerDB.sync()
 
     return {
-        Tag: TaggerTag,
-        Content: TaggerContent,
-        Path: TaggerPath,
+        ...TaggerDB.models,
         sequelize: TaggerDB,
     }
 }

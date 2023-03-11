@@ -3,7 +3,7 @@ import { createTaggerDB, TaggerDBModels } from '../db/TaggerDB'
 import { addTaggerEvents } from './chokiFunctions'
 import { FSWatcher } from 'chokidar'
 import { IpcMainEvents } from '../../../preload/ipcTypes'
-import { Tag } from '../db/models'
+import { Content, Path, Tag } from '../db/models'
 
 /* 
     TODO:
@@ -81,7 +81,6 @@ class TaggerClient {
         if (!this._ready) {
             throw "Client isn't ready yet"
         }
-        const { Content, Path } = this._TaggerDB
 
         const TagIdArray =
             options?.tags && options?.tags?.length !== 0
@@ -119,8 +118,6 @@ class TaggerClient {
         if (!this._ready) {
             throw "Client isn't ready yet"
         }
-
-        const { Tag } = this._TaggerDB
 
         const result = await Tag.findAll({
             attributes: ['id', 'name'],

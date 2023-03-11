@@ -1,33 +1,32 @@
+import { InferCreationAttributes, Optional } from 'sequelize'
 import {
-    Model,
-    InferAttributes,
-    InferCreationAttributes,
-    CreationOptional,
-    NonAttribute,
-    Association,
-    BelongsToGetAssociationMixin,
-    BelongsToSetAssociationMixin,
+    BelongsTo,
+    Column,
+    DataType,
     ForeignKey,
-} from 'sequelize'
-
+    Model,
+    Table,
+} from 'sequelize-typescript'
 import { Content } from './Content'
 
-class Path extends Model<
-    InferAttributes<Path, { omit: 'Content' }>,
-    InferCreationAttributes<Path, { omit: 'Content' }>
-> {
-    declare id: CreationOptional<number>
-    declare ContentId: ForeignKey<Content['id']>
+interface _Path {
+    id: number
+    path: string
+    contentId: number
+    content?: Content
+}
 
-    declare path: string
+@Table
+class Path extends Model<_Path, InferCreationAttributes<Path, { omit: 'id' }>> {
+    @Column({ type: DataType.TEXT })
+    path!: string
 
-    declare getContent: BelongsToGetAssociationMixin<Content>
-    declare setContent: BelongsToSetAssociationMixin<Content, number>
+    @ForeignKey(() => Content)
+    @Column({ type: DataType.INTEGER })
+    contentId?: number
 
-    declare Content?: NonAttribute<Content>
-    public declare static associations: {
-        Content: Association<Path, Content>
-    }
+    @BelongsTo(() => Content)
+    content?: Content
 }
 
 export { Path }
