@@ -1,139 +1,206 @@
 import Versions from './components/Versions'
 import icons from './assets/icons.svg'
-import { OpenDialogOptions } from 'electron'
-import { useState } from 'react'
-import { TaggerFile, TaggerDir, TaggerImage } from '../../main/src/types'
+import { PropsWithChildren, useEffect, useState } from 'react'
+import { useProgress } from './hooks/useProgress'
+import { useTags } from './hooks/useTags'
+import { Tag, Content } from 'src/main/src/db/models'
 
 function App(): JSX.Element {
-  const [files, setFiles] = useState<TaggerFile[]>([])
+  const { tags } = useTags()
+  const [files, setFiles] = useState<Content[]>([])
+  const [selected, setSelected] = useState<Set<Tag>>(new Set())
+  const [error, setError] = useState<string | undefined>()
+  const [isLoading, setIsLoading] = useState<boolean>(true)
+
+  const getImages = async () => {
+    setIsLoading(true)
+
+    const tags = selected.size > 0 ? Array.from(selected.values()) : undefined
+
+    const Files = await window.api
+      .invokeOnMain('getTaggerImages', {
+        tags,
+      })
+      .catch(setError)
+    if (Files) {
+      setFiles(() => Files)
+    }
+    setIsLoading(false)
+  }
+
+  useEffect(() => {
+    getImages()
+  }, [])
 
   return (
-    <div className="container">
-      <Versions />
-      <svg className="hero-logo" viewBox="0 0 900 300">
-        <use xlinkHref={`${icons}#electron`} />
-      </svg>
-      <h2 className="hero-text">Tagger</h2>
-      <div
-        className="feature-item"
-        onClick={(): void => {
-          // window.api.dialog.showOpenDialog({ properties: ['openFile'] })
-          const options: OpenDialogOptions = {
-            properties: ['openDirectory']
-          }
-
-          window.api.openFile(options).then((val) => {
-            console.log('val >', val)
-            setFiles([])
-            setFiles(val)
+    <Body>
+      <Query
+        tags={tags}
+        selected={selected}
+        onQuery={getImages}
+        addSelected={(tag: Tag) => {
+          setSelected((_selected) => {
+            _selected.add(tag)
+            return _selected
           })
-          //window.electron.ipcRenderer.send('dialog', options)
-          //window.dialog.showOpenDialog({ properties: ['openFile'] })
-          // window.electron.ipcRenderer.send('dialog')
-          // const dialogConfig = {
-          //   title: 'Select a file',
-          //   buttonLabel: 'This one will do',
-          //   properties: ['openFile']
-          // }
-          // window.electron.ipcRenderer.invoke('dialog', dialogConfig)
-          //window.dialog
         }}
-      >
-        <article>
-          <h2 className="title">Test Button</h2>
-          <p className="detail">{files[0]?.fullPath || 'Nothing Selected'}</p>
-        </article>
+        removeSelected={(tag: Tag) => {
+          setSelected((_selected) => {
+            const s = new Set(_selected)
+            s.delete(tag)
+            return s
+          })
+        }}
+      />
+      <div className='flex flex-wrap'>
+        {isLoading ? (
+          <h1 className='text-center text-9xl underline'>LOADING...</h1>
+        ) : (
+          files.map((value) => {
+            if (!value.Paths || !value.Paths[0]) {
+              return
+            }
+            return (
+              <div key={value.id} className='w-1/3 flex-auto  p-4 '>
+                {value.extension === '.mp4' ? (
+                  <video
+                    className='border-2 border-red-500'
+                    src={'tagger://' + value.Paths[0].path}
+                    muted={true}
+                    onClick={(evt) => {
+                      const videoPlayer = evt.currentTarget
+                      videoPlayer.paused
+                        ? videoPlayer.play()
+                        : videoPlayer.pause()
+                      videoPlayer.muted
+                        ? (videoPlayer.muted = true)
+                        : (videoPlayer.muted = false)
+                    }}
+                    onMouseOut={(evt) => {
+                      evt.currentTarget.pause()
+                    }}
+                    onMouseEnter={(evt) => {
+                      if (evt.currentTarget.paused) {
+                        evt.currentTarget.play()
+                      }
+                    }}
+                  />
+                ) : (
+                  <img src={'tagger://' + value.Paths[0].path} />
+                )}
+                <a className='truncate text-clip underline'>
+                  {value.Paths[0].path}
+                </a>
+                <a className='truncate text-clip underline'>
+                  {value.extension}
+                </a>
+              </div>
+            )
+          })
+        )}
       </div>
-      <div className="features ">
-        {
-          Folder(files)
-          // files.map((file, idx) => {
-          //   const a = file as TaggerImage
-          //   if (!a.isImage) {
-          //     return (
-          //       <div className="feature-item" key={idx}>
-          //         <h2 className="title">FOLDER</h2>
-          //         <h1>{file.name}</h1>
-          //         <article></article>
-          //       </div>
-          //     )
-          //   }
-          //   return (
-          //     <div className="feature-item" key={idx}>
-          //       <article>
-          //         <h2 className="title">Image</h2>
-          //         fi
-          //         <br />
-          //         <hr />
-          //         {file.name}
-          //         <br />
-          //         <h3 className="detail">{file.fullPath}</h3>
-          //         <img
-          //           src={`tagger://${file.fullPath}` || ''}
-          //           style={{
-          //             objectFit: 'contain',
-          //             width: '100%'
-          //           }}
-          //         />
-          //       </article>
-          //     </div>
-          //   )
-          // })
-        }
-      </div>
-    </div>
+    </Body>
   )
 }
 
-const TImage = (file: TaggerImage, color = ''): JSX.Element => {
-  return (
-    <div className="feature-item">
-      <article
-        style={{
-          backgroundColor: color || ''
-        }}
-      >
-        <h2 className="title">Image</h2>
-        fi
-        <br />
-        <hr />
-        {file.name}
-        <br />
-        <a href={'tagger://' + file.fullPath}>
-          <h3 className="detail">{file.fullPath}</h3>
-        </a>
-        <img
-          src={`tagger://${file.fullPath}` || ''}
-          style={{
-            objectFit: 'contain',
-            width: '100%'
-          }}
-        />
-      </article>
-    </div>
-  )
-}
+const Query = (props: {
+  tags: Tag[]
+  selected: Set<Tag>
+  onQuery: (...any) => any
+  addSelected: (Tag) => any
+  removeSelected: (Tag) => any
+}) => {
+  const { tags, onQuery, addSelected, selected, removeSelected } = props
+  const [query, setQuery] = useState<string>('')
+  const selectedTags = Array.from(selected)
+  const TransformedQuery = query?.split(' ')
+  const hideDrop = !!TransformedQuery[TransformedQuery.length - 1]
+  const DropTags = hideDrop
+    ? tags.filter((tag) =>
+        tag.name
+          .toLowerCase()
+          .includes(
+            TransformedQuery[TransformedQuery.length - 1].toLowerCase(),
+          ),
+      )
+    : []
 
-const Folder = (files: TaggerFile[], passColor = 0): JSX.Element => {
-  //const colors = ['#f0f0f0', '#a0a0a0', '#707070', '#303030', '#000000']
-
-  // GTA 3 PALLETTE const colors = ['#3E432Eff', '#A1AB9Dff', '#715B40ff', '#28241Fff', '#141917ff']
-  const colors = ['#141917ff', '#28241Fff', '#3E432Eff', '#A1AB9Dff', '#715B40ff']
   return (
     <>
-      {files.map((file) => {
-        const a = file as TaggerImage
-
-        if (!a.isImage) {
-          const b = file as TaggerDir
-          if (!b.isDir) {
-            return
-          }
-          return Folder(b.children, passColor + 1)
-        }
-        return TImage(file, colors[passColor])
-      })}
+      <form>
+        <input
+          className='w-[100%] flex-auto items-stretch self-stretch
+           p-2 text-pink-500 outline-none 
+           selection:bg-pink-200 hover:border-none active:border-none'
+          type={'text'}
+          value={query}
+          list='tag-list'
+          onChange={(evt) => {
+            evt.preventDefault()
+            setQuery(evt.target.value)
+          }}
+          onKeyDown={(evt) => {
+            if (evt.key === 'Enter') {
+              onQuery()
+            }
+          }}
+        />
+      </form>
+      <div
+        className={'absolute mx-auto self-center bg-white'}
+        hidden={!hideDrop}
+      >
+        {DropTags.map((tag) => {
+          return (
+            <a
+              key={tag.id}
+              className='p2 mx-2 my-1 inline-block '
+              onClick={() => {
+                setQuery('')
+                addSelected(tag)
+              }}
+            >
+              {tag.name}
+            </a>
+          )
+        })}
+      </div>
+      <div className='my-2'>
+        {selectedTags.map((tag) => {
+          return (
+            <a
+              key={tag.id}
+              onClick={() => {
+                removeSelected(tag)
+              }}
+              className='m-3 inline-block animate-gradient_xy rounded-full bg-gradient-to-tl from-fuchsia-400 to-cyan-400  p-4 text-white text-black text-opacity-80'
+            >
+              {tag.name}
+            </a>
+          )
+        })}
+      </div>
     </>
+  )
+}
+
+const Body = (props: PropsWithChildren): JSX.Element => {
+  const { progress } = useProgress()
+  return (
+    <div className='mx-auto w-4/5 overflow-hidden'>
+      <Versions />
+      <svg className='hero-logo' viewBox='0 0 900 300'>
+        <use xlinkHref={`${icons}#electron`} />
+      </svg>
+      <h2
+        className='unselectable text-center text-9xl uppercase'
+        onSelect={() => false}
+      >
+        Tagger
+        {progress}
+      </h2>
+      {props?.children || <></>}
+    </div>
   )
 }
 

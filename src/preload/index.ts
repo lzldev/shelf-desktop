@@ -1,28 +1,28 @@
-import { OpenDialogOptions, contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { ipcHandlers } from '../main/src/ipcEvents'
+import './ipcTypes'
 
-// Custom APIs for renderer
 const api = {
-  openFile: (args: OpenDialogOptions): Promise<any> =>
-    ipcRenderer.invoke(ipcHandlers.chooseLocalDir, args),
-  showMessage: (args: OpenDialogOptions): Promise<any> =>
-    ipcRenderer.invoke('dialog:showMessage', args)
+    invokeOnMain: ipcRenderer.invoke,
+    ipcRendererHandle: electronAPI.ipcRenderer.on,
 }
+
+export type api = typeof api
 
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise
 // just add to the DOM global.
+
 if (process.contextIsolated) {
-  try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('api', api)
-  } catch (error) {
-    console.error(error)
-  }
+    try {
+        contextBridge.exposeInMainWorld('electron', electronAPI)
+        contextBridge.exposeInMainWorld('api', api)
+    } catch (error) {
+        console.error(error)
+    }
 } else {
-  // @ts-ignore (define in dts)
-  window.electron = electronAPI
-  // @ts-ignore (define in dts)
-  window.api = api
+    // @ts-ignore (define in dts)
+    window.electron = electronAPI
+    // @ts-ignore (define in dts)
+    window.api = api
 }

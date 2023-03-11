@@ -1,14 +1,20 @@
-import { useState } from 'react'
+const versions = window.electron.process.versions
 
 function Versions(): JSX.Element {
-  const [versions] = useState(window.electron.process.versions)
-
   return (
-    <ul className="versions">
-      <li className="electron-version">Electron v{versions.electron}</li>
-      <li className="chrome-version">Chromium v{versions.chrome}</li>
-      <li className="node-version">Node v{versions.node}</li>
-      <li className="v8-version">V8 v{versions.v8}</li>
+    <ul className='flex flex-row'>
+      <li className='unselectable flex-auto text-xs lowercase opacity-50'>
+        Electron v{versions.electron}
+      </li>
+      <li className='unselectable flex-auto text-xs lowercase opacity-50'>
+        Chromium v{versions.chrome}
+      </li>
+      <li className='unselectable flex-auto text-xs lowercase opacity-50'>
+        Node v{versions.node}
+      </li>
+      <li className='unselectable flex-auto text-xs lowercase opacity-50'>
+        V8 v{versions.v8}
+      </li>
     </ul>
   )
 }
