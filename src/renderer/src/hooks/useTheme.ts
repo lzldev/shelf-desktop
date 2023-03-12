@@ -1,21 +1,21 @@
 import { useEffect, useState } from 'react'
 
 const useTheme = () => {
-    const [theme, _setTheme] = useState<unknown>([])
+  const [theme, _setTheme] = useState<unknown>([])
 
-    //TODO: Implement
-    const setTheme = (theme: unknown) => {
-        _setTheme(theme)
-        //config.set ....
-    }
+  //TODO: Implement
+  const setTheme = (theme: unknown) => {
+    _setTheme(theme)
+    //config.set ....
+  }
 
-    useEffect(() => {
-        ;(async () => {
-            // invoke loadConfig. || useConfig.config.theme
-        })()
-    }, [])
+  useEffect(() => {
+    ;(async () => {
+      // invoke loadConfig. || useConfig.config.theme
+    })()
+  }, [])
 
-    return { theme, setTheme }
+  return { theme, setTheme }
 }
 
 export { useTheme }

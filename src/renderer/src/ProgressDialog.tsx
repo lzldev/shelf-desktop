@@ -4,12 +4,11 @@ import { useProgress } from './hooks/useProgress'
 const ProgressDialog = (): JSX.Element => {
   const { progress } = useProgress()
   const startProgress = progress.get('start')
-  console.log(startProgress)
 
   return (
     <div
       className={
-        'flex h-screen w-screen items-center overflow-hidden p-10 first-line:first-letter:marker:selection:file:justify-center'
+        'flex h-screen w-screen flex-col items-center overflow-hidden p-10 first-line:first-letter:marker:selection:file:justify-center'
       }
     >
       <div className='flex-1 justify-center text-center transition-all'>
@@ -26,7 +25,10 @@ const ProgressDialog = (): JSX.Element => {
       <div className='bg-black text-slate-300'>
         {(startProgress?.lastPaths || []).map((path, idx) => {
           return (
-            <span className='block' key={idx}>
+            <span
+              className='block'
+              key={idx}
+            >
               {path}
             </span>
           )

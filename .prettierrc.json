@@ -1,17 +1,11 @@
 {
-    "singleQuote": true,
-    "semi": false,
-    "printWidth": 80,
-    "trailingComma": "all",
-    "arrowParens": "always",
-    "jsxSingleQuote": true,
-    "tabWidth": 4,
-    "overrides": [
-        {
-            "options": {
-                "tabWidth": 2
-            },
-            "files": ["**.tsx", "**.jsx"]
-        }
-    ]
+  "singleQuote": true,
+  "jsxSingleQuote": true,
+  "semi": false,
+  "printWidth": 80,
+  "trailingComma": "all",
+  "arrowParens": "always",
+  "tabWidth": 2,
+  "singleAttributePerLine": true,
+  "proseWrap": "always"
 }

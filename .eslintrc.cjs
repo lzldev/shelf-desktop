@@ -1,50 +1,50 @@
 module.exports = {
-    root: true,
-    env: {
-        browser: true,
-        commonjs: true,
-        es6: true,
-        node: true,
+  root: true,
+  env: {
+    browser: true,
+    commonjs: true,
+    es6: true,
+    node: true,
+  },
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    ecmaFeatures: {
+      jsx: true,
     },
-    parser: '@typescript-eslint/parser',
-    parserOptions: {
-        ecmaFeatures: {
-            jsx: true,
-        },
-        sourceType: 'module',
-        ecmaVersion: 2021,
-    },
-    plugins: ['@typescript-eslint'],
-    extends: [
-        'eslint:recommended',
-        'plugin:react/recommended',
-        'plugin:react/jsx-runtime',
-        'plugin:@typescript-eslint/recommended',
-        'plugin:@typescript-eslint/eslint-recommended',
+    sourceType: 'module',
+    ecmaVersion: 2021,
+  },
+  plugins: ['@typescript-eslint'],
+  extends: [
+    'eslint:recommended',
+    'plugin:react/recommended',
+    'plugin:react/jsx-runtime',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:@typescript-eslint/eslint-recommended',
+  ],
+  rules: {
+    '@typescript-eslint/no-extra-semi': 'off',
+    '@typescript-eslint/ban-ts-comment': [
+      'error',
+      { 'ts-ignore': 'allow-with-description' },
     ],
-    rules: {
-        '@typescript-eslint/no-extra-semi': 'off',
-        '@typescript-eslint/ban-ts-comment': [
-            'error',
-            { 'ts-ignore': 'allow-with-description' },
-        ],
-        // '@typescript-eslint/explicit-function-return-type': 'error',
-        '@typescript-eslint/explicit-module-boundary-types': 'off',
-        '@typescript-eslint/no-empty-function': [
-            'error',
-            { allow: ['arrowFunctions'] },
-        ],
-        //TODO:Reenable
-        '@typescript-eslint/no-explicit-any': 'off',
-        '@typescript-eslint/no-non-null-assertion': 'off',
-        '@typescript-eslint/no-var-requires': 'off',
-    },
-    overrides: [
-        {
-            files: ['*.js'],
-            rules: {
-                '@typescript-eslint/explicit-function-return-type': 'off',
-            },
-        },
+    // '@typescript-eslint/explicit-function-return-type': 'error',
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    '@typescript-eslint/no-empty-function': [
+      'error',
+      { allow: ['arrowFunctions'] },
     ],
+    //TODO:Reenable
+    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'off',
+    '@typescript-eslint/no-var-requires': 'off',
+  },
+  overrides: [
+    {
+      files: ['*.js'],
+      rules: {
+        '@typescript-eslint/explicit-function-return-type': 'off',
+      },
+    },
+  ],
 }

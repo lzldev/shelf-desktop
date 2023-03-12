@@ -13,24 +13,24 @@ const __DBFILENAME = 'taggerdb.tagger'
 */
 
 const createSQLiteDB = (dbPath: string) => {
-    return new Sequelize({
-        dialect: 'sqlite',
-        storage: `${dbPath}/${__DBFILENAME}`,
-        logging: false,
-    })
+  return new Sequelize({
+    dialect: 'sqlite',
+    storage: `${dbPath}/${__DBFILENAME}`,
+    logging: false,
+  })
 }
 
 export const createTaggerDB = async (dbPath: string) => {
-    const TaggerDB = createSQLiteDB(dbPath)
+  const TaggerDB = createSQLiteDB(dbPath)
 
-    TaggerDB.addModels([Content, Path, Tag, ContentTag, TagParents])
+  TaggerDB.addModels([Content, Path, Tag, ContentTag, TagParents])
 
-    await TaggerDB.sync()
+  await TaggerDB.sync()
 
-    return {
-        ...TaggerDB.models,
-        sequelize: TaggerDB,
-    }
+  return {
+    ...TaggerDB.models,
+    sequelize: TaggerDB,
+  }
 }
 
 export type TaggerDBModels = Awaited<ReturnType<typeof createTaggerDB>>
