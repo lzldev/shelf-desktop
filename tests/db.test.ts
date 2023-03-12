@@ -2,6 +2,7 @@ import { createTaggerDB } from '../src/main/src/db/TaggerDB'
 import { it, describe, afterAll, expectTypeOf, expect, assert } from 'vitest'
 import { rmSync, existsSync } from 'fs'
 import { join } from 'path'
+import { Content, Path } from '../src/main/src/db/models'
 
 const __TESTDIR = join(__dirname, './')
 const __TESTDBRPATH = join(__TESTDIR, '/taggerdb.tagger')
@@ -11,45 +12,34 @@ describe('Tagger - DB', async () => {
         rmSync(__TESTDBRPATH)
     }
 
-    const { Path, Content, sequelize, Tag } = await createTaggerDB(__TESTDIR)
+    const { sequelize } = await createTaggerDB(__TESTDIR)
 
     it('Create content with Path', async () => {
-        const content = await Content.create(
-            {
-                hash: '123456789',
-                extension: '.ext',
-                //@ts-ignore type
-                Paths: [
-                    {
-                        path: 'testpath',
-                    },
-                ],
-            },
-            {
-                include: [{ model: Path }],
-            },
-        )
+        const path = await Path.build({
+            path: 'testPath',
+        }).save()
 
-        const contentJSON = content.toJSON()
+        let content = await Content.build({
+            extension: '.rng',
+            hash: '11233445567',
+        }).save()
 
-        //@ts-expect-error type thing
-        expectTypeOf(content.toJSON()).extract('Paths').toBeArray()
-        //@ts-expect-error type thing
-        expect(contentJSON.Paths.length).eq(1)
+        content = (await content.$add('path', path)) as Content
+
+        content = await content.reload({
+            include: [Path],
+        })
+
+        console.log('Content ->', content.toJSON())
+        expect(content?.paths?.length).eq(1)
     })
     it('List Created Content with Path', async () => {
         const content = await Content.findOne({
             limit: 1,
             include: [Path],
         })
-
         assert(content)
-
-        const contentJSON = content.toJSON()
-        //@ts-expect-error type thing
-        expectTypeOf(content.toJSON()).extract('Paths').toBeArray()
-        //@ts-expect-error type thing
-        expect(contentJSON.Paths.length).eq(1)
+        expect(content.toJSON().paths?.length).eq(1)
     })
 
     afterAll(async () => {

@@ -84,7 +84,7 @@ function createWindow<Route extends keyof typeof WindowRoutes>(
 
     newWindow.on('ready-to-show', () => {
         newWindow.show()
-        newWindow.webContents.openDevTools()
+        // newWindow.webContents.openDevTools()
     })
 
     newWindow.webContents.setWindowOpenHandler((details) => {
@@ -152,7 +152,7 @@ app.on('window-all-closed', () => {
     }
 })
 
-export const updateProgress = (args: { key: string; value: number }) => {
+export const updateProgress = (args: { key: string; value: any }) => {
     Windows.get('progress')?.webContents.send('updateProgress', args)
 }
 

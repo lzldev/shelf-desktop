@@ -33,7 +33,7 @@ function App(): JSX.Element {
   }, [])
 
   return (
-    <Body>
+    <div className='max-w-screen overflow-hidden p-10'>
       <Query
         tags={tags}
         selected={selected}
@@ -52,20 +52,24 @@ function App(): JSX.Element {
           })
         }}
       />
-      <div className='flex flex-wrap'>
+      <div className='grid w-auto grid-cols-4'>
         {isLoading ? (
-          <h1 className='text-center text-9xl underline'>LOADING...</h1>
+          <h1 className='col-span-full text-center text-9xl'>LOADING</h1>
         ) : (
           files.map((value) => {
-            if (!value.Paths || !value.Paths[0]) {
+            if (!value.paths || !value.paths[0]) {
               return
             }
+
+            const url = new URL(value.paths[0].path)
+            url.protocol = 'tagger:'
+
             return (
-              <div key={value.id} className='w-1/3 flex-auto  p-4 '>
+              <div key={value.id} className='p-4'>
                 {value.extension === '.mp4' ? (
                   <video
-                    className='border-2 border-red-500'
-                    src={'tagger://' + value.Paths[0].path}
+                    className='h-full border-2 border-red-500 bg-black bg-opacity-20 object-contain'
+                    src={url.toString()}
                     muted={true}
                     onClick={(evt) => {
                       const videoPlayer = evt.currentTarget
@@ -86,10 +90,13 @@ function App(): JSX.Element {
                     }}
                   />
                 ) : (
-                  <img src={'tagger://' + value.Paths[0].path} />
+                  <img
+                    className='h-full bg-black bg-opacity-5 object-contain'
+                    src={'tagger://' + value.paths[0].path}
+                  />
                 )}
-                <a className='truncate text-clip underline'>
-                  {value.Paths[0].path}
+                <a className='truncate text-clip  underline'>
+                  {value.paths[0].path}
                 </a>
                 <a className='truncate text-clip underline'>
                   {value.extension}
@@ -99,16 +106,16 @@ function App(): JSX.Element {
           })
         )}
       </div>
-    </Body>
+    </div>
   )
 }
 
 const Query = (props: {
   tags: Tag[]
   selected: Set<Tag>
-  onQuery: (...any) => any
-  addSelected: (Tag) => any
-  removeSelected: (Tag) => any
+  onQuery: () => any
+  addSelected: (tag: Tag) => any
+  removeSelected: (tag: Tag) => any
 }) => {
   const { tags, onQuery, addSelected, selected, removeSelected } = props
   const [query, setQuery] = useState<string>('')
@@ -127,11 +134,14 @@ const Query = (props: {
 
   return (
     <>
-      <form>
+      <form className='mb-5 flex w-full place-content-stretch  border-red-500 bg-white align-middle ring'>
         <input
-          className='w-[100%] flex-auto items-stretch self-stretch
+          className='
+           w-full bg-transparent
            p-2 text-pink-500 outline-none 
-           selection:bg-pink-200 hover:border-none active:border-none'
+           ring-pink-500
+           selection:bg-pink-200
+           hover:border-none focus:ring-2 active:border-none'
           type={'text'}
           value={query}
           list='tag-list'
@@ -145,16 +155,22 @@ const Query = (props: {
             }
           }}
         />
+        <button
+          className=' bg-red-100 px-10 font-bold hover:ring'
+          onClick={onQuery}
+        >
+          Search
+        </button>
       </form>
       <div
-        className={'absolute mx-auto self-center bg-white'}
+        className={'border-x-2 border-b-2 border-black bg-white'}
         hidden={!hideDrop}
       >
         {DropTags.map((tag) => {
           return (
             <a
               key={tag.id}
-              className='p2 mx-2 my-1 inline-block '
+              className='p2 mx-2 my-1 inline-block hover:underline'
               onClick={() => {
                 setQuery('')
                 addSelected(tag)
@@ -165,7 +181,7 @@ const Query = (props: {
           )
         })}
       </div>
-      <div className='my-2'>
+      <div className='my-2 bg-gray-200'>
         {selectedTags.map((tag) => {
           return (
             <a
@@ -173,7 +189,8 @@ const Query = (props: {
               onClick={() => {
                 removeSelected(tag)
               }}
-              className='m-3 inline-block animate-gradient_xy rounded-full bg-gradient-to-tl from-fuchsia-400 to-cyan-400  p-4 text-white text-black text-opacity-80'
+              className='m-1 inline-block animate-gradient_xy rounded-full bg-gradient-to-tl
+               from-fuchsia-400 to-cyan-400  p-1.5  font-bold text-white text-opacity-90'
             >
               {tag.name}
             </a>
@@ -181,26 +198,6 @@ const Query = (props: {
         })}
       </div>
     </>
-  )
-}
-
-const Body = (props: PropsWithChildren): JSX.Element => {
-  const { progress } = useProgress()
-  return (
-    <div className='mx-auto w-4/5 overflow-hidden'>
-      <Versions />
-      <svg className='hero-logo' viewBox='0 0 900 300'>
-        <use xlinkHref={`${icons}#electron`} />
-      </svg>
-      <h2
-        className='unselectable text-center text-9xl uppercase'
-        onSelect={() => false}
-      >
-        Tagger
-        {progress}
-      </h2>
-      {props?.children || <></>}
-    </div>
   )
 }
 

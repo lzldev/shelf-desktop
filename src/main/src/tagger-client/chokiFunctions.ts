@@ -5,12 +5,13 @@ import { flattenDirectoryTree } from '../utils'
 import { updateProgress } from '../..'
 import { TaggerClient } from './'
 import { mockTags } from './mockTags'
+import { Content, Path, Tag } from '../db/models'
 
 export const addTaggerEvents = (
     taggerClient: TaggerClient,
     onReadyCallback: (...any) => void,
 ) => {
-    const { Content, Path, Tag, sequelize } = taggerClient.models
+    const { sequelize } = taggerClient.models
     const choki = taggerClient.choki
 
     const taggerOnChange = async (filePath: string): Promise<void> => {
@@ -24,7 +25,7 @@ export const addTaggerEvents = (
             include: [Content],
         })
 
-        await path?.Content?.update({
+        await path?.content?.update({
             hash: hash,
         })
     }
@@ -65,7 +66,7 @@ export const addTaggerEvents = (
 
         const newPath = await Path.create({
             path: filePath,
-            ContentId: content.dataValues.id,
+            contentId: content.dataValues.id,
         })
 
         return
@@ -103,6 +104,7 @@ export const addTaggerEvents = (
         const INITPATHS = new Map<string, number>()
 
         let lastProgress
+        const lastPaths = []
         console.time('DB ->')
         for (let i = 0; i < flatDirTree.length; i++) {
             /* 
@@ -114,76 +116,40 @@ export const addTaggerEvents = (
             if (!lastProgress || newProgress !== lastProgress) {
                 updateProgress({
                     key: 'start',
-                    value: newProgress,
+                    value: {
+                        value: newProgress,
+                        lastPaths: lastPaths.slice(-2),
+                    },
                 })
 
                 lastProgress = newProgress
             }
 
             const filePath = flatDirTree[i]
+            lastPaths.push(filePath)
+
             const fileHash = await hashFileAsync(filePath)
 
             const foundPath = await Path.findOne({
                 where: {
                     path: filePath,
                 },
+                transaction: ContentsTransaction,
             })
             const foundContent = await Content.findOne({
                 where: {
                     hash: fileHash,
                 },
                 attributes: ['id'],
+                transaction: ContentsTransaction,
             })
+            const tempContentID = INITHASHES.get(fileHash)
 
-            const tempContent = INITHASHES.get(fileHash)
-
-            if (foundContent !== null || tempContent) {
-                if (foundPath === null) {
-                    console.log('Duplicate Content - ', filePath)
-                    duplicatePath++
-
-                    //FIXME: This causes an error when the path was already registered with another content
-                    const createPath = await Path.create(
-                        {
-                            path: filePath,
-                            ContentId:
-                                foundContent?.dataValues.id || tempContent,
-                        },
-                        {
-                            include: [Content],
-                            transaction: ContentsTransaction,
-                        },
-                    )
-                    INITPATHS.set(filePath, createPath.dataValues.id)
-                    continue
-                } else {
-                    /*
-                    FIXME: 
-                      Edge case of having an existing Path pointing to a different content
-                      if Path.contentId !== FoundContent.id
-                    */
-                    INITPATHS.set(filePath, foundPath.dataValues.id)
-                }
-                //This may cause problems if the found Hash is in the TEMPHASH
-                if (foundContent !== null) {
-                    INITHASHES.set(fileHash, foundContent.dataValues.id)
-                }
-                continue
-            }
-
-            try {
+            if (foundContent === null && !tempContentID && foundPath === null) {
                 const content = await Content.create(
                     {
                         hash: fileHash,
                         extension: fsPath.parse(filePath).ext,
-                        //@ts-ignore Model is wrong
-                        Paths: [
-                            //FIXME: this actually tries to  create another path but fails
-                            // since filePath is unique so it still works.
-                            {
-                                path: filePath,
-                            },
-                        ],
                     },
                     {
                         include: [Path, Tag],
@@ -191,18 +157,56 @@ export const addTaggerEvents = (
                     },
                 )
 
+                const newPath = await Path.create(
+                    {
+                        path: filePath,
+                        contentId: content?.id,
+                    },
+                    {
+                        transaction: ContentsTransaction,
+                    },
+                )
+
                 //REMOVEME: MOCK
-                await content.addTag(
+                await content.$add(
+                    'tag',
                     Math.round(Math.random() * mockTags.length),
                     {
                         transaction: ContentsTransaction,
                     },
                 )
-                INITHASHES.set(fileHash, content.dataValues.id)
-            } catch (err) {
-                console.log('Error [CHOKI READY] ->', err)
-                contentError++
+
+                INITHASHES.set(fileHash, content.id)
+                INITPATHS.set(filePath, newPath.id)
+                continue
             }
+
+            if (tempContentID && foundContent !== null) {
+                INITHASHES.set(fileHash, foundContent.id)
+            }
+
+            if (foundPath === null && !INITPATHS.get(filePath)) {
+                console.log('Duplicate Content -> ', filePath)
+                duplicatePath++
+
+                const createPath = await Path.create(
+                    {
+                        path: filePath,
+                    },
+                    {
+                        transaction: ContentsTransaction,
+                    },
+                )
+
+                await createPath.update(
+                    { contentId: foundContent?.id || tempContentID },
+                    {
+                        transaction: ContentsTransaction,
+                    },
+                )
+            }
+
+            continue
         }
         await ContentsTransaction.commit()
         console.timeEnd('DB ->')
