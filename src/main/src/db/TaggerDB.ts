@@ -1,5 +1,5 @@
-import { Sequelize } from 'sequelize-typescript'
-import { Content, ContentTag, Path, Tag, TagParents } from './models'
+import {Sequelize} from 'sequelize-typescript'
+import {Content, ContentTag, Path, Tag, TagParents} from './models'
 
 const __DBFILENAME = 'taggerdb.tagger'
 

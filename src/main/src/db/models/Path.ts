@@ -1,4 +1,4 @@
-import { InferCreationAttributes, Optional } from 'sequelize'
+import {InferCreationAttributes, Optional} from 'sequelize'
 import {
   BelongsTo,
   Column,
@@ -7,7 +7,7 @@ import {
   Model,
   Table,
 } from 'sequelize-typescript'
-import { Content } from './Content'
+import {Content} from './Content'
 
 interface _Path {
   id: number
@@ -17,16 +17,16 @@ interface _Path {
 }
 
 @Table
-class Path extends Model<_Path, InferCreationAttributes<Path, { omit: 'id' }>> {
-  @Column({ type: DataType.TEXT })
+class Path extends Model<_Path, InferCreationAttributes<Path, {omit: 'id'}>> {
+  @Column({type: DataType.TEXT})
   path!: string
 
   @ForeignKey(() => Content)
-  @Column({ type: DataType.INTEGER })
+  @Column({type: DataType.INTEGER})
   contentId?: number
 
   @BelongsTo(() => Content)
   content?: Content
 }
 
-export { Path }
+export {Path}

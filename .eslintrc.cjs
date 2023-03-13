@@ -26,13 +26,13 @@ module.exports = {
     '@typescript-eslint/no-extra-semi': 'off',
     '@typescript-eslint/ban-ts-comment': [
       'error',
-      { 'ts-ignore': 'allow-with-description' },
+      {'ts-ignore': 'allow-with-description'},
     ],
     // '@typescript-eslint/explicit-function-return-type': 'error',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-empty-function': [
       'error',
-      { allow: ['arrowFunctions'] },
+      {allow: ['arrowFunctions']},
     ],
     //TODO:Reenable
     '@typescript-eslint/no-explicit-any': 'off',

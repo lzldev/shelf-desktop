@@ -1,17 +1,17 @@
-import { readFileSync, createReadStream, statSync } from 'fs'
+import {readFileSync, createReadStream, statSync} from 'fs'
 import * as fsPath from 'path'
-import { createHash } from 'crypto'
-import { flattenDirectoryTree } from '../utils'
-import { updateProgress } from '../..'
-import { TaggerClient } from './'
-import { mockTags } from './mockTags'
-import { Content, Path, Tag } from '../db/models'
+import {createHash} from 'crypto'
+import {flattenDirectoryTree} from '../utils'
+import {updateProgress} from '../..'
+import {TaggerClient} from './'
+import {mockTags} from './mockTags'
+import {Content, Path, Tag} from '../db/models'
 
 export const addTaggerEvents = (
   taggerClient: TaggerClient,
   onReadyCallback: (...any) => void,
 ) => {
-  const { sequelize } = taggerClient.models
+  const {sequelize} = taggerClient.models
   const choki = taggerClient.choki
 
   const taggerOnChange = async (filePath: string): Promise<void> => {
@@ -195,7 +195,7 @@ export const addTaggerEvents = (
         )
 
         await createPath.update(
-          { contentId: foundContent?.id || tempContentID },
+          {contentId: foundContent?.id || tempContentID},
           {
             transaction: ContentsTransaction,
           },

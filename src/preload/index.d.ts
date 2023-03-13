@@ -1,5 +1,5 @@
-import { ElectronAPI } from '@electron-toolkit/preload'
-import { api } from './index'
+import {ElectronAPI} from '@electron-toolkit/preload'
+import {api} from './index'
 
 declare global {
   interface Window {

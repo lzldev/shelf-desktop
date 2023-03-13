@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import {useEffect, useState} from 'react'
 
 export class ProgressMap<
   TK extends keyof ProgressType,
@@ -14,7 +14,7 @@ const useProgress = () => {
     })
   }, [])
 
-  return { progress }
+  return {progress}
 }
 
 type ProgressType = {
@@ -23,4 +23,4 @@ type ProgressType = {
     lastPaths: [string, string, string]
   }
 }
-export { useProgress }
+export {useProgress}

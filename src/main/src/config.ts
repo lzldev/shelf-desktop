@@ -1,4 +1,4 @@
-import { AnyZodObject, z } from 'zod'
+import {AnyZodObject, z} from 'zod'
 import * as path from 'path'
 import * as fs from 'fs'
 import deepmerge from 'deepmerge'

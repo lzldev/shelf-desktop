@@ -6,10 +6,10 @@ import {
   HasMany,
   DataType,
 } from 'sequelize-typescript'
-import { Tag } from './Tag'
-import { Path } from './Path'
-import { ContentTag } from './ContentTag'
-import { Optional } from 'sequelize'
+import {Tag} from './Tag'
+import {Path} from './Path'
+import {ContentTag} from './ContentTag'
+import {Optional} from 'sequelize'
 
 interface _Content {
   id: number
@@ -31,4 +31,4 @@ class Content extends Model<_Content, Optional<_Content, 'id'>> {
   paths!: Path[]
 }
 
-export { Content }
+export {Content}

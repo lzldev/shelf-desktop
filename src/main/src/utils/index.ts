@@ -1,3 +1,3 @@
-import { DirectoryTree, flattenDirectoryTree } from './DirectoryTree'
+import {DirectoryTree, flattenDirectoryTree} from './DirectoryTree'
 
-export { type DirectoryTree, flattenDirectoryTree }
+export {type DirectoryTree, flattenDirectoryTree}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import {useEffect, useState} from 'react'
 
 const useTheme = () => {
   const [theme, _setTheme] = useState<unknown>([])
@@ -15,7 +15,7 @@ const useTheme = () => {
     })()
   }, [])
 
-  return { theme, setTheme }
+  return {theme, setTheme}
 }
 
-export { useTheme }
+export {useTheme}

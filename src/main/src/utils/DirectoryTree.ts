@@ -1,4 +1,4 @@
-import { FSWatcher } from 'chokidar'
+import {FSWatcher} from 'chokidar'
 
 export type DirectoryTree = ReturnType<typeof FSWatcher.prototype.getWatched>
 //          ^?

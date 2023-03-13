@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import {useEffect, useState} from 'react'
 import Versions from './components/Versions'
 
 function StartPage(): JSX.Element {
@@ -38,7 +38,7 @@ function StartPage(): JSX.Element {
           <h1 className='text-3xl font-bold'>Open TaggerDB</h1>
         </div>
       </div>
-      <hr style={{ marginTop: '10px', marginBottom: '10px' }} />
+      <hr style={{marginTop: '10px', marginBottom: '10px'}} />
       {paths.map((recentPath, idx) => (
         <h1
           key={idx}

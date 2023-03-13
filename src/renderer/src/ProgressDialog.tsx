@@ -1,8 +1,8 @@
 import Versions from './components/Versions'
-import { useProgress } from './hooks/useProgress'
+import {useProgress} from './hooks/useProgress'
 
 const ProgressDialog = (): JSX.Element => {
-  const { progress } = useProgress()
+  const {progress} = useProgress()
   const startProgress = progress.get('start')
 
   return (
@@ -19,7 +19,7 @@ const ProgressDialog = (): JSX.Element => {
           className={`min-h-full
             animate-gradient_x bg-gradient-to-r from-red-500
             to-fuchsia-500 ring active:animate-rubberBand`}
-          style={{ width: (startProgress?.value || 0) * 100 + '%' }}
+          style={{width: (startProgress?.value || 0) * 100 + '%'}}
         />
       </div>
       <div className='bg-black text-slate-300'>
