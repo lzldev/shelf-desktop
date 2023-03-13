@@ -1,9 +1,9 @@
 import * as chokidar from 'chokidar'
-import { createTaggerDB, TaggerDBModels } from '../db/TaggerDB'
-import { addTaggerEvents } from './chokiFunctions'
-import { FSWatcher } from 'chokidar'
-import { IpcMainEvents } from '../../../preload/ipcTypes'
-import { Content, Path, Tag } from '../db/models'
+import {createTaggerDB, TaggerDBModels} from '../db/TaggerDB'
+import {addTaggerEvents} from './chokiFunctions'
+import {FSWatcher} from 'chokidar'
+import {IpcMainEvents} from '../../../preload/ipcTypes'
+import {Content, ContentTag, Path, Tag} from '../db/models'
 
 /* 
     TODO:
@@ -94,7 +94,7 @@ class TaggerClient {
     const result = await Content.findAll({
       attributes: ['id', 'extension'],
       include: [
-        { model: Path },
+        {model: Path},
         {
           model: Tag,
           attributes: ['id'],
@@ -112,7 +112,7 @@ class TaggerClient {
     return result
   }
 
-  async getOneContent(options: { id: number }) {
+  async getOneContent(options: {id: number}) {
     if (!this._ready) {
       throw "Client isn't ready yet"
     }
@@ -122,7 +122,7 @@ class TaggerClient {
         id: options.id,
       },
       include: [
-        { model: Path },
+        {model: Path},
         {
           model: Tag,
           attributes: ['id', 'name'],
@@ -144,6 +144,18 @@ class TaggerClient {
 
     return result
   }
+  async addTagToContent(options: IpcMainEvents['addTagToContent']['args']) {
+    const newRelation = await ContentTag.build({
+      contentId: options.contentId,
+      tagId: options.tagId,
+    })
+    try {
+      const add = await newRelation.save()
+      return true
+    } catch (e) {
+      return false
+    }
+  }
 }
 
-export { TaggerClient }
+export {TaggerClient}

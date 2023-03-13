@@ -1,11 +1,20 @@
-import { memo, PropsWithChildren, useMemo, useState } from 'react'
-import { useTags } from './hooks/useTags'
-import { Tag, Content } from 'src/main/src/db/models'
-import { createSearchParams, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import {
+  AnchorHTMLAttributes,
+  HTMLAttributes,
+  HtmlHTMLAttributes,
+  memo,
+  PropsWithChildren,
+  useMemo,
+  useState,
+} from 'react'
+import {useTags} from './hooks/useTags'
+import {Tag, Content} from 'src/main/src/db/models'
+import {createSearchParams, useNavigate} from 'react-router-dom'
+import {useQuery} from '@tanstack/react-query'
+import {InlineTag} from './components/InlineTag'
 
 function App(): JSX.Element {
-  const { tags } = useTags()
+  const {tags} = useTags()
   const [selected, setSelected] = useState<Set<Tag>>(new Set())
   const navigate = useNavigate()
 
@@ -72,7 +81,7 @@ function App(): JSX.Element {
               return (
                 <div
                   key={value.id}
-                  className='grid-flow-col overflow-hidden p-4'
+                  className={'grid-flow-col overflow-hidden p-4'}
                   onClick={() => {
                     navigate({
                       pathname: 'content',
@@ -82,9 +91,9 @@ function App(): JSX.Element {
                     })
                   }}
                 >
-                  <div className='w-full'>
+                  <div className={'w-full'}>
                     <TaggerFile content={value} />
-                    <a className='trucate overflow-hidden '>
+                    <a className={'trucate overflow-hidden '}>
                       {value.paths[0].path}
                     </a>
                   </div>
@@ -98,11 +107,15 @@ function App(): JSX.Element {
 }
 
 const Body = (
-  props: { isLoading: boolean; error: unknown } & PropsWithChildren,
+  props: {isLoading: boolean; error: unknown} & PropsWithChildren,
 ) => {
   if (props.error) {
     return (
-      <div className='grid w-auto sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8'>
+      <div
+        className={
+          'grid w-auto sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8'
+        }
+      >
         <h1 className='text-6xl'>{props.error.toString()}</h1>
       </div>
     )
@@ -114,8 +127,8 @@ const Body = (
   )
 }
 
-const TaggerFile = (props: { content: Content }) => {
-  const { content } = props
+const TaggerFile = (props: {content: Content}) => {
+  const {content} = props
   const [hidden, setHidden] = useState(true)
 
   if (content.extension === '.mp4') {
@@ -173,7 +186,7 @@ export const Query = (props: {
   removeSelected: (tag: Tag) => any
   hidden?: boolean
 }) => {
-  const { tags, onQuery, addSelected, selected, removeSelected } = props
+  const {tags, onQuery, addSelected, selected, removeSelected} = props
   const [query, setQuery] = useState<string>('')
   const selectedTags = Array.from(selected)
   const TransformedQuery = query?.split(' ')
@@ -195,21 +208,14 @@ export const Query = (props: {
   return (
     <div className='relative'>
       <form
-        className='z-50 mb-5
-        flex w-full
-        place-content-stretch
-        overflow-clip
-        rounded-full
-        bg-white
-        ring ring-pink-500'
+        className={
+          'z-20 mb-5 flex w-full place-content-stretch overflow-clip rounded-full bg-white ring ring-pink-500'
+        }
       >
         <input
-          className=' z-50
-           w-full bg-transparent
-           p-2
-          text-pink-500 outline-none 
-           selection:bg-pink-200
-           hover:border-none active:border-none'
+          className={
+            ' z-20 w-full bg-transparent p-2 text-pink-500 outline-none selection:bg-pink-200 hover:border-none active:border-none'
+          }
           type={'text'}
           value={query}
           list='tag-list'
@@ -224,14 +230,9 @@ export const Query = (props: {
           }}
         />
         <button
-          className=' z-50 bg-gradient-to-r
-          from-pink-500 to-cyan-600 bg-clip-text px-10 font-bold
-          text-transparent 
-          text-gray-700
-          ring-gray-300
-          hover:bg-clip-border
-          hover:text-white
-          hover:ring-0'
+          className={
+            'z-20 bg-gradient-to-r from-pink-500 to-cyan-600 bg-clip-text px-10 font-bold text-transparent text-gray-700 ring-gray-300 hover:bg-clip-border hover:text-white hover:ring-0'
+          }
           onClick={onQuery}
         >
           Search
@@ -239,9 +240,9 @@ export const Query = (props: {
       </form>
 
       <div
-        className='absolute top-10 -right-0.5 -left-0.5 -mt-5 h-auto origin-top
-        border-x-2 border-b-2 border-pink-500 bg-white 
-        pt-6'
+        className={
+          'absolute top-10 -right-0.5 -left-0.5 z-10 -mt-5 h-auto origin-top border-x-2 border-b-2 border-pink-500 bg-white pt-6'
+        }
         hidden={!hideDrop || DropDownTags.length === 0}
       >
         {DropDownTags.map((tag) => {
@@ -267,20 +268,11 @@ export const Query = (props: {
       >
         {selectedTags.map((tag) => {
           return (
-            <a
+            <InlineTag
               key={tag.id}
-              onClick={() => {
-                removeSelected(tag)
-              }}
-              className='m-1 inline-block animate-gradient_xy_fast rounded-full
-               bg-gradient-to-tr from-fuchsia-400 to-cyan-400 
-               p-1.5 font-bold
-               text-opacity-90 hover:bg-clip-text 
-               hover:text-transparent hover:ring-2
-               hover:backdrop-brightness-200'
-            >
-              {tag.name}
-            </a>
+              tag={tag}
+              onClick={() => removeSelected(tag)}
+            />
           )
         })}
       </div>

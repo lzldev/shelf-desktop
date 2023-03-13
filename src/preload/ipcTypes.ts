@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-namespace */
-import type { IpcMainInvokeEvent, IpcRendererEvent } from 'electron'
-import type { OpenDialogReturn } from '../main'
-import { Content, Tag } from '../main/src/db/models'
+import type {IpcMainInvokeEvent, IpcRendererEvent} from 'electron'
+import type {OpenDialogReturn} from '../main'
+import {Content, Tag} from '../main/src/db/models'
 
 export type TypeLevelRecord<
   TShape extends object,
-  TRecord extends { [key: string]: TShape },
+  TRecord extends {[key: string]: TShape},
 > = TRecord
 
 type IpcMainEventShape = {
@@ -21,7 +21,7 @@ export type IpcMainEvents = TypeLevelRecord<
       return: void
     }
     openDialog: {
-      args: [options: { dialogType: 'openFile' | 'openDirectory' }]
+      args: [options: {dialogType: 'openFile' | 'openDirectory'}]
       return: OpenDialogReturn
     }
     getRecent: {
@@ -30,10 +30,14 @@ export type IpcMainEvents = TypeLevelRecord<
     }
     getTaggerImages: {
       args: {
-        pagination?: { page: number; pageSize: number }
+        pagination?: {page: number; pageSize: number}
         tags?: Tag[]
       }
       return: Content[]
+    }
+    addTagToContent: {
+      args: {contentId: number; tagId: number}
+      return: boolean
     }
     getDetailedImage: {
       args: number
@@ -54,7 +58,7 @@ export type IpcRendererEvents = TypeLevelRecord<
   IpcRendererEventShape,
   {
     updateProgress: {
-      args: { value: number; key: string }
+      args: {value: number; key: string}
     }
   }
 >

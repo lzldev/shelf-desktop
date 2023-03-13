@@ -8,6 +8,12 @@ import {
 import { Tag } from './Tag'
 import { Content } from './Content'
 
+interface ContentTag {
+  id: number
+  contentId:number
+  tagId:number
+}
+
 @Table
 class ContentTag extends Model {
   @Column({ type: DataType.INTEGER })

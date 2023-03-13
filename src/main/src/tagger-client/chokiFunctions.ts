@@ -77,7 +77,7 @@ export const addTaggerEvents = (
       (p) => !statSync(p).isDirectory(),
     )
 
-    let contentError = 0
+    const contentError = 0
     let duplicatePath = 0
 
     const ContentsTransaction = await sequelize.transaction({

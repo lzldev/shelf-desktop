@@ -13,8 +13,8 @@ import {
 import '../preload/ipcTypes'
 import * as fs from 'fs'
 import * as path from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { TaggerClient } from './src/tagger-client'
+import {electronApp, optimizer, is} from '@electron-toolkit/utils'
+import {TaggerClient} from './src/tagger-client'
 
 //TODO: Move
 const WindowRoutes = {
@@ -89,7 +89,7 @@ function createWindow<Route extends keyof typeof WindowRoutes>(
 
   newWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
-    return { action: 'deny' }
+    return {action: 'deny'}
   })
 
   // HMR for renderer base on electron-vite cli.
@@ -114,9 +114,9 @@ function createWindow<Route extends keyof typeof WindowRoutes>(
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  protocol.registerFileProtocol('tagger', (request, callback) => {
+  protocol.registerFileProtocol('tagger', (request: any, callback: any) => {
     const url = request.url.substring(9)
-    callback({ path: url })
+    callback({path: url})
   })
   // Set app user model id for windows
   electronApp.setAppUserModelId('electron')
@@ -124,7 +124,7 @@ app.whenReady().then(() => {
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
   // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
-  app.on('browser-window-created', (_, window) => {
+  app.on('browser-window-created', (_: any, window: BrowserWindow) => {
     optimizer.watchWindowShortcuts(window)
   })
 
@@ -151,7 +151,7 @@ app.on('window-all-closed', () => {
   }
 })
 
-export const updateProgress = (args: { key: string; value: any }) => {
+export const updateProgress = (args: {key: string; value: any}) => {
   Windows.get('progress')?.webContents.send('updateProgress', args)
 }
 
@@ -238,6 +238,17 @@ ipcMain.handle('getTaggerTags', async () => {
   return JSON.parse(JSON.stringify(r))
 })
 
+ipcMain.handle('addTagToContent', async (_, options) => {
+  for (let i = 0; i < TaggerClients.length; i++) {
+    const res = await TaggerClients[i].addTagToContent(options)
+    if (!res) {
+      return false
+    }
+  }
+
+  return true
+})
+
 ipcMain.handle('getTaggerImages', async (_, options) => {
   const r: any = []
 
@@ -254,7 +265,7 @@ ipcMain.handle('getTaggerImages', async (_, options) => {
 
 ipcMain.handle('getDetailedImage', async (_, id) => {
   for (let i = 0; i < TaggerClients.length; i++) {
-    const res = await TaggerClients[i].getOneContent({ id: id })
+    const res = await TaggerClients[i].getOneContent({id: id})
     if (!res) {
       continue
     }

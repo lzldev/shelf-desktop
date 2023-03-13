@@ -1,14 +1,15 @@
-import { Content, Tag } from 'src/main/src/db/models'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { Query } from './Main'
-import { useTags } from './hooks/useTags'
-import { useState } from 'react'
+import {Content, Tag} from 'src/main/src/db/models'
+import {useNavigate, useSearchParams} from 'react-router-dom'
+import {useQuery} from '@tanstack/react-query'
+import {Query} from './Main'
+import {useTags} from './hooks/useTags'
+import {useState} from 'react'
+import {InlineTag} from './components/InlineTag'
 
 function App(): JSX.Element {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { tags } = useTags()
+  const {tags} = useTags()
   //REMOVEME:
   const [selected] = useState(new Set<Tag>())
   const [showQuery, setShowQuery] = useState(false)
@@ -43,7 +44,7 @@ function App(): JSX.Element {
   if (isLoading) {
     return (
       <div className='flex h-screen w-screen'>
-        <h1 onClick={() => navigate({ pathname: '/' })}>
+        <h1 onClick={() => navigate({pathname: '/'})}>
           LOADING - {searchParams}
         </h1>
         <h1 onClick={() => navigate('/')}>{window.location.toString()}</h1>
@@ -54,18 +55,16 @@ function App(): JSX.Element {
   if (!content || error) {
     return (
       <div className='flex h-screen w-screen'>
-        <h1 onClick={() => navigate({ pathname: '/' })}>
-          {'ERROR -> ' + error}
-        </h1>
+        <h1 onClick={() => navigate({pathname: '/'})}>{'ERROR -> ' + error}</h1>
       </div>
     )
   }
 
   return (
-    <div className='max-w-screen overflow-y-hidden p-10'>
+    <div className={'max-w-screen min-h-screen w-full overflow-y-hidden p-10'}>
       <h1
         className='text-6xl font-bold'
-        onClick={() => navigate({ pathname: '/' })}
+        onClick={() => navigate({pathname: '/'})}
       >
         {'BACK'}
       </h1>
@@ -73,9 +72,9 @@ function App(): JSX.Element {
         <div className='flex w-full'>
           <TaggerContent content={content} />
         </div>
-        <hr className='divide-y-8'></hr>
+        <div className={'my-2 -mx-96 h-0.5 bg-white'}></div>
         <div className='relative'>
-          <div>
+          <div className={'my-2'}>
             {(content?.paths || []).map((p, idx) => {
               return (
                 <p
@@ -90,42 +89,59 @@ function App(): JSX.Element {
           <div>
             {(content?.tags || []).map((tag) => {
               return (
-                <a
+                <InlineTag
                   key={tag.id}
-                  className='relative m-1 inline-block animate-gradient_xy rounded-full bg-gradient-to-tl
-               from-fuchsia-400 to-cyan-400  p-1.5  font-bold text-opacity-90'
-                >
-                  {tag.name}
-                  <DropdownMenu />
-                </a>
+                  tag={tag}
+                />
               )
             })}
+            {(content?.tags || []).map((tag) => {
+              return (
+                <InlineTag
+                  key={tag.id}
+                  tag={tag}
+                />
+              )
+            })}
+            {(content?.tags || []).map((tag) => {
+              return (
+                <InlineTag
+                  key={tag.id}
+                  tag={tag}
+                />
+              )
+            })}
+            <a
+              className={
+                'relative m-1 inline-flex animate-gradient_xy items-center rounded-full bg-gradient-to-tl from-fuchsia-400 to-cyan-400 p-1 text-xl font-bold text-opacity-90'
+              }
+              onClick={(evt) => {
+                evt.clientX
+                setShowQuery(true)
+              }}
+            >
+              +
+            </a>
           </div>
-          <a
-            className='m-1 inline-flex animate-gradient_xy items-center rounded-full 
-          bg-gradient-to-tl
-          from-fuchsia-400 to-cyan-400 p-1 text-xl font-bold text-opacity-90'
-            onClick={(evt) => {
-              evt.clientX
-              setShowQuery(true)
-            }}
-          >
-            +
-          </a>
         </div>
       </div>
-      {/* <Query
+      <Query
         hidden={!showQuery}
         tags={tags}
         addSelected={(tag) => {
           setShowQuery(false)
           console.log(tag)
+
+          window.api.invokeOnMain('addTagToContent', {
+            contentId: content.id,
+            tagId: tag.id,
+          })
           //TODO:Add Tag to Content
         }}
         onQuery={() => {}}
         removeSelected={() => {}}
         selected={selected}
-      />*/}
+      />
     </div>
   )
 }
@@ -133,9 +149,9 @@ function App(): JSX.Element {
 const DropdownMenu = () => {
   return (
     <div
-      className='absolute right-0 bottom-0 
-      z-10 mt-2 w-56 origin-bottom-right rounded-md bg-white 
-      shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none'
+      className={
+        'absolute right-0 bottom-0 z-10 mt-2 w-56 origin-bottom-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none'
+      }
       role='menu'
       aria-orientation='vertical'
       aria-labelledby='menu-button'
@@ -193,8 +209,8 @@ const DropdownMenu = () => {
   )
 }
 
-const TaggerContent = (props: { content: Content }) => {
-  const { content } = props
+const TaggerContent = (props: {content: Content}) => {
+  const {content} = props
 
   if (content.extension === '.mp4') {
     return (
@@ -223,7 +239,7 @@ const TaggerContent = (props: { content: Content }) => {
 
   return (
     <img
-      className='h-full flex-auto bg-black bg-opacity-5 object-contain'
+      className='mx-auto h-96  bg-black bg-opacity-5 object-contain'
       src={'tagger://' + content.paths[0].path}
     />
   )
