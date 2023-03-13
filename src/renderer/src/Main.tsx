@@ -1,12 +1,4 @@
-import {
-  AnchorHTMLAttributes,
-  HTMLAttributes,
-  HtmlHTMLAttributes,
-  memo,
-  PropsWithChildren,
-  useMemo,
-  useState,
-} from 'react'
+import {PropsWithChildren, useState} from 'react'
 import {useTags} from './hooks/useTags'
 import {Tag, Content} from 'src/main/src/db/models'
 import {createSearchParams, useNavigate} from 'react-router-dom'
@@ -20,7 +12,6 @@ function App(): JSX.Element {
 
   const getImages = async () => {
     const tags = selected.size > 0 ? Array.from(selected.values()) : undefined
-
     const Files = await window.api.invokeOnMain('getTaggerImages', {
       tags,
     })
@@ -41,10 +32,6 @@ function App(): JSX.Element {
     queryKey: ['content'],
     queryFn: getImages,
   })
-
-  if (!files) {
-    return <h1>big bad</h1>
-  }
 
   return (
     <div className='min-h-screen w-full p-10'>
@@ -72,35 +59,31 @@ function App(): JSX.Element {
         isLoading={isLoading}
         error={error}
       >
-        {files
-          ? (files || []).map((value) => {
-              if (!value.paths || !value.paths[0]) {
-                return
-              }
+        {(files || []).map((content) => {
+          if (!content.paths || !content.paths[0]) {
+            return
+          }
 
-              return (
-                <div
-                  key={value.id}
-                  className={'grid-flow-col overflow-hidden p-4'}
-                  onClick={() => {
-                    navigate({
-                      pathname: 'content',
-                      search: createSearchParams({
-                        id: value.id,
-                      }).toString(),
-                    })
-                  }}
-                >
-                  <div className={'w-full'}>
-                    <TaggerFile content={value} />
-                    <a className={'trucate overflow-hidden '}>
-                      {value.paths[0].path}
-                    </a>
-                  </div>
-                </div>
-              )
-            })
-          : null}
+          return (
+            <div
+              key={content.id}
+              className={'grid-flow-col overflow-hidden p-4'}
+              onClick={() => {
+                navigate({
+                  pathname: 'content',
+                  search: createSearchParams({
+                    id: content.id,
+                  }).toString(),
+                })
+              }}
+            >
+              <div className={'flex h-full flex-col'}>
+                <TaggerFile content={content} />
+                <a className={'inline-flex'}>{content.paths[0].path}</a>
+              </div>
+            </div>
+          )
+        })}
       </Body>
     </div>
   )
@@ -134,7 +117,7 @@ const TaggerFile = (props: {content: Content}) => {
   if (content.extension === '.mp4') {
     return (
       <video
-        className='h-full border-2 border-red-500 bg-black bg-opacity-20'
+        className='flex-auto border-2 bg-black bg-opacity-20'
         src={'tagger://' + content.paths[0].path}
         muted={true}
         onClick={(evt) => {
@@ -159,14 +142,15 @@ const TaggerFile = (props: {content: Content}) => {
   return (
     <div
       className={
-        hidden
-          ? 'animate-gradient_x bg-gradient-to-r from-gray-600 to-gray-500 opacity-50'
-          : ''
+        'flex h-full' +
+        (hidden
+          ? ' animate-gradient_x bg-gradient-to-r from-gray-600 to-gray-500 opacity-50'
+          : '')
       }
     >
       <img
         className={
-          'h-full flex-auto object-contain transition-all' +
+          'flex-auto object-contain transition-all' +
           (hidden ? 'bg-gradient-to-tr opacity-0' : '')
         }
         onLoad={() => {
@@ -220,8 +204,11 @@ export const Query = (props: {
           value={query}
           list='tag-list'
           onChange={(evt) => {
-            evt.preventDefault()
             setQuery(evt.target.value)
+          }}
+          onSubmit={(evt) => {
+            evt.preventDefault()
+            evt.stopPropagation()
           }}
           onKeyDown={(evt) => {
             if (evt.key === 'Enter') {

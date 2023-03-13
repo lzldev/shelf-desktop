@@ -1,4 +1,3 @@
-import Versions from './components/Versions'
 import {useProgress} from './hooks/useProgress'
 
 const ProgressDialog = (): JSX.Element => {

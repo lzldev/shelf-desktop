@@ -9,7 +9,7 @@ import {Content, Path, Tag} from '../db/models'
 
 export const addTaggerEvents = (
   taggerClient: TaggerClient,
-  onReadyCallback: (...any) => void,
+  onReadyCallback: (...args: any[]) => void,
 ) => {
   const {sequelize} = taggerClient.models
   const choki = taggerClient.choki

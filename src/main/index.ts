@@ -17,7 +17,7 @@ import {electronApp, optimizer, is} from '@electron-toolkit/utils'
 import {TaggerClient} from './src/tagger-client'
 
 //TODO: Move
-const WindowRoutes = {
+const _WindowRoutes = {
   main: {
     route: '',
     startOptions: {
@@ -42,21 +42,24 @@ const WindowRoutes = {
   },
 } as const
 
-const Windows = new Map<keyof typeof WindowRoutes, BrowserWindow>()
-const TaggerClients: TaggerClient[] = []
+export type HasKey<T, K, TTrue, TFalse = never> = K extends keyof T
+  ? TTrue
+  : TFalse
 
-function createWindow<Route extends keyof typeof WindowRoutes>(
-  route: Route,
-): void {
+let CurrentTaggerClient: TaggerClient //TODO:RENAME
+
+const Windows = new Map<keyof typeof _WindowRoutes, BrowserWindow>()
+
+function createWindow(route: keyof typeof _WindowRoutes): void {
   if (Windows.has(route)) {
     console.log('Window Already Exists.')
     return
   }
 
-  //FIXTHIS: Clean this up.
+  //TODO: Clean this up.
   const screenArea = screen.getPrimaryDisplay().bounds
-  const sizeX = WindowRoutes[route].startOptions?.x || 900
-  const sizeY = WindowRoutes[route].startOptions?.y || 900
+  const sizeX = _WindowRoutes[route].startOptions?.x || 900
+  const sizeY = _WindowRoutes[route].startOptions?.y || 900
   const x = Math.max(screenArea.width / 2 + screenArea.x - sizeX / 2, 0)
   const y = Math.max(screenArea.height / 2 + screenArea.y - sizeY / 2, 0)
 
@@ -64,7 +67,7 @@ function createWindow<Route extends keyof typeof WindowRoutes>(
     BrowserWindow.getFocusedWindow()?.getPosition() || [x, y]
 
   const newWindow = new BrowserWindow({
-    ...WindowRoutes[route].startOptions,
+    ..._WindowRoutes[route].startOptions,
     width: sizeX,
     show: false,
     height: sizeY,
@@ -96,13 +99,13 @@ function createWindow<Route extends keyof typeof WindowRoutes>(
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     newWindow.loadURL(
-      process.env['ELECTRON_RENDERER_URL'] + `#/${WindowRoutes[route].route}`,
+      process.env['ELECTRON_RENDERER_URL'] + `#/${_WindowRoutes[route].route}`,
     )
   } else {
     newWindow.loadFile(
       path.join(
         __dirname,
-        '../renderer/index.html' + `#/${WindowRoutes[route].route}`,
+        '../renderer/index.html' + `#/${_WindowRoutes[route].route}`,
       ),
     )
   }
@@ -156,33 +159,23 @@ export const updateProgress = (args: {key: string; value: any}) => {
 }
 
 async function startNewClient(path: string | string[]) {
-  if (TaggerClients.length > 0) {
-    console.log('Multiple Clients .... To be implemented')
-    return
-  }
-  if (!Windows.get('progress')) {
+  if (!Windows.has('progress')) {
     createWindow('progress')
   }
-  TaggerClients.push(
-    await TaggerClient.create(path, () => {
-      const progWindow = Windows.get('progress')
 
-      if (progWindow) {
-        console.log('Window Found ->', 'Closing')
-        console.log('id ->', progWindow.id)
-        progWindow.close()
-      }
-      createWindow('main')
-    }),
-  )
-  console.log('Pre Window ID ->', Windows.get('progress')?.webContents.id)
+  CurrentTaggerClient = await TaggerClient.create(path, () => {
+    const progWindow = Windows.get('progress')
+    if (progWindow) {
+      progWindow.close()
+    }
+    createWindow('main')
+  })
+
+  // console.log(
+  //   'Pre Window ID ->',
+  //   Windows.progress ? Windows.progress[0].webContents.id : undefined,
+  // )
 }
-
-/* 
-    TODO:implement
-        ipcMain.handle('errorPopup',() => {
-    }) 
-*/
 
 export type OpenDialogReturn = {
   canceled: boolean
@@ -225,56 +218,28 @@ ipcMain.handle('startTaggerClient', async (Event, path) => {
 })
 
 ipcMain.handle('getTaggerTags', async () => {
-  const r: any = []
-
-  for (let i = 0; i < TaggerClients.length; i++) {
-    const res = await TaggerClients[i].getTags()
-    if (!res) {
-      continue
-    }
-    r.push(...res)
-  }
-
-  return JSON.parse(JSON.stringify(r))
+  const res = await CurrentTaggerClient.getTags()
+  return JSON.parse(JSON.stringify(res))
 })
 
 ipcMain.handle('addTagToContent', async (_, options) => {
-  for (let i = 0; i < TaggerClients.length; i++) {
-    const res = await TaggerClients[i].addTagToContent(options)
-    if (!res) {
-      return false
-    }
-  }
+  const tag = await CurrentTaggerClient.addTagToContent(options)
 
-  return true
+  return !!tag
 })
 
 ipcMain.handle('getTaggerImages', async (_, options) => {
-  const r: any = []
+  const res = await CurrentTaggerClient.getContent(options)
 
-  for (let i = 0; i < TaggerClients.length; i++) {
-    const res = await TaggerClients[i].getContent(options)
-    if (!res) {
-      continue
-    }
-    r.push(...res)
-  }
-
-  return JSON.parse(JSON.stringify(r))
+  return JSON.parse(JSON.stringify(res))
 })
 
 ipcMain.handle('getDetailedImage', async (_, id) => {
-  for (let i = 0; i < TaggerClients.length; i++) {
-    const res = await TaggerClients[i].getOneContent({id: id})
-    if (!res) {
-      continue
-    }
-    return JSON.parse(JSON.stringify(res))
-  }
-  return null
+  const res = await CurrentTaggerClient.getOneContent({id: id})
+  return JSON.parse(JSON.stringify(res))
 })
 /*
-    TODO:Add Runtime Validation with ZOD since its being held in a file.
+    TODO:Add Runtime Validation with ZOD since this is being held in a file.
     zJson.parse(path,schema)
 */
 ipcMain.handle('getRecent', async () => loadRecent())

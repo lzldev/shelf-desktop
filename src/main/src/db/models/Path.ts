@@ -1,4 +1,4 @@
-import {InferCreationAttributes, Optional} from 'sequelize'
+import {InferCreationAttributes} from 'sequelize'
 import {
   BelongsTo,
   Column,

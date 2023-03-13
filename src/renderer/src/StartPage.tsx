@@ -1,13 +1,15 @@
-import {useEffect, useState} from 'react'
+import {useQuery} from '@tanstack/react-query'
 import Versions from './components/Versions'
 
 function StartPage(): JSX.Element {
-  const [paths, setPaths] = useState<string[]>([])
-
   const fetchRecentPaths = async () => {
-    const paths = await window.api.invokeOnMain('getRecent', null)
-    return paths
+    return await window.api.invokeOnMain('getRecent', null)
   }
+
+  const {data: paths,error,isLoading} = useQuery({
+    queryKey: ['recentPath'],
+    queryFn: fetchRecentPaths,
+  })
 
   const openDialog = async (dir: 'openFile' | 'openDirectory') => {
     const dialog = await window.api.invokeOnMain('openDialog', {
@@ -17,10 +19,6 @@ function StartPage(): JSX.Element {
 
     await window.api.invokeOnMain('startTaggerClient', dialog.filePaths)
   }
-
-  useEffect(() => {
-    fetchRecentPaths().then(setPaths)
-  }, [])
 
   return (
     <div className='container'>
@@ -39,7 +37,7 @@ function StartPage(): JSX.Element {
         </div>
       </div>
       <hr style={{marginTop: '10px', marginBottom: '10px'}} />
-      {paths.map((recentPath, idx) => (
+      {(paths || []).map((recentPath, idx) => (
         <h1
           key={idx}
           className='recentPath text-3xl font-bold hover:bg-sky-200'

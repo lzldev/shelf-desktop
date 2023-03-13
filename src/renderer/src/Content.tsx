@@ -36,6 +36,7 @@ function App(): JSX.Element {
     data: content,
     error,
     isLoading,
+    refetch,
   } = useQuery({
     queryKey: ['DetailedContent'],
     queryFn: fetchImage,
@@ -95,22 +96,6 @@ function App(): JSX.Element {
                 />
               )
             })}
-            {(content?.tags || []).map((tag) => {
-              return (
-                <InlineTag
-                  key={tag.id}
-                  tag={tag}
-                />
-              )
-            })}
-            {(content?.tags || []).map((tag) => {
-              return (
-                <InlineTag
-                  key={tag.id}
-                  tag={tag}
-                />
-              )
-            })}
             <a
               className={
                 'relative m-1 inline-flex animate-gradient_xy items-center rounded-full bg-gradient-to-tl from-fuchsia-400 to-cyan-400 p-1 text-xl font-bold text-opacity-90'
@@ -128,15 +113,17 @@ function App(): JSX.Element {
       <Query
         hidden={!showQuery}
         tags={tags}
-        addSelected={(tag) => {
+        addSelected={async (tag) => {
           setShowQuery(false)
-          console.log(tag)
 
-          window.api.invokeOnMain('addTagToContent', {
+          const tagCreated = await window.api.invokeOnMain('addTagToContent', {
             contentId: content.id,
             tagId: tag.id,
           })
-          //TODO:Add Tag to Content
+
+          if (tagCreated) {
+            refetch()
+          }
         }}
         onQuery={() => {}}
         removeSelected={() => {}}
