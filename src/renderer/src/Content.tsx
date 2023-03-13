@@ -1,28 +1,44 @@
-import { useEffect, useState } from 'react'
-import { Content } from 'src/main/src/db/models'
+import { Content, Tag } from 'src/main/src/db/models'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { Query } from './Main'
+import { useTags } from './hooks/useTags'
+import { useState } from 'react'
 
 function App(): JSX.Element {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [content, setContent] = useState<Content>()
-  const [isLoading, setisLoading] = useState(true)
-  const [error, setError] = useState<boolean>()
-  const searchId = parseInt(searchParams.get('id') + '') || 0
+  const { tags } = useTags()
+  //REMOVEME:
+  const [selected] = useState(new Set<Tag>())
+  const [showQuery, setShowQuery] = useState(false)
 
   const fetchImage = async () => {
-    const result = await window.api.invokeOnMain('getDetailedImage', searchId)
-    if (!result) {
-      setError(true)
-      setisLoading(false)
-      return
+    const id = searchParams.get('id')
+
+    if (id === null) {
+      throw 'Invalid ID in search Params '
     }
-    setContent(result)
-    setisLoading(false)
+    const result = await window.api.invokeOnMain(
+      'getDetailedImage',
+      parseInt(id),
+    )
+
+    if (!result) {
+      throw 'Invalid Image'
+    }
+
+    return result
   }
-  useEffect(() => {
-    fetchImage()
-  }, [])
+
+  const {
+    data: content,
+    error,
+    isLoading,
+  } = useQuery({
+    queryKey: ['DetailedContent'],
+    queryFn: fetchImage,
+  })
 
   if (isLoading) {
     return (
@@ -38,45 +54,141 @@ function App(): JSX.Element {
   if (!content || error) {
     return (
       <div className='flex h-screen w-screen'>
-        <h1 onClick={() => navigate({ pathname: '/' })}>ERROR ----</h1>
+        <h1 onClick={() => navigate({ pathname: '/' })}>
+          {'ERROR -> ' + error}
+        </h1>
       </div>
     )
   }
 
   return (
-    <div className='max-w-screen overflow-hidden p-10'>
+    <div className='max-w-screen overflow-y-hidden p-10'>
       <h1
         className='text-6xl font-bold'
         onClick={() => navigate({ pathname: '/' })}
       >
         {'BACK'}
       </h1>
-      <div className='grid-flow-col overflow-hidden p-4'>
-        <div className='w-full'>
+      <div className='relative overflow-hidden p-4'>
+        <div className='flex w-full'>
           <TaggerContent content={content} />
-          {(content?.paths || []).map((p, idx) => {
-            return (
-              <p
-                key={idx}
-                className='trucate overflow-hidden'
-              >
-                {p.path}
-              </p>
-            )
-          })}
         </div>
-        {(content?.tags || []).map((tag) => {
-          return (
-            <a
-              key={tag.id}
-              className='m-1 inline-block animate-gradient_xy rounded-full bg-gradient-to-tl
+        <hr className='divide-y-8'></hr>
+        <div className='relative'>
+          <div>
+            {(content?.paths || []).map((p, idx) => {
+              return (
+                <p
+                  key={idx}
+                  className='trucate overflow-hidden'
+                >
+                  {p.path}
+                </p>
+              )
+            })}
+          </div>
+          <div>
+            {(content?.tags || []).map((tag) => {
+              return (
+                <a
+                  key={tag.id}
+                  className='relative m-1 inline-block animate-gradient_xy rounded-full bg-gradient-to-tl
                from-fuchsia-400 to-cyan-400  p-1.5  font-bold text-opacity-90'
-            >
-              {tag.name}
-            </a>
-          )
-        })}
+                >
+                  {tag.name}
+                  <DropdownMenu />
+                </a>
+              )
+            })}
+          </div>
+          <a
+            className='m-1 inline-flex animate-gradient_xy items-center rounded-full 
+          bg-gradient-to-tl
+          from-fuchsia-400 to-cyan-400 p-1 text-xl font-bold text-opacity-90'
+            onClick={(evt) => {
+              evt.clientX
+              setShowQuery(true)
+            }}
+          >
+            +
+          </a>
+        </div>
       </div>
+      {/* <Query
+        hidden={!showQuery}
+        tags={tags}
+        addSelected={(tag) => {
+          setShowQuery(false)
+          console.log(tag)
+          //TODO:Add Tag to Content
+        }}
+        onQuery={() => {}}
+        removeSelected={() => {}}
+        selected={selected}
+      />*/}
+    </div>
+  )
+}
+
+const DropdownMenu = () => {
+  return (
+    <div
+      className='absolute right-0 bottom-0 
+      z-10 mt-2 w-56 origin-bottom-right rounded-md bg-white 
+      shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none'
+      role='menu'
+      aria-orientation='vertical'
+      aria-labelledby='menu-button'
+      tabIndex={-1}
+    >
+      {/* 
+      //TODO: Add a Tags popup with portals.
+      <div
+        className='py-1'
+        role='none'
+      >
+        <a
+          href='#'
+          className='block px-4 py-2 text-sm text-gray-700'
+          role='menuitem'
+          tabIndex={-1}
+          id='menu-item-0'
+        >
+          Account settings
+        </a>
+        <a
+          href='#'
+          className='block px-4 py-2 text-sm text-gray-700'
+          role='menuitem'
+          tabIndex={-1}
+          id='menu-item-1'
+        >
+          Support
+        </a>
+        <a
+          href='#'
+          className='block px-4 py-2 text-sm text-gray-700'
+          role='menuitem'
+          tabIndex={-1}
+          id='menu-item-2'
+        >
+          License
+        </a>
+        <form
+          className=''
+          role='none'
+        >
+          <button
+            className='block w-full px-4 py-2 text-left text-sm text-gray-700'
+            role='menuitem'
+            tabIndex={-1}
+            id='menu-item-3'
+          >
+            Sign out
+          </button>
+        </form>
+      </div> 
+      */}
     </div>
   )
 }

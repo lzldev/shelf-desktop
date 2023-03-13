@@ -15,7 +15,6 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { TaggerClient } from './src/tagger-client'
-import { Content } from './src/db/models'
 
 //TODO: Move
 const WindowRoutes = {
