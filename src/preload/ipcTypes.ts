@@ -40,7 +40,7 @@ export type IpcMainEvents = TypeLevelRecord<
       return: boolean
     }
     getDetailedImage: {
-      args: number
+      args: [contentId:number]
       return: Content | null
     }
     getTaggerTags: {

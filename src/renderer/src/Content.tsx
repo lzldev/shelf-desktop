@@ -1,10 +1,11 @@
-import {Content, Tag} from 'src/main/src/db/models'
+import {Tag} from 'src/main/src/db/models'
 import {useNavigate, useSearchParams} from 'react-router-dom'
 import {useQuery} from '@tanstack/react-query'
-import {Query} from './Main'
+import {SearchBar} from './Main'
 import {useTags} from './hooks/useTags'
 import {useState} from 'react'
 import {InlineTag} from './components/InlineTag'
+import {TaggerContent} from './components/TaggerContent'
 
 function App(): JSX.Element {
   const navigate = useNavigate()
@@ -62,25 +63,29 @@ function App(): JSX.Element {
   }
 
   return (
-    <div className={'max-w-screen min-h-screen w-full overflow-y-hidden p-10'}>
-      <h1
-        className='text-6xl font-bold'
-        onClick={() => navigate({pathname: '/'})}
-      >
-        {'BACK'}
-      </h1>
+    <div>
+      <div className='my-5 flex justify-between px-5'>
+        <h1
+          className='font-mono text-6xl font-extrabold'
+          onClick={() => navigate({pathname: '/'})}
+        >
+          {'<-'}
+        </h1>
+      </div>
+      <div>
+        <TaggerContent
+          content={content}
+          className={'h-[60vh]'}
+        />
+      </div>
       <div className='relative overflow-hidden p-4'>
-        <div className='flex w-full'>
-          <TaggerContent content={content} />
-        </div>
-        <div className={'my-2 -mx-96 h-0.5 bg-white'}></div>
         <div className='relative'>
           <div className={'my-2'}>
             {(content?.paths || []).map((p, idx) => {
               return (
                 <p
                   key={idx}
-                  className='trucate overflow-hidden'
+                  className='trucate selectable overflow-hidden font-mono font-medium selection:bg-fuchsia-400'
                 >
                   {p.path}
                 </p>
@@ -97,20 +102,20 @@ function App(): JSX.Element {
               )
             })}
             <a
-              className={
-                'relative m-1 inline-flex animate-gradient_xy items-center rounded-full bg-gradient-to-tl from-fuchsia-400 to-cyan-400 p-1 text-xl font-bold text-opacity-90'
-              }
               onClick={(evt) => {
                 evt.clientX
                 setShowQuery(true)
               }}
+              className={
+                'ml-1 inline-flex animate-gradient_xy_fast rounded-full border-2 bg-gradient-to-tr from-fuchsia-400 via-cyan-400 to-green-400 p-1 px-1.5 text-center text-xl font-bold text-white text-opacity-90 backdrop-contrast-200 transition-all hover:bg-clip-text hover:text-transparent'
+              }
             >
               +
             </a>
           </div>
         </div>
       </div>
-      <Query
+      <SearchBar
         hidden={!showQuery}
         tags={tags}
         addSelected={async (tag) => {
@@ -193,42 +198,6 @@ const DropdownMenu = () => {
       </div> 
       */}
     </div>
-  )
-}
-
-const TaggerContent = (props: {content: Content}) => {
-  const {content} = props
-
-  if (content.extension === '.mp4') {
-    return (
-      <video
-        className='h-full border-2 border-red-500 bg-black bg-opacity-20 object-contain'
-        src={'tagger://' + content.paths[0].path}
-        muted={true}
-        onClick={(evt) => {
-          const videoPlayer = evt.currentTarget
-          videoPlayer.paused ? videoPlayer.play() : videoPlayer.pause()
-          videoPlayer.muted
-            ? (videoPlayer.muted = true)
-            : (videoPlayer.muted = false)
-        }}
-        onMouseOut={(evt) => {
-          evt.currentTarget.pause()
-        }}
-        onMouseEnter={(evt) => {
-          if (evt.currentTarget.paused) {
-            evt.currentTarget.play()
-          }
-        }}
-      />
-    )
-  }
-
-  return (
-    <img
-      className='mx-auto h-96  bg-black bg-opacity-5 object-contain'
-      src={'tagger://' + content.paths[0].path}
-    />
   )
 }
 export default App
