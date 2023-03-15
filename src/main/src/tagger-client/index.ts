@@ -1,35 +1,54 @@
 import * as chokidar from 'chokidar'
 import {createTaggerDB, TaggerDBModels} from '../db/TaggerDB'
-import {addTaggerEvents} from './chokiFunctions'
+import {addChokiEvents} from './chokiEvents'
 import {FSWatcher} from 'chokidar'
 import {IpcMainEvents} from '../../../preload/ipcTypes'
 import {Content, ContentTag, Path, Tag} from '../db/models'
+import {z} from 'zod'
+import {zJson, zJsonValues} from '../zJson'
+import {join} from 'path'
 
 /* 
-    TODO:
-        Checking FS Stat before actually hashing files 
-        then comparing to last watched Files (that contains FS.stats)
-        To clear dead Paths and get modifications
-        
     TODO: Implement
         process.on('SIGINT', saveWatchedFiles)
         process.on('exit', saveWatchedFiles)
         function saveWatchedFiles(){}
 */
 
+const CONFIG_FILE_NAME = '/.taggercfg' //TODO: Move this elsewhere
+
+const configSchema = {
+  additionalPaths: z.array(z.string()),
+  lastFiles: z.array(
+    z.tuple([
+      z.string({
+        description: 'Path',
+      }),
+      z.number({
+        description: 'lastModified',
+      }),
+    ]),
+  ),
+} as const
+
+type ConfigSchema = typeof configSchema
+type ConfigValues = zJsonValues<typeof configSchema>
+
 class TaggerClient {
   private _choki: FSWatcher
   private _TaggerDB: TaggerDBModels
   private _ready = false
+  private _config: zJson<ConfigSchema, ConfigValues>
 
+  get config() {
+    return this._config
+  }
   get models() {
     return this._TaggerDB
   }
-
   get choki() {
     return this._choki
   }
-
   get ready() {
     return this._ready
   }
@@ -37,10 +56,18 @@ class TaggerClient {
     this._ready = value
   }
 
-  static async create(path: string[] | string, mainCallback: () => void) {
-    const TaggerDB = await createTaggerDB(Array.isArray(path) ? path[0] : path)
+  static async create(basePath: string, mainCallback: () => void) {
+    const TaggerDB = await createTaggerDB(
+      Array.isArray(basePath) ? basePath[0] : basePath,
+    )
 
-    const choki = chokidar.watch(path, {
+    console.log('CONFIG ->', join(basePath + CONFIG_FILE_NAME))
+    const config = new zJson(join(basePath + CONFIG_FILE_NAME), configSchema, {
+      additionalPaths: [],
+      lastFiles: [],
+    })
+
+    const choki = chokidar.watch([basePath, ...config.get('additionalPaths')], {
       ignoreInitial: true,
       ignored: [
         (str) => {
@@ -54,18 +81,21 @@ class TaggerClient {
       choki,
       TaggerDB,
       mainCallback,
+      config,
     })
   }
 
   protected constructor(newInstance: {
     choki: FSWatcher
     TaggerDB: TaggerDBModels
+    config: zJson<ConfigSchema, ConfigValues>
     mainCallback: () => void
   }) {
     this._TaggerDB = newInstance.TaggerDB
     this._choki = newInstance.choki
+    this._config = newInstance.config
 
-    addTaggerEvents(this, newInstance.mainCallback)
+    addChokiEvents(this, newInstance.mainCallback)
 
     return this
   }

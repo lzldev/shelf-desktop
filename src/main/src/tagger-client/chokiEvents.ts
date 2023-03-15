@@ -1,13 +1,68 @@
-import {readFileSync, createReadStream, statSync} from 'fs'
+import {
+  readFileSync,
+  createReadStream,
+  statSync,
+  fstatSync,
+  open,
+  openSync,
+} from 'fs'
 import * as fsPath from 'path'
 import {createHash} from 'crypto'
 import {flattenDirectoryTree} from '../utils'
 import {updateProgress} from '../..'
-import {TaggerClient} from './'
+import {TaggerClient} from '.'
 import {mockTags} from './mockTags'
 import {Content, Path, Tag} from '../db/models'
+import {parse} from 'path'
 
-export const addTaggerEvents = (
+type FileTuple = [string, number]
+
+const toFileTuple = (stringArr: string[]) => {
+  return stringArr.map((p) => {
+    const {mtimeMs} = statSync(p)
+    return [p, mtimeMs]
+  }) as FileTuple[]
+}
+
+const compareOldFiles = (newFiles: FileTuple[], oldFiles: FileTuple[]) => {
+  const toBeAdded: FileTuple[] = []
+  const toBeUpdated: FileTuple[] = []
+  const toBeRemoved: FileTuple[] = []
+
+  newFiles.forEach((newFile) => {
+    const foundInOld = oldFiles.findIndex((lf) => {
+      return lf[0] === newFile[0]
+    })
+
+    if (foundInOld === -1) {
+      toBeAdded.push(newFile)
+      return
+    } else if (oldFiles[foundInOld][1] < newFile[1]) {
+      toBeUpdated.push(newFile)
+      return
+    }
+
+    oldFiles.splice(foundInOld, 1)
+  })
+
+  //REMOVEME:Probably not needed since everthing has been cleaned already the only ones that remain are supposed to be removed.
+  oldFiles.forEach((of) => {
+    const foundInNew = newFiles.findIndex((newFile) => newFile[0] === of[0])
+
+    if (foundInNew === -1) {
+      toBeRemoved.push(of)
+      return
+    }
+  })
+
+  return {
+    toBeAdded,
+    toBeRemoved,
+    toBeUpdated,
+  }
+}
+
+export const addChokiEvents = (
   taggerClient: TaggerClient,
   onReadyCallback: (...args: any[]) => void,
 ) => {
@@ -84,7 +139,7 @@ export const addTaggerEvents = (
       benchmark: true,
     })
 
-    //REMOVEME : MOCK
+    //REMOVEME : MOCK ---
     const tagTransaction = await sequelize.transaction()
     for (let i = 0; i < mockTags.length; i++) {
       await Tag.findOrCreate({
@@ -99,34 +154,57 @@ export const addTaggerEvents = (
       })
     }
     await tagTransaction.commit()
+    //----
 
     const INITHASHES = new Map<string, number>()
     const INITPATHS = new Map<string, number>()
 
-    let lastProgress
-    const lastPaths = []
-    console.time('DB ->')
-    for (let i = 0; i < flatDirTree.length; i++) {
-      /* 
-                REMOVEME:DEBUG
-                console.timeLog('DB ->', i) ITER
-            */
-      const newProgress = i / flatDirTree.length
-
-      if (!lastProgress || newProgress !== lastProgress) {
+    let lastProgress: number | undefined
+    const lastPaths: string[] = []
+    const sendUpdateProgress = (newProgress: number, newPath: string) => {
+      if (!lastProgress || lastProgress !== newProgress) {
         updateProgress({
           key: 'start',
           value: {
             value: newProgress,
-            lastPaths: lastPaths.slice(-2),
+            lastPaths: lastPaths,
           },
         })
-
         lastProgress = newProgress
-      }
 
-      const filePath = flatDirTree[i]
-      lastPaths.push(filePath)
+        if (lastPaths.length <= 2) {
+          lastPaths.shift()
+        }
+        lastPaths.push(newPath)
+      }
+    }
+
+    const lastFiles = taggerClient.config.get('lastFiles')
+    const newFiles = toFileTuple(flatDirTree)
+
+    let toBeAdded, toBeRemoved, toBeUpdated
+
+    if (lastFiles.length > 0) {
+      const results = compareOldFiles(newFiles, lastFiles)
+
+      toBeAdded = results.toBeAdded
+      toBeRemoved = results.toBeRemoved
+      toBeUpdated = results.toBeUpdated
+    } else {
+      toBeAdded = newFiles
+    }
+
+    // TODO:IMPLEMENT
+    // if(toBeRemoved && toBeRemoved.length >= 0){
+    // }
+    // TODO:IMPLEMENT
+    // if(toBeUpdated && toBeUpdated.length >= 0){
+    // }
+
+    console.time('DB ->')
+    for (let i = 0; i < toBeAdded.length; i++) {
+      const filePath = toBeAdded[i][0]
+      sendUpdateProgress(i / toBeAdded.length, filePath)
 
       const fileHash = await hashFileAsync(filePath)
 
@@ -206,14 +284,12 @@ export const addTaggerEvents = (
     }
     await ContentsTransaction.commit()
     console.timeEnd('DB ->')
-
+    taggerClient.config.set('lastFiles', newFiles, true)
     console.log('Content Errors -> ', contentError)
     console.log('Duplicate Path -> ', duplicatePath)
-
     taggerClient.ready = true
     onReadyCallback()
   }
-
   choki.addListener('add', taggerOnAdd)
   choki.addListener('change', taggerOnChange)
   choki.addListener('ready', taggerOnReady)
