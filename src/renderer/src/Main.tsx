@@ -1,6 +1,6 @@
 import {HTMLAttributes, PropsWithChildren, useState} from 'react'
 import {useTags} from './hooks/useTags'
-import {Tag, Content} from 'src/main/src/db/models'
+import {Tag} from 'src/main/src/db/models'
 import {createSearchParams, useNavigate} from 'react-router-dom'
 import {useQuery} from '@tanstack/react-query'
 import {InlineTag} from './components/InlineTag'
