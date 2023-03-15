@@ -1,18 +1,18 @@
 import {createTaggerDB} from '../src/main/src/db/TaggerDB'
-import {it, describe, afterAll, expectTypeOf, expect, assert} from 'vitest'
-import {rmSync, existsSync} from 'fs'
+import {zJson} from '../src/main/src/zJson'
+import {it, describe, afterAll, expect, assert, beforeAll} from 'vitest'
+import {rmSync, existsSync, rmdirSync, readdirSync} from 'fs'
 import {join} from 'path'
 import {Content, ContentTag, Path, Tag} from '../src/main/src/db/models'
+import {z} from 'zod'
 
-const __TESTDIR = join(__dirname, './')
+const __TESTDIR = join(__dirname, 'test/')
 const __TESTDBRPATH = join(__TESTDIR, '/taggerdb.tagger')
+const __TESTZFILEPATH = join(__TESTDIR, '/.zfilecfg.cfg')
 
+let sequelize
 describe('Tagger - DB', async () => {
-  if (existsSync(__TESTDBRPATH)) {
-    rmSync(__TESTDBRPATH)
-  }
-
-  const {sequelize} = await createTaggerDB(__TESTDIR)
+  sequelize = await (await createTaggerDB(__TESTDIR)).sequelize
 
   let contentid, tagid
 
@@ -58,7 +58,6 @@ describe('Tagger - DB', async () => {
     })
 
     contentTag = await contentTag.save()
-    console.log('Content Tag Relation ->', contentTag.toJSON())
 
     assert(contentTag)
   })
@@ -86,13 +85,60 @@ describe('Tagger - DB', async () => {
     assert(content)
 
     const jsonContent = content.toJSON()
-    console.log('Complete Content -> ', jsonContent)
     expect(jsonContent.paths?.length).toBe(1)
     expect(jsonContent.tags?.length).toBe(1)
+  })
+})
+
+describe('zJson', async () => {
+  it('zJson should NOT THROW', () => {
+    const config = new zJson(
+      __TESTZFILEPATH,
+      {
+        test: z.string(),
+        numba: z.number(),
+        arr: z.array(z.number()),
+      },
+      {
+        test: 'Hello ,Tester',
+        numba: 1234,
+        arr: [1, 2, 3],
+      },
+    )
+
+    config.save(true)
+    config.load()
+
+    expect(config.get('test')).eq('Hello ,Tester')
+
+    config.set('test', 'Bye ,Tester', true)
+    config.load()
+
+    expect(config.get('test')).eq('Bye ,Tester')
+
+    expect(config.get('arr'))
+      .instanceOf(Array)
+      .containSubset([1, 2, 3])
+      .not.containSubset([4, 5, 6])
+
+    config.set('arr', [4, 5, 6], true)
+
+    expect(config.load()).eq(true)
+
+    expect(config.get('arr'))
+      .instanceOf(Array)
+      .containSubset([4, 5, 6])
+      .not.containSubset([1, 2, 3])
+
+    console.log('final CFG ->', config.getAll())
   })
 
   afterAll(async () => {
     await sequelize.close()
-    rmSync(__TESTDBRPATH)
+    if (existsSync(__TESTDIR)) {
+      readdirSync(__TESTDIR).forEach((p) => {
+        rmSync(join(__TESTDIR, p))
+      })
+    }
   })
 })
