@@ -88,6 +88,22 @@ describe('Tagger - DB', async () => {
     expect(jsonContent.paths?.length).toBe(1)
     expect(jsonContent.tags?.length).toBe(1)
   })
+
+  it('content NOT WHERE PATH', async () => {
+    const content = await Content.findOne({
+      include: [
+        {
+          model: Path,
+          where: {
+            path: 'pleaseNotBeAtestPath',
+          },
+        },
+      ],
+    })
+
+    console.log('DONT FIND ->', content?.toJSON())
+    assert(!content)
+  })
 })
 
 describe('zJson', async () => {

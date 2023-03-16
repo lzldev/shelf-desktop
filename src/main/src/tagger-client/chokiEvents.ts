@@ -1,11 +1,4 @@
-import {
-  readFileSync,
-  createReadStream,
-  statSync,
-  fstatSync,
-  open,
-  openSync,
-} from 'fs'
+import {createReadStream, statSync} from 'fs'
 import * as fsPath from 'path'
 import {createHash} from 'crypto'
 import {flattenDirectoryTree} from '../utils'
@@ -13,54 +6,7 @@ import {updateProgress} from '../..'
 import {TaggerClient} from '.'
 import {mockTags} from './mockTags'
 import {Content, Path, Tag} from '../db/models'
-import {parse} from 'path'
-
-type FileTuple = [string, number]
-
-const toFileTuple = (stringArr: string[]) => {
-  return stringArr.map((p) => {
-    const {mtimeMs} = statSync(p)
-    return [p, mtimeMs]
-  }) as FileTuple[]
-}
-
-const compareOldFiles = (newFiles: FileTuple[], oldFiles: FileTuple[]) => {
-  const toBeAdded: FileTuple[] = []
-  const toBeUpdated: FileTuple[] = []
-  const toBeRemoved: FileTuple[] = []
-
-  newFiles.forEach((newFile) => {
-    const foundInOld = oldFiles.findIndex((lf) => {
-      return lf[0] === newFile[0]
-    })
-
-    if (foundInOld === -1) {
-      toBeAdded.push(newFile)
-      return
-    } else if (oldFiles[foundInOld][1] < newFile[1]) {
-      toBeUpdated.push(newFile)
-      return
-    }
-
-    oldFiles.splice(foundInOld, 1)
-  })
-
-  //REMOVEME:Probably not needed since everthing has been cleaned already the only ones that remain are supposed to be removed.
-  oldFiles.forEach((of) => {
-    const foundInNew = newFiles.findIndex((newFile) => newFile[0] === of[0])
-
-    if (foundInNew === -1) {
-      toBeRemoved.push(of)
-      return
-    }
-  })
-
-  return {
-    toBeAdded,
-    toBeRemoved,
-    toBeUpdated,
-  }
-}
+import {compareOldFiles, toFileTuple} from '../utils/chokiUtils'
 
 export const addChokiEvents = (
   taggerClient: TaggerClient,
@@ -69,77 +15,18 @@ export const addChokiEvents = (
   const {sequelize} = taggerClient.models
   const choki = taggerClient.choki
 
-  const taggerOnChange = async (filePath: string): Promise<void> => {
-    const hash = await hashFileAsync(filePath)
-
-    const path = await Path.findOne({
-      where: {
-        path: filePath,
-      },
-      attributes: ['id', 'path'],
-      include: [Content],
-    })
-
-    await path?.content?.update({
-      hash: hash,
-    })
-  }
-
-  //FIXME: ---
-  const taggerOnAdd = async (filePath: string): Promise<void> => {
-    const file = readFileSync(filePath)
-    const hash = await hashFileAsync(filePath)
-
-    // const [newPath, pathCreated] = await Path.findCreateFind({
-    //   where: {
-    //     path: filePath,
-    //   },
-    //   defaults: {
-    //     path: filePath,
-    //   },
-    // })
-
-    const teste = await Path.findOne({
-      where: {
-        path: filePath,
-      },
-    })
-
-    if (teste) {
-      return
-    }
-
-    const [content] = await Content.findOrCreate({
-      where: {
-        hash: hash,
-      },
-      defaults: {
-        hash: hash,
-        extension: fsPath.parse(filePath).ext,
-      },
-    })
-
-    const newPath = await Path.create({
-      path: filePath,
-      contentId: content.dataValues.id,
-    })
-
-    return
-  }
-
   const taggerOnReady = async (): Promise<void> => {
     const flatDirTree = flattenDirectoryTree(choki.getWatched()).filter(
       (p) => !statSync(p).isDirectory(),
     )
 
+    //REMOVEME:Debug
     const contentError = 0
     let duplicatePath = 0
 
-    const ContentsTransaction = await sequelize.transaction({
-      benchmark: true,
-    })
+    const ContentsTransaction = await sequelize.transaction()
 
-    //REMOVEME : MOCK ---
+    //REMOVEME : MOCK TAGS ---
     const tagTransaction = await sequelize.transaction()
     for (let i = 0; i < mockTags.length; i++) {
       await Tag.findOrCreate({
@@ -279,17 +166,81 @@ export const addChokiEvents = (
           },
         )
       }
-
-      continue
     }
     await ContentsTransaction.commit()
+    sendUpdateProgress(1, 'Finished')
     console.timeEnd('DB ->')
+
     taggerClient.config.set('lastFiles', newFiles, true)
     console.log('Content Errors -> ', contentError)
     console.log('Duplicate Path -> ', duplicatePath)
     taggerClient.ready = true
     onReadyCallback()
   }
+
+  const taggerOnChange = async (filePath: string): Promise<void> => {
+    const newHash = await hashFileAsync(filePath)
+
+    const content = await Content.findOne({
+      include: [
+        {
+          model: Path,
+          where: {
+            path: filePath,
+          },
+        },
+      ],
+    })
+
+    await content?.update({
+      hash: newHash,
+    })
+  }
+
+  const taggerOnAdd = async (filePath: string): Promise<void> => {
+    const fileHash = await hashFileAsync(filePath)
+
+    const [content] = await Content.findOrCreate({
+      where: {
+        hash: fileHash,
+      },
+      defaults: {
+        hash: fileHash,
+        extension: fsPath.parse(filePath).ext,
+      },
+    })
+
+    const [newPath, created] = await Path.findOrCreate({
+      where: {
+        path: filePath,
+      },
+      defaults: {
+        path: filePath,
+        contentId: content.id,
+      },
+    })
+
+    if (created) {
+      return
+    }
+
+    await newPath.update({
+      contentId: content.id,
+    })
+  }
+
+  const taggerOnUnlink = async (filePath: string) => {
+    ;(
+      await Path.findOne({
+        where: {
+          path: filePath,
+        },
+      })
+    )?.destroy()
+    //FIXME: Removing content here would break file rename
+  }
+
+  choki.addListener('unlink', taggerOnUnlink)
   choki.addListener('add', taggerOnAdd)
   choki.addListener('change', taggerOnChange)
   choki.addListener('ready', taggerOnReady)

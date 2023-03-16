@@ -19,7 +19,9 @@ interface _Content {
   tags?: Tag[]
 }
 
-@Table
+@Table({
+  paranoid: true,
+})
 class Content extends Model<_Content, Optional<_Content, 'id'>> {
   @Column(DataType.TEXT)
   hash!: string

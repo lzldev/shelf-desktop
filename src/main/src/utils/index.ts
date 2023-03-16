@@ -1,3 +1,3 @@
-import {DirectoryTree, flattenDirectoryTree} from './DirectoryTree'
+import {DirectoryTree, flattenDirectoryTree} from './chokiUtils'
 
 export {type DirectoryTree, flattenDirectoryTree}
