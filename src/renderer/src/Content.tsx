@@ -11,8 +11,6 @@ function App(): JSX.Element {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const {tags} = useTags()
-  //REMOVEME:
-  const [selected] = useState(new Set<Tag>())
   const [showQuery, setShowQuery] = useState(false)
 
   const fetchImage = async () => {
@@ -67,7 +65,7 @@ function App(): JSX.Element {
       <div className='my-5 flex justify-between px-5'>
         <h1
           className='font-mono text-6xl font-extrabold'
-          onClick={() => navigate({pathname: '/'})}
+          onClick={() => window.history.back()}
         >
           {'<-'}
         </h1>
@@ -132,7 +130,6 @@ function App(): JSX.Element {
         }}
         onQuery={() => {}}
         removeSelected={() => {}}
-        selected={selected}
       />
     </div>
   )

@@ -17,12 +17,7 @@ function App(): JSX.Element {
     const Files = await window.api.invokeOnMain('getTaggerImages', {
       tags,
     })
-
-    if (Files) {
-      return Files
-    }
-
-    throw 'Content Not Found'
+    return Files || []
   }
 
   const {
@@ -64,7 +59,7 @@ function App(): JSX.Element {
         isLoading={isLoading}
         error={error}
         className={
-          'grid w-auto sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8'
+          'grid w-auto divide-y-8 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8'
         }
       >
         {(files || []).map((content) => {
@@ -75,7 +70,9 @@ function App(): JSX.Element {
           return (
             <div
               key={content.id}
-              className={'flex min-h-[30vh] flex-col  overflow-clip p-4'}
+              className={
+                'relative m-2 flex h-full max-h-fit min-h-[30vh]  flex-col overflow-clip '
+              }
               onClick={() => {
                 navigate({
                   pathname: 'content',
@@ -89,7 +86,13 @@ function App(): JSX.Element {
                 content={content}
                 className={'h-full w-full'}
               />
-              <a className={'truncate'}>{content.paths[0].path}</a>
+              <a
+                className={
+                  'absolute bottom-0 text-ellipsis whitespace-nowrap bg-clip-text font-mono font-bold text-white'
+                }
+              >
+                {content.paths[0].path}
+              </a>
             </div>
           )
         })}
@@ -118,7 +121,7 @@ const Body = (
 
 export const SearchBar = (props: {
   tags: Tag[]
-  selected: Set<Tag>
+  selected?: Set<Tag>
   onQuery: () => any
   addSelected: (tag: Tag) => any
   removeSelected: (tag: Tag) => any
@@ -126,7 +129,7 @@ export const SearchBar = (props: {
 }) => {
   const {tags, onQuery, addSelected, selected, removeSelected} = props
   const [query, setQuery] = useState<string>('')
-  const selectedTags = Array.from(selected)
+  const selectedTags = Array.from(selected || [])
   const TransformedQuery = query?.split(' ')
   const hideDrop = !!TransformedQuery[TransformedQuery.length - 1]
   const DropDownTags = hideDrop
