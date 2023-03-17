@@ -15,7 +15,7 @@ export class zJson<
   readonly _schema: TSchema
   private _defaults: TValues
   private _filePath: string
-  readonly _isNew: boolean
+  readonly isNew: boolean
   private _values: TValues
 
   constructor(
@@ -26,7 +26,7 @@ export class zJson<
   ) {
     try {
       nodePath.parse(path)
-      this._isNew = !fs.existsSync(path)
+      this.isNew = !fs.existsSync(path)
     } catch (err) {
       throw 'Invalid Directory'
     }
@@ -35,11 +35,11 @@ export class zJson<
     this._defaults = defaults
     this._values = defaults
 
-    if (!this._isNew && options.load) {
+    if (!this.isNew && options.load) {
       this.load()
     }
 
-    if (this._isNew && options.save) {
+    if (this.isNew && options.save) {
       this.save()
     }
   }
