@@ -1,23 +1,33 @@
-import {HTMLAttributes, PropsWithChildren, useState} from 'react'
+import clsx from 'clsx'
+import {HTMLAttributes, PropsWithChildren, useMemo, useState} from 'react'
 import {useTags} from './hooks/useTags'
-import {Tag} from 'src/main/src/db/models'
-import {createSearchParams, useNavigate} from 'react-router-dom'
+import {Content, Tag} from 'src/main/src/db/models'
 import {useQuery} from '@tanstack/react-query'
 import {InlineTag} from './components/InlineTag'
 import {TaggerContent} from './components/TaggerContent'
-import clsx from 'clsx'
+import {createPortal} from 'react-dom'
+import ContentModal from './ContentModal'
+import {useToggle} from './hooks/useToggle'
 
-function App(): JSX.Element {
+function Main(): JSX.Element {
   const {tags} = useTags()
   const [selected, setSelected] = useState<Set<Tag>>(new Set())
-  const navigate = useNavigate()
+  const [selectedContent, setSelectedContent] = useState<Content | undefined>()
+  const [showDetailsModal, toggleShowDetailsModal] = useToggle(false)
 
-  const getImages = async () => {
-    const tags = selected.size > 0 ? Array.from(selected.values()) : undefined
-    const Files = await window.api.invokeOnMain('getTaggerImages', {
-      tags,
-    })
-    return Files || []
+  const containerClass = clsx(
+    'min-h-screen w-full  p-10',
+    selected.size == 0 ? 'divide-y-2' : '',
+  )
+
+  const openContentModal = (content: Content) => {
+    setSelectedContent(content)
+    toggleShowDetailsModal(true)
+  }
+
+  const closeContentModal = () => {
+    setSelectedContent(undefined)
+    toggleShowDetailsModal(false)
   }
 
   const {
@@ -25,18 +35,31 @@ function App(): JSX.Element {
     error,
     isLoading,
     refetch,
-  } = useQuery({
-    queryKey: ['content'],
-    queryFn: getImages,
+  } = useQuery(['content'], async () => {
+    const tags = selected.size > 0 ? Array.from(selected.values()) : undefined
+    const Files = await window.api.invokeOnMain('getTaggerImages', {
+      tags,
+    })
+    return Files || []
   })
 
   return (
     <div
-      className={clsx(
-        'min-h-screen w-full  p-10',
-        selected.size == 0 ? 'divide-y-2' : '',
-      )}
+      id={'taggerBody'}
+      className={containerClass}
     >
+      {showDetailsModal &&
+        createPortal(
+          <ContentModal
+            className={'text-6 fixed inset-0 z-50 max-h-screen w-full'}
+            content={selectedContent}
+            contentProps={{
+              className: clsx('bg-opacity-50 bg-black backdrop-blur-xl'),
+            }}
+            onClose={() => closeContentModal()}
+          />,
+          document.getElementById('root') as HTMLElement,
+        )}
       <SearchBar
         tags={tags}
         selected={selected}
@@ -59,11 +82,11 @@ function App(): JSX.Element {
         isLoading={isLoading}
         error={error}
         className={
-          'grid w-auto divide-y-8 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8'
+          'grid w-full sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8'
         }
       >
         {(files || []).map((content) => {
-          if (!content.paths || !content.paths[0]) {
+          if (!content?.paths[0]) {
             return
           }
 
@@ -71,28 +94,24 @@ function App(): JSX.Element {
             <div
               key={content.id}
               className={
-                'relative m-2 flex h-full max-h-fit min-h-[30vh]  flex-col overflow-clip '
+                'relative mx-2 flex h-full max-h-fit min-h-[30vh]  flex-col overflow-clip py-2'
               }
               onClick={() => {
-                navigate({
-                  pathname: 'content',
-                  search: createSearchParams({
-                    id: content.id,
-                  }).toString(),
-                })
+                openContentModal(content)
               }}
             >
               <TaggerContent
                 content={content}
-                className={'h-full w-full'}
-              />
-              <a
-                className={
-                  'absolute bottom-0 text-ellipsis whitespace-nowrap bg-clip-text font-mono font-bold text-white'
-                }
+                className={'relative h-full w-full'}
               >
-                {content.paths[0].path}
-              </a>
+                <span
+                  className={
+                    'via-teal-20 absolute bottom-0 min-w-full max-w-full animate-gradient_x overflow-hidden text-ellipsis  whitespace-nowrap bg-black bg-opacity-50 font-mono font-bold text-white'
+                  }
+                >
+                  {content.paths[0].path}
+                </span>
+              </TaggerContent>
             </div>
           )
         })}
@@ -121,7 +140,7 @@ const Body = (
 
 export const SearchBar = (props: {
   tags: Tag[]
-  selected?: Set<Tag>
+  selected: Set<Tag>
   onQuery: () => any
   addSelected: (tag: Tag) => any
   removeSelected: (tag: Tag) => any
@@ -129,7 +148,7 @@ export const SearchBar = (props: {
 }) => {
   const {tags, onQuery, addSelected, selected, removeSelected} = props
   const [query, setQuery] = useState<string>('')
-  const selectedTags = Array.from(selected || [])
+  const selectedTags = Array.from(selected)
   const TransformedQuery = query?.split(' ')
   const hideDrop = !!TransformedQuery[TransformedQuery.length - 1]
   const DropDownTags = hideDrop
@@ -225,4 +244,4 @@ export const SearchBar = (props: {
   )
 }
 
-export default App
+export default Main

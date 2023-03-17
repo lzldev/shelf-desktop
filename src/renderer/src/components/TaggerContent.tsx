@@ -4,12 +4,12 @@ import {Content} from 'src/main/src/db/models'
 
 const TaggerContent = ({
   content,
-  contentAttributes,
+  contentProps,
   className,
   ...props
 }: {
   content: Content
-  contentAttributes?: HTMLAttributes<HTMLImageElement | HTMLVideoElement>
+  contentProps?: HTMLAttributes<HTMLImageElement | HTMLVideoElement>
 } & HTMLAttributes<HTMLDivElement>) => {
   const [hidden, setHidden] = useState(true)
 
@@ -30,16 +30,18 @@ const TaggerContent = ({
       )}
     >
       <img
-        className='absolute inset-auto -z-10 h-full w-full scale-150 object-contain blur-2xl'
+        className={
+          'absolute inset-auto -z-10 h-full w-full scale-150 object-contain blur-2xl'
+        }
         src={uri}
       />
       {content.extension !== '.mp4' ? (
         <img
-          {...contentAttributes}
+          {...contentProps}
           hidden={hidden}
           className={clsx(
             'mx-auto h-full object-contain transition-all',
-            contentAttributes?.className,
+            contentProps?.className,
           )}
           onLoad={() => {
             setHidden(false)
@@ -47,9 +49,10 @@ const TaggerContent = ({
           src={uri}
         />
       ) : (
+        //FIXME:Only load Video after the component has been clicked
         <video
-          {...contentAttributes}
-          className={clsx(className, '')}
+          {...contentProps}
+          className={clsx(className)}
           src={uri}
           muted={true}
           onClick={(evt) => {
@@ -69,6 +72,7 @@ const TaggerContent = ({
           }}
         />
       )}
+      {props.children}
     </div>
   )
 }
