@@ -1,5 +1,6 @@
 import {FSWatcher} from 'chokidar'
-import {statSync} from 'fs'
+import {existsSync, statSync} from 'fs'
+import {normalize} from 'path'
 
 export type DirectoryTree = ReturnType<typeof FSWatcher.prototype.getWatched>
 
@@ -18,7 +19,9 @@ export type FileTuple = [string, number]
 export const toFileTuple = (stringArr: string[]) => {
   return stringArr.map((p) => {
     const {mtimeMs} = statSync(p)
-    return [p, mtimeMs]
+    const normalizedPath = normalize(p)
+
+    return [normalizedPath, mtimeMs]
   }) as FileTuple[]
 }
 
@@ -48,9 +51,9 @@ export const compareOldFiles = (
 
   //REMOVEME:Probably not needed since everthing has been cleaned up already the only ones that remain are supposed to be removed.
   oldFiles.forEach((of) => {
-    const foundInNew = newFiles.findIndex((newFile) => newFile[0] === of[0])
+    const stillExists = existsSync(of[0])
 
-    if (foundInNew === -1) {
+    if (stillExists) {
       toBeRemoved.push(of)
       return
     }

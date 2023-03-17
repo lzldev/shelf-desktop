@@ -12,6 +12,7 @@ import {Content} from './Content'
 interface _Path {
   id: number
   path: string
+  mTimeMs?: number
   contentId: number
   content?: Content
 }
@@ -20,6 +21,9 @@ interface _Path {
 class Path extends Model<_Path, InferCreationAttributes<Path, {omit: 'id'}>> {
   @Column({type: DataType.TEXT})
   path!: string
+
+  @Column({type: DataType.FLOAT})
+  mTimeMs!: number
 
   @ForeignKey(() => Content)
   @Column({type: DataType.INTEGER})

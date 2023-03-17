@@ -1,4 +1,4 @@
-import {createReadStream, statSync} from 'fs'
+import {createReadStream, fstatSync, statSync} from 'fs'
 import * as fsPath from 'path'
 import {createHash} from 'crypto'
 import {flattenDirectoryTree} from '../utils'
@@ -6,7 +6,9 @@ import {updateProgress} from '../..'
 import {TaggerClient} from '.'
 import {mockTags} from './mockTags'
 import {Content, Path, Tag} from '../db/models'
-import {compareOldFiles, toFileTuple} from '../utils/chokiUtils'
+import {toFileTuple} from '../utils/chokiUtils'
+import {normalize, parse} from 'path'
+import {Op} from 'sequelize'
 
 export const addChokiEvents = (
   taggerClient: TaggerClient,
@@ -65,33 +67,63 @@ export const addChokiEvents = (
         lastPaths.push(newPath)
       }
     }
+    //TODO: Actually do all of this in the DB lol.
 
-    const lastFiles = taggerClient.config.get('lastFiles')
     const newFiles = toFileTuple(flatDirTree)
 
-    let toBeAdded, toBeRemoved, toBeUpdated
+    if (!taggerClient.config.isNew) {
+      console.time('DB CLEANUP ->')
+      const paths = await Path.findAll()
 
-    if (lastFiles.length > 0) {
-      const results = compareOldFiles(newFiles, lastFiles)
+      paths.forEach(
+        await (async (dbPath) => {
+          const path = dbPath.toJSON()
+          const foundPath = newFiles.findIndex((nf) => {
+            const bol = nf[0] === path.path
+            return bol
+          })
 
-      toBeAdded = results.toBeAdded
-      toBeRemoved = results.toBeRemoved
-      toBeUpdated = results.toBeUpdated
-    } else {
-      toBeAdded = newFiles
+          if (foundPath === -1) {
+            console.log('CLEANING >', path.path)
+            await dbPath.destroy({})
+            return
+          }
+
+          // console.log('db mTime >', path.mTimeMs)
+          // console.log('watched mTime >', newFiles[foundPath][1])
+
+          if (foundPath !== -1 && path.mTimeMs === newFiles[foundPath][1]) {
+            // console.log('Same >', path.path)
+            return
+          }
+
+          if (path.mTimeMs !== newFiles[foundPath][1]) {
+            console.log('Updating ->', path.path)
+            const newHash = await hashFileAsync(path.path)
+            const content = await Content.findOne({
+              where: {
+                id: path.contentId,
+              },
+            })
+
+            await content?.update({
+              hash: newHash,
+            })
+
+            await dbPath.update({
+              mTimeMs: newFiles[foundPath][1],
+            })
+            return
+          }
+          console.timeEnd('DB CLEANUP ->')
+        }),
+      )
     }
 
-    // TODO:IMPLEMENT
-    // if(toBeRemoved && toBeRemoved.length >= 0){
-    // }
-    // TODO:IMPLEMENT
-    // if(toBeUpdated && toBeUpdated.length >= 0){
-    // }
-
     console.time('DB ->')
-    for (let i = 0; i < toBeAdded.length; i++) {
-      const filePath = toBeAdded[i][0]
-      sendUpdateProgress(i / toBeAdded.length, filePath)
+    for (let i = 0; i < newFiles.length; i++) {
+      const [filePath, mTimeMs] = newFiles[i]
+      sendUpdateProgress(i / newFiles.length, filePath)
 
       const fileHash = await hashFileAsync(filePath)
 
@@ -125,6 +157,7 @@ export const addChokiEvents = (
         const newPath = await Path.create(
           {
             path: filePath,
+            mTimeMs: mTimeMs,
             contentId: content?.id,
           },
           {
@@ -153,6 +186,7 @@ export const addChokiEvents = (
         const createPath = await Path.create(
           {
             path: filePath,
+            mTimeMs: mTimeMs,
           },
           {
             transaction: ContentsTransaction,
@@ -178,7 +212,8 @@ export const addChokiEvents = (
     onReadyCallback()
   }
 
-  const taggerOnChange = async (filePath: string): Promise<void> => {
+  const taggerOnChange = async (path: string): Promise<void> => {
+    const filePath = normalize(path)
     const newHash = await hashFileAsync(filePath)
 
     const content = await Content.findOne({
@@ -197,8 +232,10 @@ export const addChokiEvents = (
     })
   }
 
-  const taggerOnAdd = async (filePath: string): Promise<void> => {
+  const taggerOnAdd = async (pathString: string): Promise<void> => {
+    const filePath = normalize(pathString)
     const fileHash = await hashFileAsync(filePath)
+    const {mtimeMs} = statSync(filePath)
 
     const [content] = await Content.findOrCreate({
       where: {
@@ -216,6 +253,7 @@ export const addChokiEvents = (
       },
       defaults: {
         path: filePath,
+        mTimeMs: mtimeMs,
         contentId: content.id,
       },
     })
@@ -229,14 +267,18 @@ export const addChokiEvents = (
     })
   }
 
-  const taggerOnUnlink = async (filePath: string) => {
-    ;(
-      await Path.findOne({
-        where: {
-          path: filePath,
-        },
-      })
-    )?.destroy()
+  const taggerOnUnlink = async (fp: string) => {
+    const filePath = normalize(fp)
+    const path = await Path.findOne({
+      where: {
+        path: filePath,
+      },
+    })
+
+    console.log('FilePath ->', `[${filePath}]`)
+    console.log('Unlink ->', path?.toJSON())
+
+    await path?.destroy()
     //FIXME: Removing content here would break file rename
   }
 
