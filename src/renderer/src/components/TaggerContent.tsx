@@ -1,14 +1,22 @@
 import clsx from 'clsx'
-import {HTMLAttributes, useState} from 'react'
+import {HTMLAttributes, useMemo, useState} from 'react'
 import {Content} from 'src/main/src/db/models'
 
-const TaggerContent = (
-  props: {
-    content: Content
-    contentAttributes?: HTMLAttributes<HTMLImageElement | HTMLVideoElement>
-  } & HTMLAttributes<HTMLDivElement>,
-) => {
+const TaggerContent = ({
+  content,
+  contentAttributes,
+  className,
+  ...props
+}: {
+  content: Content
+  contentAttributes?: HTMLAttributes<HTMLImageElement | HTMLVideoElement>
+} & HTMLAttributes<HTMLDivElement>) => {
   const [hidden, setHidden] = useState(true)
+
+  const uri = useMemo(
+    () => new URL('tagger://' + content.paths[0].path).toString(),
+    [content],
+  )
 
   return (
     <div
@@ -18,31 +26,31 @@ const TaggerContent = (
         hidden
           ? 'animate-gradient_x bg-gradient-to-r from-gray-600 to-gray-500 opacity-50'
           : '',
-        props.className,
+        className,
       )}
     >
       <img
         className='absolute inset-auto -z-10 h-full w-full scale-150 object-contain blur-2xl'
-        src={'tagger://' + props.content.paths[0].path}
+        src={uri}
       />
-      {props.content.extension !== '.mp4' ? (
+      {content.extension !== '.mp4' ? (
         <img
-          {...props.contentAttributes}
+          {...contentAttributes}
           hidden={hidden}
           className={clsx(
             'mx-auto h-full object-contain transition-all',
-            props.contentAttributes?.className,
+            contentAttributes?.className,
           )}
           onLoad={() => {
             setHidden(false)
           }}
-          src={'tagger://' + props.content.paths[0].path}
+          src={uri}
         />
       ) : (
         <video
-          {...props.contentAttributes}
-          className={clsx(props.className, '')}
-          src={'tagger://' + props.content.paths[0].path}
+          {...contentAttributes}
+          className={clsx(className, '')}
+          src={uri}
           muted={true}
           onClick={(evt) => {
             const videoPlayer = evt.currentTarget

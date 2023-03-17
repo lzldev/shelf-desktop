@@ -118,8 +118,8 @@ function createWindow(route: keyof typeof _WindowRoutes): void {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   protocol.registerFileProtocol('tagger', (request: any, callback: any) => {
-    const url = request.url.substring(9)
-    callback({path: url})
+    const pathname = decodeURI(request.url.replace('tagger://', ''))
+    callback(pathname)
   })
   // Set app user model id for windows
   electronApp.setAppUserModelId('electron')

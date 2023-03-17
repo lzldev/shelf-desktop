@@ -16,6 +16,6 @@
     "composite": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "noImplicitAny": true
+    "noImplicitAny": true,
   }
 }
