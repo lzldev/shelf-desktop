@@ -1,5 +1,5 @@
 import {FSWatcher} from 'chokidar'
-import {existsSync, statSync} from 'fs'
+import {statSync} from 'fs'
 import {normalize} from 'path'
 
 export type DirectoryTree = ReturnType<typeof FSWatcher.prototype.getWatched>
@@ -25,7 +25,7 @@ export const toFileTuple = (stringArr: string[]) => {
   }) as FileTuple[]
 }
 
-export const toFileSet = (pathArr: string[]) => {
+export const toFileMap = (pathArr: string[]) => {
   const newSet = new Map<string, number>()
   pathArr.forEach((path) => {
     const {mtimeMs} = statSync(path)

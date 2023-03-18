@@ -20,35 +20,16 @@ export const addChokiEvents = (
     const flatDirTree = flattenDirectoryTree(choki.getWatched()).filter(
       (p) => !statSync(p).isDirectory(),
     )
-
+    const ContentsTransaction = await sequelize.transaction()
+    const INITHASHES = new Map<string, number>()
+    const INITPATHS = new Map<string, number>()
+    const lastPaths: string[] = []
+    const newFiles = toFileTuple(flatDirTree)
     //REMOVEME:Debug
     const contentError = 0
     let duplicatePath = 0
 
-    const ContentsTransaction = await sequelize.transaction()
-
-    //REMOVEME : MOCK TAGS ---
-    const tagTransaction = await sequelize.transaction()
-    for (let i = 0; i < mockTags.length; i++) {
-      await Tag.findOrCreate({
-        where: {
-          name: mockTags[i].name,
-        },
-        defaults: {
-          name: mockTags[i].name,
-          parentOnly: false,
-        },
-        transaction: tagTransaction,
-      })
-    }
-    await tagTransaction.commit()
-    //----
-
-    const INITHASHES = new Map<string, number>()
-    const INITPATHS = new Map<string, number>()
-
     let lastProgress: number | undefined
-    const lastPaths: string[] = []
     const sendUpdateProgress = (newProgress: number, newPath: string) => {
       if (!lastProgress || lastProgress !== newProgress) {
         updateProgress({
@@ -66,17 +47,33 @@ export const addChokiEvents = (
         lastPaths.push(newPath)
       }
     }
-    //TODO: Actually do all of this in the DB lol.
 
-    const newFiles = toFileTuple(flatDirTree)
+    //REMOVEME : MOCK TAGS ---------------------------------------
+    const tagTransaction = await sequelize.transaction()
+    for (let i = 0; i < mockTags.length; i++) {
+      await Tag.findOrCreate({
+        where: {
+          name: mockTags[i].name,
+        },
+        defaults: {
+          name: mockTags[i].name,
+          parentOnly: false,
+        },
+        transaction: tagTransaction,
+      })
+    }
+    await tagTransaction.commit()
+    //------------------------------------------------------------
 
     if (!taggerClient.config.isNew) {
+      const pathTransaction = await sequelize.transaction()
       console.time('DB CLEANUP ->')
       console.time('PATH FINDALL ->')
       const paths = await Path.findAll({
         attributes: {
           exclude: ['updatedAt', 'createdAt'],
         },
+        transaction: pathTransaction,
       })
       console.timeEnd('PATH FINDALL ->')
 
@@ -90,40 +87,49 @@ export const addChokiEvents = (
 
           if (foundPath === -1) {
             console.log('CLEANING >', path.path)
-            await dbPath.destroy({})
+            await dbPath.destroy({transaction: pathTransaction})
             return
           }
 
-          // console.log('db mTime >', path.mTimeMs)
-          // console.log('watched mTime >', newFiles[foundPath][1])
-
           if (foundPath !== -1 && path.mTimeMs === newFiles[foundPath][1]) {
-            console.log('Same >', path.path)
             newFiles.splice(foundPath, 1)
             return
           }
 
           if (path.mTimeMs !== newFiles[foundPath][1]) {
-            console.log('Updating ->', path.path)
+            console.log('UPDATING ->', path.path)
             const newHash = await hashFileAsync(path.path)
             const content = await Content.findOne({
               where: {
                 id: path.contentId,
               },
+              transaction: pathTransaction,
             })
 
-            await content?.update({
-              hash: newHash,
-            })
+            await content?.update(
+              {
+                hash: newHash,
+              },
+              {
+                transaction: pathTransaction,
+              },
+            )
 
-            await dbPath.update({
-              mTimeMs: newFiles[foundPath][1],
-            })
+            await dbPath.update(
+              {
+                mTimeMs: newFiles[foundPath][1],
+              },
+              {
+                transaction: pathTransaction,
+              },
+            )
             return
           }
-          console.timeEnd('DB CLEANUP ->')
         }),
       )
+
+      await pathTransaction.commit()
+      console.timeEnd('DB CLEANUP ->')
     }
 
     console.time('DB ->')

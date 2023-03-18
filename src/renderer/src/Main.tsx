@@ -28,12 +28,14 @@ function Main(): JSX.Element {
     remove,
   } = useInfiniteQuery(
     ['content'],
-    async ({pageParam = 0}) => {
+    async ({pageParam}) => {
+      const pagination = pageParam || {offset: 0, limit: pageSize}
       const tags = selected.size > 0 ? Array.from(selected.values()) : undefined
+
       const Files = await window.api.invokeOnMain('getTaggerImages', {
         pagination: {
-          page: pageParam,
-          pageSize: pageSize,
+          page: pagination.offset,
+          pageSize: pagination.limit,
         },
         tags,
       })
@@ -42,10 +44,15 @@ function Main(): JSX.Element {
     {
       getNextPageParam: (lastPage, allPages) => {
         const nextPage = allPages.length + 1
-        if (nextPage * pageSize > lastPage.count) {
+        const totalPages = Math.floor(lastPage.count / pageSize)
+
+        if (nextPage === totalPages + 1 && lastPage.count % pageSize !== 0) {
+          return {offset: nextPage, limit: lastPage.count % pageSize}
+        }
+        if (nextPage > totalPages) {
           return false
         } else {
-          return nextPage
+          return {offset: nextPage, limit: pageSize}
         }
       },
     },
@@ -119,6 +126,22 @@ function Main(): JSX.Element {
           })
         }}
       />
+      <div className={'w-full space-x-2 text-end'}>
+        <a className='text-end font-mono text-gray-400'>
+          TOTAL:
+          {content?.pages[0].count}
+        </a>
+        <a className='text-end font-mono text-gray-400'>
+          SHOWING:
+          {content?.pages
+            .map((r) => r.content.length)
+            .reduce((a, c) => (a += c))}
+        </a>
+        <a className='text-end font-mono text-gray-400'>
+          Pages:
+          {content?.pages.length}
+        </a>
+      </div>
       <Body
         id={'taggerBody'}
         isLoading={isLoading}

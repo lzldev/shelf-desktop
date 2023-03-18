@@ -19,16 +19,6 @@ const CONFIG_FILE_NAME = '/.taggercfg' //TODO: Move this elsewhere
 
 const configSchema = {
   additionalPaths: z.array(z.string()),
-  lastFiles: z.array(
-    z.tuple([
-      z.string({
-        description: 'Path',
-      }),
-      z.number({
-        description: 'lastModified',
-      }),
-    ]),
-  ),
 } as const
 
 type ConfigSchema = typeof configSchema
@@ -60,11 +50,8 @@ class TaggerClient {
     const TaggerDB = await createTaggerDB(
       Array.isArray(basePath) ? basePath[0] : basePath,
     )
-
-    console.log('CONFIG ->', join(basePath + CONFIG_FILE_NAME))
     const config = new zJson(join(basePath + CONFIG_FILE_NAME), configSchema, {
       additionalPaths: [],
-      lastFiles: [],
     })
 
     const choki = chokidar.watch([basePath, ...config.get('additionalPaths')], {
@@ -120,6 +107,7 @@ class TaggerClient {
       : undefined
 
     const limit = options?.pagination?.pageSize || undefined
+    console.log('Pagination:', {offset: offset, limit: limit})
 
     const {rows, count} = await Content.findAndCountAll({
       attributes: ['id', 'extension'],
