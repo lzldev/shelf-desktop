@@ -2,7 +2,7 @@ import * as chokidar from 'chokidar'
 import {createTaggerDB, TaggerDBModels} from '../db/TaggerDB'
 import {addChokiEvents} from './chokiEvents'
 import {FSWatcher} from 'chokidar'
-import {IpcMainEvents} from '../../../preload/ipcTypes'
+import {FunctionFromEvent, IpcMainEvents} from '../../../preload/ipcTypes'
 import {Content, ContentTag, Path, Tag} from '../db/models'
 import {z} from 'zod'
 import {zJson, zJsonValues} from '../zJson'
@@ -121,7 +121,7 @@ class TaggerClient {
 
     const limit = options?.pagination?.pageSize || undefined
 
-    const result = await Content.findAll({
+    const {rows, count} = await Content.findAndCountAll({
       attributes: ['id', 'extension'],
       offset: offset,
       limit: limit,
@@ -139,7 +139,7 @@ class TaggerClient {
       ],
     })
 
-    return result
+    return {content: rows, count: count}
   }
 
   async getOneContent(options: {id: number}) {

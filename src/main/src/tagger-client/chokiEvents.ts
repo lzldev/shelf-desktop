@@ -73,7 +73,13 @@ export const addChokiEvents = (
 
     if (!taggerClient.config.isNew) {
       console.time('DB CLEANUP ->')
-      const paths = await Path.findAll()
+      console.time('PATH FINDALL ->')
+      const paths = await Path.findAll({
+        attributes: {
+          exclude: ['updatedAt', 'createdAt'],
+        },
+      })
+      console.timeEnd('PATH FINDALL ->')
 
       paths.forEach(
         await (async (dbPath) => {
@@ -93,7 +99,8 @@ export const addChokiEvents = (
           // console.log('watched mTime >', newFiles[foundPath][1])
 
           if (foundPath !== -1 && path.mTimeMs === newFiles[foundPath][1]) {
-            // console.log('Same >', path.path)
+            console.log('Same >', path.path)
+            newFiles.splice(foundPath, 1)
             return
           }
 
@@ -123,9 +130,9 @@ export const addChokiEvents = (
     console.time('DB ->')
     for (let i = 0; i < newFiles.length; i++) {
       const [filePath, mTimeMs] = newFiles[i]
-      sendUpdateProgress(i / newFiles.length, filePath)
-
       const fileHash = await hashFileAsync(filePath)
+      const tempContentID = INITHASHES.get(fileHash)
+      sendUpdateProgress(i / newFiles.length, filePath)
 
       const foundPath = await Path.findOne({
         where: {
@@ -140,7 +147,6 @@ export const addChokiEvents = (
         attributes: ['id'],
         transaction: ContentsTransaction,
       })
-      const tempContentID = INITHASHES.get(fileHash)
 
       if (foundContent === null && !tempContentID && foundPath === null) {
         const content = await Content.create(
@@ -180,9 +186,7 @@ export const addChokiEvents = (
       }
 
       if (foundPath === null && !INITPATHS.get(filePath)) {
-        console.log('Duplicate Content -> ', filePath)
         duplicatePath++
-
         const createPath = await Path.create(
           {
             path: filePath,
@@ -201,13 +205,13 @@ export const addChokiEvents = (
         )
       }
     }
-    await ContentsTransaction.commit()
     sendUpdateProgress(1, 'Finished')
+    await ContentsTransaction.commit()
     console.timeEnd('DB ->')
 
-    taggerClient.config.set('lastFiles', newFiles, true)
     console.log('Content Errors -> ', contentError)
     console.log('Duplicate Path -> ', duplicatePath)
+    taggerClient.config.set('lastFiles', newFiles, true)
     taggerClient.ready = true
     onReadyCallback()
   }

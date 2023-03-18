@@ -33,14 +33,14 @@ export type IpcMainEvents = TypeLevelRecord<
         pagination?: {page: number; pageSize: number}
         tags?: Tag[]
       }
-      return: Content[]
+      return: {content: Content[]; count: number}
     }
     addTagToContent: {
       args: {contentId: number; tagId: number}
       return: boolean
     }
     getDetailedImage: {
-      args: [contentId:number]
+      args: [contentId: number]
       return: Content | null
     }
     getTaggerTags: {

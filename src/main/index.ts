@@ -15,6 +15,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import {electronApp, optimizer, is} from '@electron-toolkit/utils'
 import {TaggerClient} from './src/tagger-client'
+import {Content} from './src/db/models'
 
 //TODO: Move
 const _WindowRoutes = {
@@ -229,9 +230,9 @@ ipcMain.handle('addTagToContent', async (_, options) => {
 })
 
 ipcMain.handle('getTaggerImages', async (_, options) => {
-  const res = await CurrentTaggerClient.getContent(options)
+  const {content, count} = await CurrentTaggerClient.getContent(options)
 
-  return JSON.parse(JSON.stringify(res))
+  return {content: JSON.parse(JSON.stringify(content)), count}
 })
 
 ipcMain.handle('getDetailedImage', async (_, id) => {

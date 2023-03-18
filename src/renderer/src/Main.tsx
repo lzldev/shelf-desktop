@@ -1,13 +1,16 @@
 import clsx from 'clsx'
-import {HTMLAttributes, PropsWithChildren, useMemo, useState} from 'react'
+import {HTMLAttributes, PropsWithChildren, useEffect, useState} from 'react'
 import {useTags} from './hooks/useTags'
 import {Content, Tag} from 'src/main/src/db/models'
-import {useQuery} from '@tanstack/react-query'
+import {useInfiniteQuery} from '@tanstack/react-query'
 import {InlineTag} from './components/InlineTag'
 import {TaggerContent} from './components/TaggerContent'
 import {createPortal} from 'react-dom'
 import ContentModal from './ContentModal'
 import {useToggle} from './hooks/useToggle'
+
+//TODO: Get this from the APP config
+const pageSize = 25
 
 function Main(): JSX.Element {
   const {tags} = useTags()
@@ -15,10 +18,59 @@ function Main(): JSX.Element {
   const [selectedContent, setSelectedContent] = useState<Content | undefined>()
   const [showDetailsModal, toggleShowDetailsModal] = useToggle(false)
 
-  const containerClass = clsx(
-    'min-h-screen w-full  p-10',
-    selected.size == 0 ? 'divide-y-2' : '',
+  const {
+    data: content,
+    error,
+    isLoading,
+    refetch,
+    hasNextPage,
+    fetchNextPage,
+    remove,
+  } = useInfiniteQuery(
+    ['content'],
+    async ({pageParam = 0}) => {
+      const tags = selected.size > 0 ? Array.from(selected.values()) : undefined
+      const Files = await window.api.invokeOnMain('getTaggerImages', {
+        pagination: {
+          page: pageParam,
+          pageSize: pageSize,
+        },
+        tags,
+      })
+      return Files || []
+    },
+    {
+      getNextPageParam: (lastPage, allPages) => {
+        const nextPage = allPages.length + 1
+        if (nextPage * pageSize > lastPage.count) {
+          return false
+        } else {
+          return nextPage
+        }
+      },
+    },
   )
+
+  useEffect(() => {
+    const onScroll = () => {
+      const container = document.getElementById('taggerBody')
+      const threshold = 10
+      if (!container) return
+
+      if (
+        window.scrollY + window.innerHeight >=
+          container.scrollHeight - threshold &&
+        hasNextPage
+      ) {
+        fetchNextPage()
+      }
+    }
+
+    window.addEventListener('scroll', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+    }
+  }, [hasNextPage])
 
   const openContentModal = (content: Content) => {
     setSelectedContent(content)
@@ -30,24 +82,10 @@ function Main(): JSX.Element {
     toggleShowDetailsModal(false)
   }
 
-  const {
-    data: files,
-    error,
-    isLoading,
-    refetch,
-  } = useQuery(['content'], async () => {
-    const tags = selected.size > 0 ? Array.from(selected.values()) : undefined
-    const Files = await window.api.invokeOnMain('getTaggerImages', {
-      tags,
-    })
-    return Files || []
-  })
+  const containerClass = clsx('min-h-screen max-h-fit w-full  p-10')
 
   return (
-    <div
-      id={'taggerBody'}
-      className={containerClass}
-    >
+    <div className={containerClass}>
       {showDetailsModal &&
         createPortal(
           <ContentModal
@@ -63,7 +101,10 @@ function Main(): JSX.Element {
       <SearchBar
         tags={tags}
         selected={selected}
-        onQuery={refetch}
+        onQuery={() => {
+          remove()
+          refetch()
+        }}
         addSelected={(tag: Tag) => {
           setSelected((_selected) => {
             _selected.add(tag)
@@ -79,74 +120,88 @@ function Main(): JSX.Element {
         }}
       />
       <Body
+        id={'taggerBody'}
         isLoading={isLoading}
         error={error}
         className={
           'grid w-full sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8'
         }
       >
-        {(files || []).map((content) => {
-          if (!content?.paths[0]) {
-            return
-          }
+        {content?.pages.map((page) => {
+          return (page.content || []).map((content) => {
+            if (!content?.paths[0]) {
+              return
+            }
 
-          return (
-            <div
-              key={content.id}
-              className={
-                'relative mx-2 flex h-full max-h-fit min-h-[30vh]  flex-col overflow-clip py-2'
-              }
-              onClick={() => {
-                openContentModal(content)
-              }}
-            >
-              <TaggerContent
-                content={content}
-                className={'relative h-full w-full'}
+            return (
+              <div
+                key={content.id}
+                className={
+                  'relative mx-2 flex h-full max-h-fit min-h-[30vh]  flex-col overflow-clip py-2'
+                }
+                onClick={() => {
+                  openContentModal(content)
+                }}
               >
-                <span
-                  className={
-                    'via-teal-20 absolute bottom-0 min-w-full max-w-full animate-gradient_x overflow-hidden text-ellipsis  whitespace-nowrap bg-black bg-opacity-50 font-mono font-bold text-white'
-                  }
+                <TaggerContent
+                  content={content}
+                  className={'relative h-full w-full'}
                 >
-                  {content.paths[0].path}
-                </span>
-              </TaggerContent>
-            </div>
-          )
+                  <span
+                    className={
+                      'via-teal-20 absolute bottom-0 min-w-full max-w-full animate-gradient_x overflow-hidden text-ellipsis  whitespace-nowrap bg-black bg-opacity-50 font-mono font-bold text-white'
+                    }
+                  >
+                    {content.paths[0].path}
+                  </span>
+                </TaggerContent>
+              </div>
+            )
+          })
         })}
       </Body>
     </div>
   )
 }
 
-const Body = (
-  props: {isLoading: boolean; error: unknown} & PropsWithChildren &
-    HTMLAttributes<HTMLDivElement>,
-) => {
-  if (props.error) {
+const Body = ({
+  isLoading,
+  error,
+  ...props
+}: {isLoading: boolean; error: unknown} & PropsWithChildren &
+  HTMLAttributes<HTMLDivElement>) => {
+  if (error) {
     return (
       <div {...props}>
-        <h1 className='text-6xl'>{props.error.toString()}</h1>
+        <h1 className='text-6xl'>{error.toString()}</h1>
       </div>
     )
   }
   return (
-    <div className='grid sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8'>
-      {props.isLoading ? <></> : props.children}
+    <div
+      {...props}
+      className='grid sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8'
+    >
+      {isLoading ? <></> : props.children}
     </div>
   )
 }
 
-export const SearchBar = (props: {
+export const SearchBar = ({
+  tags,
+  selected,
+  onQuery,
+  addSelected,
+  removeSelected,
+  hidden,
+}: {
   tags: Tag[]
   selected: Set<Tag>
   onQuery: () => any
   addSelected: (tag: Tag) => any
   removeSelected: (tag: Tag) => any
   hidden?: boolean
-}) => {
-  const {tags, onQuery, addSelected, selected, removeSelected} = props
+} & HTMLAttributes<HTMLDivElement>) => {
   const [query, setQuery] = useState<string>('')
   const selectedTags = Array.from(selected)
   const TransformedQuery = query?.split(' ')
@@ -160,16 +215,17 @@ export const SearchBar = (props: {
           ),
       )
     : []
+  const hideSelected = selectedTags.length === 0
 
-  if (props.hidden === true) {
+  if (hidden === true) {
     return <></>
   }
 
   return (
-    <div className='relative'>
+    <div className={clsx('relative', hideSelected ? 'mb-5' : '')}>
       <form
         className={
-          'z-20 mb-5 flex w-full place-content-stretch overflow-clip rounded-full bg-white pl-2 ring-2 ring-pink-500'
+          'z-20 flex w-full place-content-stretch overflow-clip rounded-full bg-white pl-2 ring-2 ring-pink-500'
         }
       >
         <input
@@ -227,8 +283,8 @@ export const SearchBar = (props: {
         })}
       </div>
       <div
-        className='-mx-10 bg-gray-200 px-10 py-2'
-        hidden={selectedTags.length === 0}
+        className={clsx('-mx-10 my-5 bg-gray-200 px-10 py-2')}
+        hidden={hideSelected}
       >
         {selectedTags.map((tag) => {
           return (

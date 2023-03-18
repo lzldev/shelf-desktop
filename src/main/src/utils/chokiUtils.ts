@@ -25,43 +25,11 @@ export const toFileTuple = (stringArr: string[]) => {
   }) as FileTuple[]
 }
 
-export const compareOldFiles = (
-  newFiles: FileTuple[],
-  oldFiles: FileTuple[],
-) => {
-  const toBeAdded: FileTuple[] = []
-  const toBeUpdated: FileTuple[] = []
-  const toBeRemoved: FileTuple[] = []
-
-  newFiles.forEach((newFile) => {
-    const foundInOld = oldFiles.findIndex((lf) => {
-      return lf[0] === newFile[0]
-    })
-
-    if (foundInOld === -1) {
-      toBeAdded.push(newFile)
-      return
-    } else if (oldFiles[foundInOld][1] < newFile[1]) {
-      toBeUpdated.push(newFile)
-      return
-    }
-
-    oldFiles.splice(foundInOld, 1)
+export const toFileSet = (pathArr: string[]) => {
+  const newSet = new Map<string, number>()
+  pathArr.forEach((path) => {
+    const {mtimeMs} = statSync(path)
+    newSet.set(path, mtimeMs)
   })
-
-  //REMOVEME:Probably not needed since everthing has been cleaned up already the only ones that remain are supposed to be removed.
-  oldFiles.forEach((of) => {
-    const stillExists = existsSync(of[0])
-
-    if (stillExists) {
-      toBeRemoved.push(of)
-      return
-    }
-  })
-
-  return {
-    toBeAdded,
-    toBeRemoved,
-    toBeUpdated,
-  }
+  return newSet
 }

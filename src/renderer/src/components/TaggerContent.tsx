@@ -17,6 +17,7 @@ const TaggerContent = ({
     () => new URL('tagger://' + content.paths[0].path).toString(),
     [content],
   )
+  const video = content.extension == '.mp4' || content.extension == '.avi'
 
   return (
     <div
@@ -29,30 +30,34 @@ const TaggerContent = ({
         className,
       )}
     >
-      <img
-        className={
-          'absolute inset-auto -z-10 h-full w-full scale-150 object-contain blur-2xl'
-        }
-        src={uri}
-      />
-      {content.extension !== '.mp4' ? (
-        <img
-          {...contentProps}
-          hidden={hidden}
-          className={clsx(
-            'mx-auto h-full object-contain transition-all',
-            contentProps?.className,
-          )}
-          onLoad={() => {
-            setHidden(false)
-          }}
-          src={uri}
-        />
+      {!video ? (
+        <>
+          <img
+            className={
+              'absolute inset-auto -z-10 h-full w-full scale-150 object-contain opacity-75 blur-2xl'
+            }
+            src={uri}
+          />
+          <img
+            {...contentProps}
+            hidden={hidden}
+            className={clsx(
+              'mx-auto h-full object-contain transition-all',
+              contentProps?.className,
+            )}
+            onLoad={() => {
+              setHidden(false)
+            }}
+            src={uri}
+          />
+        </>
       ) : (
-        //FIXME:Only load Video after the component has been clicked
         <video
           {...contentProps}
-          className={clsx(className)}
+          className={clsx(
+            'mx-auto h-full object-contain transition-all',
+            className,
+          )}
           src={uri}
           muted={true}
           onClick={(evt) => {
