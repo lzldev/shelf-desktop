@@ -1,6 +1,6 @@
-import {useNavigate, useSearchParams} from 'react-router-dom'
+import {useNavigate} from 'react-router-dom'
 import {useQuery} from '@tanstack/react-query'
-import {HTMLAttributes, KeyboardEventHandler, useEffect, useState} from 'react'
+import {HTMLAttributes, useEffect} from 'react'
 import {InlineTag} from './components/InlineTag'
 import {TaggerContent} from './components/TaggerContent'
 import {Content} from 'src/main/src/db/models'

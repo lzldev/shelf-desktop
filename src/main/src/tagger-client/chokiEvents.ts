@@ -1,4 +1,4 @@
-import {createReadStream, fstatSync, statSync} from 'fs'
+import {createReadStream, statSync} from 'fs'
 import * as fsPath from 'path'
 import {createHash} from 'crypto'
 import {flattenDirectoryTree} from '../utils'
@@ -7,8 +7,7 @@ import {TaggerClient} from '.'
 import {mockTags} from './mockTags'
 import {Content, Path, Tag} from '../db/models'
 import {toFileTuple} from '../utils/chokiUtils'
-import {normalize, parse} from 'path'
-import {Op} from 'sequelize'
+import {normalize} from 'path'
 
 export const addChokiEvents = (
   taggerClient: TaggerClient,
