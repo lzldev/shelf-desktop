@@ -6,6 +6,7 @@ import {TaggerContent} from './components/TaggerContent'
 import {Content} from 'src/main/src/db/models'
 import clsx from 'clsx'
 import {useToggle} from './hooks/useToggle'
+import {InlineButton} from './components/InlineButton'
 
 function ContentModal({
   content: ContentParam,
@@ -21,25 +22,6 @@ function ContentModal({
   const [fullscreen, toggleFullscreen] = useToggle(false)
   const containerClass = clsx(props.className)
   const navigate = useNavigate()
-
-  useEffect(() => {
-    const hotkeysListener = (evt: KeyboardEvent) => {
-      switch (evt.key) {
-        case 'Escape': {
-          onClose()
-          break
-        }
-        case 'f': {
-          toggleFullscreen()
-          break
-        }
-      }
-    }
-    addEventListener('keydown', hotkeysListener)
-    return () => {
-      removeEventListener('keydown', hotkeysListener)
-    }
-  }, [])
 
   const {
     data: content,
@@ -62,6 +44,43 @@ function ContentModal({
       initialData: ContentParam,
     },
   )
+
+  const dirPath = content?.paths[0].path.substring(
+    0,
+    content?.paths[0].path.lastIndexOf('\\'),
+  )
+
+  useEffect(() => {
+    const hotkeysListener = (evt: KeyboardEvent) => {
+      switch (evt.key) {
+        case 'Escape': {
+          onClose()
+          break
+        }
+        case 'f': {
+          toggleFullscreen()
+          break
+        }
+        case 'o': {
+          console.log('Hewwoo')
+          if (content) {
+            window.open('file://' + pathStr)
+          }
+          break
+        }
+        case 'd': {
+          if (content) {
+            window.open('file://' + dirPath)
+          }
+          break
+        }
+      }
+    }
+    addEventListener('keydown', hotkeysListener)
+    return () => {
+      removeEventListener('keydown', hotkeysListener)
+    }
+  }, [])
 
   if (!ContentParam) return <></>
 
@@ -121,6 +140,11 @@ function ContentModal({
         }
       >
         <div className='relative'>
+          <div className='inline-block'>
+            <InlineButton onClick={() => {}}>Open File</InlineButton>
+            <InlineButton>Open Directory</InlineButton>
+            <InlineButton>Add Tag</InlineButton>
+          </div>
           <div className={'my-2'}>
             {(content?.paths || []).map((p, idx) => {
               return (

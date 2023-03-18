@@ -15,7 +15,6 @@ import * as fs from 'fs'
 import * as path from 'path'
 import {electronApp, optimizer, is} from '@electron-toolkit/utils'
 import {TaggerClient} from './src/tagger-client'
-import {Content} from './src/db/models'
 
 //TODO: Move
 const _WindowRoutes = {
@@ -49,10 +48,10 @@ export type HasKey<T, K, TTrue, TFalse = never> = K extends keyof T
 
 let CurrentTaggerClient: TaggerClient //TODO:RENAME
 
-const Windows = new Map<keyof typeof _WindowRoutes, BrowserWindow>()
+const windows = new Map<keyof typeof _WindowRoutes, BrowserWindow>()
 
 function createWindow(route: keyof typeof _WindowRoutes): void {
-  if (Windows.has(route)) {
+  if (windows.has(route)) {
     console.log('Window Already Exists.')
     return
   }
@@ -81,6 +80,7 @@ function createWindow(route: keyof typeof _WindowRoutes): void {
         }
       : {}),
     webPreferences: {
+      webSecurity: false,
       preload: path.join(__dirname, '../preload/index.js'),
       sandbox: false,
     },
@@ -111,7 +111,7 @@ function createWindow(route: keyof typeof _WindowRoutes): void {
     )
   }
 
-  Windows.set(route, newWindow)
+  windows.set(route, newWindow)
 }
 
 // This method will be called when Electron has finished
@@ -156,16 +156,16 @@ app.on('window-all-closed', () => {
 })
 
 export const updateProgress = (args: {key: string; value: any}) => {
-  Windows.get('progress')?.webContents.send('updateProgress', args)
+  windows.get('progress')?.webContents.send('updateProgress', args)
 }
 
 async function startNewClient(path: string | string[]) {
-  if (!Windows.has('progress')) {
+  if (!windows.has('progress')) {
     createWindow('progress')
   }
 
   CurrentTaggerClient = await TaggerClient.create(path, () => {
-    const progWindow = Windows.get('progress')
+    const progWindow = windows.get('progress')
     if (progWindow) {
       progWindow.close()
     }
@@ -199,7 +199,7 @@ ipcMain.handle('openDialog', async (_, options) => {
 })
 
 ipcMain.handle('startTaggerClient', async (Event, path) => {
-  Windows.get('start')?.close()
+  windows.get('start')?.close()
   const chosenPath = Array.isArray(path) ? path[0] : path
 
   if (!fs.existsSync(chosenPath)) {

@@ -107,7 +107,6 @@ class TaggerClient {
       : undefined
 
     const limit = options?.pagination?.pageSize || undefined
-    console.log('Pagination:', {offset: offset, limit: limit})
 
     const {rows, count} = await Content.findAndCountAll({
       attributes: ['id', 'extension'],

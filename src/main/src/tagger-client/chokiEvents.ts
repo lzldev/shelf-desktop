@@ -216,7 +216,6 @@ export const addChokiEvents = (
 
     console.log('Content Errors -> ', contentError)
     console.log('Duplicate Path -> ', duplicatePath)
-    taggerClient.config.set('lastFiles', newFiles, true)
     taggerClient.ready = true
     onReadyCallback()
   }

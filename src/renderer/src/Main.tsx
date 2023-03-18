@@ -32,14 +32,14 @@ function Main(): JSX.Element {
       const pagination = pageParam || {offset: 0, limit: pageSize}
       const tags = selected.size > 0 ? Array.from(selected.values()) : undefined
 
-      const Files = await window.api.invokeOnMain('getTaggerImages', {
+      const files = await window.api.invokeOnMain('getTaggerImages', {
         pagination: {
           page: pagination.offset,
           pageSize: pagination.limit,
         },
         tags,
       })
-      return Files || []
+      return files || []
     },
     {
       getNextPageParam: (lastPage, allPages) => {
