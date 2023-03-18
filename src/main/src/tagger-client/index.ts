@@ -116,13 +116,15 @@ class TaggerClient {
         : undefined
 
     const offset = options?.pagination
-      ? options.pagination.pageSize * options.pagination.pageSize
+      ? options.pagination.page * options.pagination.pageSize
       : undefined
 
     const limit = options?.pagination?.pageSize || undefined
 
     const result = await Content.findAll({
       attributes: ['id', 'extension'],
+      offset: offset,
+      limit: limit,
       include: [
         {model: Path},
         {
@@ -135,8 +137,6 @@ class TaggerClient {
             : undefined,
         },
       ],
-      offset: offset,
-      limit: limit,
     })
 
     return result
@@ -180,7 +180,7 @@ class TaggerClient {
       tagId: options.tagId,
     })
     try {
-      const add = await newRelation.save()
+      await newRelation.save()
       return true
     } catch (e) {
       return false
