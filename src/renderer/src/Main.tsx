@@ -6,7 +6,7 @@ import {useInfiniteQuery} from '@tanstack/react-query'
 import {InlineTag} from './components/InlineTag'
 import {TaggerContent} from './components/TaggerContent'
 import {createPortal} from 'react-dom'
-import ContentModal from './ContentModal'
+import ContentModal, {AddTagDropdown, InlineTagDropdown} from './ContentModal'
 import {useToggle} from './hooks/useToggle'
 
 //TODO: Get this from the APP config
@@ -89,7 +89,7 @@ function Main(): JSX.Element {
     toggleShowDetailsModal(false)
   }
 
-  const containerClass = clsx('min-h-screen max-h-fit w-full  p-10')
+  const containerClass = clsx('min-h-screen max-h-fit w-full p-10')
 
   return (
     <div className={containerClass}>
@@ -253,7 +253,7 @@ export const SearchBar = ({
       >
         <input
           className={
-            ' z-20 w-full bg-transparent p-2 text-pink-500 outline-none selection:bg-pink-200 hover:border-none active:border-none'
+            'z-20 w-full bg-transparent p-2 text-pink-500 outline-none selection:bg-pink-200 hover:border-none active:border-none'
           }
           type={'text'}
           value={query}

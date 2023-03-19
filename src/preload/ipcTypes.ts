@@ -39,6 +39,10 @@ export type IpcMainEvents = TypeLevelRecord<
       args: {contentId: number; tagId: number}
       return: boolean
     }
+    removeTagfromContent: {
+      args: {contentId: number; tagId: number}
+      return: boolean
+    }
     getDetailedImage: {
       args: [contentId: number]
       return: Content | null

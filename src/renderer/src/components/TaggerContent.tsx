@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import {HTMLAttributes, useMemo, useState} from 'react'
+import {HTMLAttributes, useEffect, useMemo, useState} from 'react'
 import {Content} from 'src/main/src/db/models'
 
 const TaggerContent = ({
@@ -13,10 +13,13 @@ const TaggerContent = ({
 } & HTMLAttributes<HTMLDivElement>) => {
   const [hidden, setHidden] = useState(true)
 
-  const uri = useMemo(
-    () => new URL('tagger://' + content.paths[0].path).toString(),
-    [content],
-  )
+  useEffect(() => {
+    if (content.paths.length === 0) {
+      setHidden(true)
+    }
+  }, [content])
+
+  const uri = new URL('tagger://' + content?.paths[0]?.path || '').toString()
   const video = content.extension == '.mp4' || content.extension == '.avi'
 
   return (

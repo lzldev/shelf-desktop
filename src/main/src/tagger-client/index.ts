@@ -173,6 +173,22 @@ class TaggerClient {
       return false
     }
   }
+  async removeTagFromContent(
+    options: IpcMainEvents['removeTagfromContent']['args'],
+  ) {
+    const newRelation = await ContentTag.findOne({
+      where: {
+        contentId: options.contentId,
+        tagId: options.tagId,
+      },
+    })
+    try {
+      await newRelation?.destroy()
+      return true
+    } catch (e) {
+      return false
+    }
+  }
 }
 
 export {TaggerClient}

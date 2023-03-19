@@ -225,7 +225,11 @@ ipcMain.handle('getTaggerTags', async () => {
 
 ipcMain.handle('addTagToContent', async (_, options) => {
   const tag = await CurrentTaggerClient.addTagToContent(options)
+  return !!tag
+})
 
+ipcMain.handle('removeTagfromContent', async (_, options) => {
+  const tag = await CurrentTaggerClient.removeTagFromContent(options)
   return !!tag
 })
 
