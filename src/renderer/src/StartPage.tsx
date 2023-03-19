@@ -4,7 +4,7 @@ import Versions from './components/Versions'
 function StartPage(): JSX.Element {
   const {data: paths} = useQuery(['recentPath'], async () => {
     return await (
-      await window.api.invokeOnMain('getConfig', null)
+      await window.api.invokeOnMain('getConfig')
     ).recentFiles
   })
 

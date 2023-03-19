@@ -7,7 +7,10 @@ export type zJsonValues<T extends zJsonSchema> = {
   [key in keyof T]: z.infer<T[key]>
 }
 
-//TODO: Decide if the save=false from SET is good or not
+export type ExtractzJsonSchema<T extends zJsonSchema> = {
+  [key in keyof T]: z.infer<T[key]>
+}
+
 export class zJson<
   TSchema extends {[key: string]: ZodTypeAny},
   TValues extends {[key in keyof TSchema]: z.infer<TSchema[key]>},
@@ -61,7 +64,7 @@ export class zJson<
   set<K extends keyof TSchema>(
     key: K,
     value: z.infer<TSchema[K]>,
-    save = false,
+    save = true,
   ) {
     let newValue
     try {

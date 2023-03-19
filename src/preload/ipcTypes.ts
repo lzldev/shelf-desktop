@@ -3,6 +3,7 @@ import type {IpcMainInvokeEvent, IpcRendererEvent} from 'electron'
 import {z} from 'zod'
 import type {OpenDialogReturn, CONFIGSCHEMA} from '../main'
 import {Content, Tag} from '../main/src/db/models'
+import {ExtractzJsonSchema as zJsonSchemaInfer} from '../main/src/zJson'
 
 export type TypeLevelRecord<
   TShape extends object,
@@ -30,10 +31,8 @@ export type IpcMainEvents = TypeLevelRecord<
       return: string[]
     }
     getConfig: {
-      args: null
-      return: {
-        [key in keyof typeof CONFIGSCHEMA]: z.infer<(typeof CONFIGSCHEMA)[key]>
-      }
+      args: never
+      return: zJsonSchemaInfer<typeof CONFIGSCHEMA>
     }
     getTaggerImages: {
       args: {

@@ -248,4 +248,4 @@ ipcMain.handle('getDetailedImage', async (_, id) => {
   return JSON.parse(JSON.stringify(res))
 })
 
-ipcMain.handle('getConfig', async () => TaggerConfig.getAll())
+ipcMain.handle('getConfig', async (evt) => TaggerConfig.getAll())
