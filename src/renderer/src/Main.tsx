@@ -6,8 +6,9 @@ import {useInfiniteQuery} from '@tanstack/react-query'
 import {InlineTag} from './components/InlineTag'
 import {TaggerContent} from './components/TaggerContent'
 import {createPortal} from 'react-dom'
-import ContentModal, {AddTagDropdown, InlineTagDropdown} from './ContentModal'
+import ContentModal from './ContentModal'
 import {useToggle} from './hooks/useToggle'
+import {Cog} from './assets/icons'
 
 //TODO: Get this from the APP config
 const pageSize = 25
@@ -101,6 +102,8 @@ function Main(): JSX.Element {
             contentProps={{
               className: clsx('bg-opacity-50 bg-black backdrop-blur-xl'),
             }}
+            onNext={() => {}}
+            onPrevious={() => {}}
             onClose={() => closeContentModal()}
           />,
           document.getElementById('root') as HTMLElement,
@@ -126,10 +129,15 @@ function Main(): JSX.Element {
           })
         }}
       />
-      <div className={'w-full space-x-2 text-end'}>
+      <div className={'flex h-full w-full flex-row-reverse space-x-2 text-end'}>
+        <Cog className='ml-1 inline-flex fill-gray-100 transition-all hover:fill-gray-300 hover:stroke-white' />
         <a className='text-end font-mono text-gray-400'>
-          TOTAL:
-          {content?.pages[0].count}
+          PAGES:
+          {content?.pages.length}
+        </a>
+        <a className='text-end font-mono text-gray-400'>
+          TAGS:
+          {tags.length}
         </a>
         <a className='text-end font-mono text-gray-400'>
           SHOWING:
@@ -137,9 +145,9 @@ function Main(): JSX.Element {
             .map((r) => r.content.length)
             .reduce((a, c) => (a += c))}
         </a>
-        <a className='text-end font-mono text-gray-400'>
-          Pages:
-          {content?.pages.length}
+        <a className='h-full text-end align-top font-mono text-gray-400'>
+          TOTAL:
+          {content?.pages[0].count}
         </a>
       </div>
       <Body

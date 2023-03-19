@@ -15,16 +15,21 @@ import {useToggle} from './hooks/useToggle'
 import {InlineButton} from './components/InlineButton'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {useTagQuery} from './hooks/useTagQuery'
+import {BackArrow} from './assets/icons'
 
 function ContentModal({
   content: contentProp,
   contentProps,
   onClose,
+  onNext,
+  onPrevious,
   ...props
 }: {
   content?: Content
   contentProps: HTMLAttributes<HTMLDivElement>
   onClose: (...any: any[]) => any
+  onNext: (...any: any[]) => any
+  onPrevious: (...any: any[]) => any
 } & HTMLAttributes<HTMLDivElement>): JSX.Element {
   const [hotkeys, toggleHotkeys] = useToggle(true)
   const [fullscreen, toggleFullscreen] = useToggle(false)
@@ -86,6 +91,14 @@ function ContentModal({
           }
           break
         }
+        case 'ArrowRight': {
+          onNext()
+          break
+        }
+        case 'ArrowLeft': {
+          onPrevious()
+          break
+        }
       }
     }
 
@@ -134,12 +147,12 @@ function ContentModal({
       className={containerClass}
     >
       <div className='flex justify-between  bg-gray-200 p-5'>
-        <h1
-          className='font-mono text-6xl font-extrabold'
+        <BackArrow
+          className={
+            'h-16 w-16 stroke-gray-600 px-2 transition-all hover:stroke-white'
+          }
           onClick={onClose}
-        >
-          {'<-'}
-        </h1>
+        />
       </div>
       <div onClick={() => toggleFullscreen()}>
         <TaggerContent
@@ -226,7 +239,7 @@ export const InlineTagDropdown = ({
         <InlineTag tag={tag} />
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal container={modalRef.current}>
-        <DropdownMenu.Content className='rounded-md bg-white shadow-md'>
+        <DropdownMenu.Content className='overflow-y-clip rounded-md bg-white shadow-md'>
           <DropdownMenu.Arrow className='fill-white' />
           <DropdownMenu.Item
             className='select-none p-4 outline-none transition-colors hover:bg-gray-500 hover:text-white'
@@ -260,7 +273,7 @@ export const AddTagDropdown = ({
         <InlineButton>{children}</InlineButton>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal container={modalRef.current}>
-        <DropdownMenu.Content className='min-w-full rounded-md bg-white p-2 shadow-md'>
+        <DropdownMenu.Content className='min-w-full rounded-md bg-white p-3 shadow-md'>
           <DropdownMenu.Arrow className='fill-white' />
           <div className='group relative flex max-h-[30vh] select-none flex-col items-center overflow-y-scroll p-2 text-sm'>
             {foundTags.map((tag) => {
