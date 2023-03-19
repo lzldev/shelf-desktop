@@ -8,6 +8,7 @@ import {
   Tray,
   screen,
   nativeImage,
+  Menu,
 } from 'electron'
 
 import '../preload/ipcTypes'
@@ -15,6 +16,18 @@ import * as fs from 'fs'
 import * as path from 'path'
 import {electronApp, optimizer, is} from '@electron-toolkit/utils'
 import {TaggerClient} from './src/tagger-client'
+import {zJson, zJsonSchema} from './src/zJson'
+import {join} from 'path'
+import {z} from 'zod'
+
+const CONFIGPATH = join(app.getPath('userData'), 'config.json')
+export const CONFIGSCHEMA = {
+  recentFiles: z.array(z.string()),
+} as const
+
+const TaggerConfig = new zJson(CONFIGPATH, CONFIGSCHEMA, {
+  recentFiles: [],
+})
 
 //TODO: Move
 const _WindowRoutes = {
@@ -42,12 +55,7 @@ const _WindowRoutes = {
   },
 } as const
 
-export type HasKey<T, K, TTrue, TFalse = never> = K extends keyof T
-  ? TTrue
-  : TFalse
-
-let CurrentTaggerClient: TaggerClient //TODO:RENAME
-
+let Client: TaggerClient
 const windows = new Map<keyof typeof _WindowRoutes, BrowserWindow>()
 
 function createWindow(route: keyof typeof _WindowRoutes): void {
@@ -88,16 +96,11 @@ function createWindow(route: keyof typeof _WindowRoutes): void {
 
   newWindow.on('ready-to-show', () => {
     newWindow.show()
-    // newWindow.webContents.openDevTools()
   })
-
   newWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return {action: 'deny'}
   })
-
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     newWindow.loadURL(
       process.env['ELECTRON_RENDERER_URL'] + `#/${_WindowRoutes[route].route}`,
@@ -111,46 +114,53 @@ function createWindow(route: keyof typeof _WindowRoutes): void {
     )
   }
 
+  newWindow.on('closed', () => {
+    windows.delete('main')
+  })
+
   windows.set(route, newWindow)
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   protocol.registerFileProtocol('tagger', (request: any, callback: any) => {
     const pathname = decodeURI(request.url.replace('tagger://', ''))
     callback(pathname)
   })
-  // Set app user model id for windows
   electronApp.setAppUserModelId('electron')
-
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
   app.on('browser-window-created', (_: any, window: BrowserWindow) => {
     optimizer.watchWindowShortcuts(window)
   })
 
   const appTray = new Tray(nativeImage.createFromPath('build/icon.png'))
-
   appTray.setTitle('Tagger')
 
-  createWindow('start')
+  const menu = Menu.buildFromTemplate([
+    {
+      label: 'Open',
+      click: () => {
+        if (Client) {
+          createWindow('main')
+        }
+      },
+    },
+    {
+      label: 'Exit',
+      click: () => {
+        app.quit()
+      },
+    },
+  ])
 
+  appTray.setContextMenu(menu)
+
+  createWindow('start')
   app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow('start')
+    if (!BrowserWindow.getAllWindows().length) createWindow('start')
   })
 })
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  if (process.platform !== 'darwin' && !Client) {
     app.quit()
   }
 })
@@ -159,23 +169,18 @@ export const updateProgress = (args: {key: string; value: any}) => {
   windows.get('progress')?.webContents.send('updateProgress', args)
 }
 
-async function startNewClient(path: string | string[]) {
+async function startNewClient(path: string) {
   if (!windows.has('progress')) {
     createWindow('progress')
   }
 
-  CurrentTaggerClient = await TaggerClient.create(path, () => {
+  Client = await TaggerClient.create(path, () => {
     const progWindow = windows.get('progress')
     if (progWindow) {
       progWindow.close()
     }
     createWindow('main')
   })
-
-  // console.log(
-  //   'Pre Window ID ->',
-  //   Windows.progress ? Windows.progress[0].webContents.id : undefined,
-  // )
 }
 
 export type OpenDialogReturn = {
@@ -202,16 +207,16 @@ ipcMain.handle('startTaggerClient', async (Event, path) => {
   windows.get('start')?.close()
   const chosenPath = Array.isArray(path) ? path[0] : path
 
+  //TODO: Handle this better
   if (!fs.existsSync(chosenPath)) {
-    //REMOVEME:Handle this error better.
     throw 'Invalid Path'
   }
 
-  const recentFiles = loadRecent()
+  const recentFiles = TaggerConfig.get('recentFiles')
   if (recentFiles.length >= 8) {
     recentFiles.shift()
   }
-  saveRecent(recentFiles.concat(path))
+  TaggerConfig.set('recentFiles', recentFiles, true)
 
   BrowserWindow.fromId(Event.sender.id)?.close()
   startNewClient(chosenPath)
@@ -219,44 +224,28 @@ ipcMain.handle('startTaggerClient', async (Event, path) => {
 })
 
 ipcMain.handle('getTaggerTags', async () => {
-  const res = await CurrentTaggerClient.getTags()
+  const res = await Client.getTags()
   return JSON.parse(JSON.stringify(res))
 })
 
 ipcMain.handle('addTagToContent', async (_, options) => {
-  const tag = await CurrentTaggerClient.addTagToContent(options)
+  const tag = await Client.addTagToContent(options)
   return !!tag
 })
 
 ipcMain.handle('removeTagfromContent', async (_, options) => {
-  const tag = await CurrentTaggerClient.removeTagFromContent(options)
+  const tag = await Client.removeTagFromContent(options)
   return !!tag
 })
 
 ipcMain.handle('getTaggerImages', async (_, options) => {
-  const {content, count} = await CurrentTaggerClient.getContent(options)
-
+  const {content, count} = await Client.getContent(options)
   return {content: JSON.parse(JSON.stringify(content)), count}
 })
 
 ipcMain.handle('getDetailedImage', async (_, id) => {
-  const res = await CurrentTaggerClient.getOneContent({id: id})
+  const res = await Client.getDetailedContent({id: id})
   return JSON.parse(JSON.stringify(res))
 })
-/*
-    TODO:Add Runtime Validation with ZOD since this is being held in a file.
-    zJson.parse(path,schema)
-*/
-ipcMain.handle('getRecent', async () => loadRecent())
 
-const recentPathsFile = path.join(app.getPath('userData'), '/.recentFiles')
-const saveRecent = (arr: string[]) => {
-  fs.writeFileSync(recentPathsFile, JSON.stringify(arr))
-}
-const loadRecent = (): string[] => {
-  if (fs.existsSync(recentPathsFile)) {
-    return JSON.parse(fs.readFileSync(recentPathsFile).toString())
-  } else {
-    return []
-  }
-}
+ipcMain.handle('getConfig', async () => TaggerConfig.getAll())

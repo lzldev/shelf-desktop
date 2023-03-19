@@ -91,7 +91,6 @@ class TaggerClient {
     if (!this._ready) return "Client isn't ready"
     return this._choki.getWatched()
   }
-
   async getContent(options?: IpcMainEvents['getTaggerImages']['args']) {
     if (!this._ready) {
       throw "Client isn't ready yet"
@@ -128,8 +127,7 @@ class TaggerClient {
 
     return {content: rows, count: count}
   }
-
-  async getOneContent(options: {id: number}) {
+  async getDetailedContent(options: {id: number}) {
     if (!this._ready) {
       throw "Client isn't ready yet"
     }
@@ -149,7 +147,6 @@ class TaggerClient {
 
     return result
   }
-
   async getTags() {
     if (!this._ready) {
       throw "Client isn't ready yet"

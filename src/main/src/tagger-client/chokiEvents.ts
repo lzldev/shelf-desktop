@@ -39,6 +39,7 @@ export const addChokiEvents = (
             lastPaths: lastPaths,
           },
         })
+
         lastProgress = newProgress
 
         if (lastPaths.length <= 2) {
@@ -50,13 +51,14 @@ export const addChokiEvents = (
 
     //REMOVEME : MOCK TAGS ---------------------------------------
     const tagTransaction = await sequelize.transaction()
-    for (let i = 0; i < mockTags.length; i++) {
+
+    for (const tag of mockTags) {
       await Tag.findOrCreate({
         where: {
-          name: mockTags[i].name,
+          name: tag.name,
         },
         defaults: {
-          name: mockTags[i].name,
+          name: tag.name,
           parentOnly: false,
         },
         transaction: tagTransaction,
@@ -76,7 +78,6 @@ export const addChokiEvents = (
         transaction: pathTransaction,
       })
       console.timeEnd('PATH FINDALL ->')
-
       paths.forEach(
         await (async (dbPath) => {
           const path = dbPath.toJSON()
@@ -97,7 +98,6 @@ export const addChokiEvents = (
           }
 
           if (path.mTimeMs !== newFiles[foundPath][1]) {
-            console.log('UPDATING ->', path.path)
             const newHash = await hashFileAsync(path.path)
             const content = await Content.findOne({
               where: {
@@ -180,6 +180,7 @@ export const addChokiEvents = (
         await content.$add('tag', Math.round(Math.random() * mockTags.length), {
           transaction: ContentsTransaction,
         })
+        //----
 
         INITHASHES.set(fileHash, content.id)
         INITPATHS.set(filePath, newPath.id)
@@ -283,11 +284,7 @@ export const addChokiEvents = (
       },
     })
 
-    console.log('FilePath ->', `[${filePath}]`)
-    console.log('Unlink ->', path?.toJSON())
-
     await path?.destroy()
-    //FIXME: Removing content here would break file rename
   }
 
   choki.addListener('unlink', taggerOnUnlink)

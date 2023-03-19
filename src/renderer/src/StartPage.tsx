@@ -2,12 +2,10 @@ import {useQuery} from '@tanstack/react-query'
 import Versions from './components/Versions'
 
 function StartPage(): JSX.Element {
-  const {
-    data: paths,
-    error,
-    isLoading,
-  } = useQuery(['recentPath'], async () => {
-    return await window.api.invokeOnMain('getRecent', null)
+  const {data: paths} = useQuery(['recentPath'], async () => {
+    return await (
+      await window.api.invokeOnMain('getConfig', null)
+    ).recentFiles
   })
 
   const openDialog = async (dir: 'openFile' | 'openDirectory') => {

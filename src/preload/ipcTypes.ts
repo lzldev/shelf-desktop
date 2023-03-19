@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import type {IpcMainInvokeEvent, IpcRendererEvent} from 'electron'
-import type {OpenDialogReturn} from '../main'
+import {z} from 'zod'
+import type {OpenDialogReturn, CONFIGSCHEMA} from '../main'
 import {Content, Tag} from '../main/src/db/models'
 
 export type TypeLevelRecord<
@@ -27,6 +28,12 @@ export type IpcMainEvents = TypeLevelRecord<
     getRecent: {
       args: null
       return: string[]
+    }
+    getConfig: {
+      args: null
+      return: {
+        [key in keyof typeof CONFIGSCHEMA]: z.infer<(typeof CONFIGSCHEMA)[key]>
+      }
     }
     getTaggerImages: {
       args: {
@@ -123,6 +130,7 @@ declare module 'electron' {
     } & OriginalIpcRenderer
   }
 }
+
 type OriginalIpcMain = Omit<Electron.IpcMain, 'handle'>
 type OriginalIpcRenderer = Omit<Electron.IpcRenderer, 'invoke' | 'on'>
 type OriginalWebContents = Omit<Electron.WebContents, 'send'>

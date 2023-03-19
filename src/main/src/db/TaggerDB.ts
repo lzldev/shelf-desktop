@@ -27,6 +27,13 @@ export const createTaggerDB = async (dbPath: string) => {
 
   await TaggerDB.sync()
 
+  process.on('SIGINT', async () => {
+    await TaggerDB.close()
+  })
+  process.on('exit', async () => {
+    await TaggerDB.close()
+  })
+
   return {
     ...TaggerDB.models,
     sequelize: TaggerDB,
