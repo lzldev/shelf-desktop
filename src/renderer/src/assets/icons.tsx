@@ -31,7 +31,7 @@ export const BackArrow = (props: HTMLAttributes<SVGElement>) => (
     viewBox='0 0 24 24'
     strokeWidth={1.5}
     stroke='currentColor'
-    className={clsx('h-6 w-6', props.className)}
+    className={props.className}
   >
     <path
       strokeLinecap='round'
