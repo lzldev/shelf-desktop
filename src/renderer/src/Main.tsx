@@ -1,5 +1,13 @@
 import clsx from 'clsx'
-import {HTMLAttributes, PropsWithChildren, useEffect, useState} from 'react'
+import {
+  forwardRef,
+  HTMLAttributes,
+  PropsWithChildren,
+  Ref,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import {useTags} from './hooks/useTags'
 import {Content, Tag} from 'src/main/src/db/models'
 import {useInfiniteQuery} from '@tanstack/react-query'
@@ -15,6 +23,7 @@ const pageSize = 25
 
 function Main(): JSX.Element {
   const {tags} = useTags()
+  const body = useRef<HTMLDivElement>(null)
   const [selected, setSelected] = useState<Set<Tag>>(new Set())
   const [selectedContent, setSelectedContent] = useState<Content | undefined>()
   const [showDetailsModal, toggleShowDetailsModal] = useToggle(false)
@@ -23,52 +32,42 @@ function Main(): JSX.Element {
     data: content,
     error,
     isLoading,
+    isRefetching,
     refetch,
     hasNextPage,
     fetchNextPage,
     remove,
   } = useInfiniteQuery(
     ['content'],
-    async ({pageParam}) => {
+    async (context) => {
+      const {pageParam = {offset: 0, limit: pageSize}} = context
       const pagination = pageParam || {offset: 0, limit: pageSize}
       const tags = selected.size > 0 ? Array.from(selected.values()) : undefined
 
       const files = await window.api.invokeOnMain('getTaggerImages', {
         pagination: {
-          page: pagination.offset,
-          pageSize: pagination.limit,
+          offset: pagination.offset,
+          limit: pagination.limit,
         },
         tags,
       })
       return files || []
     },
     {
-      getNextPageParam: (lastPage, allPages) => {
-        const nextPage = allPages.length + 1
-        const totalPages = Math.floor(lastPage.count / pageSize)
-
-        if (nextPage === totalPages + 1 && lastPage.count % pageSize !== 0) {
-          return {offset: nextPage, limit: lastPage.count % pageSize}
-        }
-        if (nextPage > totalPages) {
-          return false
-        } else {
-          return {offset: nextPage, limit: pageSize}
-        }
-      },
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
     },
   )
 
   useEffect(() => {
+    if (!body.current) return
     const onScroll = () => {
-      const container = document.getElementById('taggerBody')
       const threshold = 10
-      if (!container) return
-
+      if (!body.current) return
       if (
         window.scrollY + window.innerHeight >=
-          container.scrollHeight - threshold &&
-        hasNextPage
+          body.current.scrollHeight - threshold &&
+        hasNextPage &&
+        !isRefetching
       ) {
         fetchNextPage()
       }
@@ -78,13 +77,12 @@ function Main(): JSX.Element {
     return () => {
       window.removeEventListener('scroll', onScroll)
     }
-  }, [hasNextPage])
+  }, [hasNextPage, body])
 
   const openContentModal = (content: Content) => {
     setSelectedContent(content)
     toggleShowDetailsModal(true)
   }
-
   const closeContentModal = () => {
     setSelectedContent(undefined)
     toggleShowDetailsModal(false)
@@ -140,18 +138,16 @@ function Main(): JSX.Element {
           {tags.length}
         </a>
         <a className='text-end font-mono text-gray-400'>
-          SHOWING:
-          {content?.pages
-            .map((r) => r.content.length)
-            .reduce((a, c) => (a += c))}
-        </a>
-        <a className='h-full text-end align-top font-mono text-gray-400'>
           TOTAL:
-          {content?.pages[0].count}
+          {content?.pages
+            .map((page) => {
+              return page.content.length
+            })
+            .reduce((total, n) => (total += n))}
         </a>
       </div>
       <Body
-        id={'taggerBody'}
+        ref={body}
         isLoading={isLoading}
         error={error}
         className={
@@ -195,15 +191,21 @@ function Main(): JSX.Element {
   )
 }
 
-const Body = ({
-  isLoading,
-  error,
-  ...props
-}: {isLoading: boolean; error: unknown} & PropsWithChildren &
-  HTMLAttributes<HTMLDivElement>) => {
+const _Body = (
+  {
+    isLoading,
+    error,
+    ...props
+  }: {isLoading: boolean; error: unknown} & PropsWithChildren &
+    HTMLAttributes<HTMLDivElement>,
+  ref: Ref<HTMLDivElement>,
+) => {
   if (error) {
     return (
-      <div {...props}>
+      <div
+        {...props}
+        ref={ref}
+      >
         <h1 className='text-6xl'>{error.toString()}</h1>
       </div>
     )
@@ -211,12 +213,15 @@ const Body = ({
   return (
     <div
       {...props}
+      ref={ref}
       className='grid sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8'
     >
       {isLoading ? <></> : props.children}
     </div>
   )
 }
+
+const Body = forwardRef(_Body)
 
 export const SearchBar = ({
   tags,

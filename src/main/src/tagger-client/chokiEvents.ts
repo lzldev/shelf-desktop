@@ -70,7 +70,6 @@ export const addChokiEvents = (
     if (!taggerClient.config.isNew) {
       const pathTransaction = await sequelize.transaction()
       console.time('DB CLEANUP ->')
-      console.time('PATH FINDALL ->')
       const paths = await Path.findAll({
         attributes: {
           exclude: ['updatedAt', 'createdAt'],
@@ -127,7 +126,6 @@ export const addChokiEvents = (
           }
         }),
       )
-
       await pathTransaction.commit()
       console.timeEnd('DB CLEANUP ->')
     }

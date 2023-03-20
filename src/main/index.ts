@@ -16,7 +16,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import {electronApp, optimizer, is} from '@electron-toolkit/utils'
 import {TaggerClient} from './src/tagger-client'
-import {zJson, zJsonSchema} from './src/zJson'
+import {zJson} from './src/zJson'
 import {join} from 'path'
 import {z} from 'zod'
 
@@ -76,8 +76,8 @@ function createWindow(route: keyof typeof _WindowRoutes): void {
 
   const newWindow = new BrowserWindow({
     ..._WindowRoutes[route].startOptions,
-    width: sizeX,
     show: false,
+    width: sizeX,
     height: sizeY,
     x: currentWindowX,
     y: currentWindowY,
@@ -93,6 +93,8 @@ function createWindow(route: keyof typeof _WindowRoutes): void {
       sandbox: false,
     },
   })
+
+  newWindow.removeMenu()
 
   newWindow.on('ready-to-show', () => {
     newWindow.show()
@@ -126,7 +128,7 @@ app.whenReady().then(() => {
     const pathname = decodeURI(request.url.replace('tagger://', ''))
     callback(pathname)
   })
-  electronApp.setAppUserModelId('electron')
+  electronApp.setAppUserModelId('Tagger')
   app.on('browser-window-created', (_: any, window: BrowserWindow) => {
     optimizer.watchWindowShortcuts(window)
   })
@@ -138,7 +140,7 @@ app.whenReady().then(() => {
     {
       label: 'Open',
       click: () => {
-        if (Client) {
+        if (Client && !windows.has('main')) {
           createWindow('main')
         }
       },
@@ -204,22 +206,28 @@ ipcMain.handle('openDialog', async (_, options) => {
 })
 
 ipcMain.handle('startTaggerClient', async (Event, path) => {
-  windows.get('start')?.close()
-  const chosenPath = Array.isArray(path) ? path[0] : path
+  const recentFiles = TaggerConfig.get('recentFiles')
+  if (!fs.existsSync(path)) {
+    const idx = recentFiles.findIndex((p) => p == path)
+    if (idx !== -1) {
+      recentFiles.splice(idx, 1)
+      TaggerConfig.set('recentFiles', recentFiles)
+    }
 
-  //TODO: Handle this better
-  if (!fs.existsSync(chosenPath)) {
-    throw 'Invalid Path'
+    return
   }
 
-  const recentFiles = TaggerConfig.get('recentFiles')
+  windows.get('start')?.close()
+
+  recentFiles.push(path)
   if (recentFiles.length >= 8) {
     recentFiles.shift()
   }
-  TaggerConfig.set('recentFiles', recentFiles, true)
+
+  TaggerConfig.set('recentFiles', recentFiles)
 
   BrowserWindow.fromId(Event.sender.id)?.close()
-  startNewClient(chosenPath)
+  startNewClient(path)
   return
 })
 
@@ -239,8 +247,9 @@ ipcMain.handle('removeTagfromContent', async (_, options) => {
 })
 
 ipcMain.handle('getTaggerImages', async (_, options) => {
-  const {content, count} = await Client.getContent(options)
-  return {content: JSON.parse(JSON.stringify(content)), count}
+  const {content, nextCursor} = await Client.getContent(options)
+
+  return {content: JSON.parse(JSON.stringify(content)), nextCursor}
 })
 
 ipcMain.handle('getDetailedImage', async (_, id) => {

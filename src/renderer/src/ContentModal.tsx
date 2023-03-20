@@ -148,7 +148,7 @@ function ContentModal({
       <div className='flex justify-between  bg-gray-200 p-5'>
         <BackArrow
           className={
-            'h-20 w-20 stroke-gray-600 px-2 transition-all hover:stroke-white'
+            'h-16 w-16 stroke-gray-600 px-2 transition-all hover:stroke-white'
           }
           onClick={onClose}
         />

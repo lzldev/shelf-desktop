@@ -3,7 +3,7 @@ import type {IpcMainInvokeEvent, IpcRendererEvent} from 'electron'
 import {z} from 'zod'
 import type {OpenDialogReturn, CONFIGSCHEMA} from '../main'
 import {Content, Tag} from '../main/src/db/models'
-import {ExtractzJsonSchema as zJsonSchemaInfer} from '../main/src/zJson'
+import {zJsonSchemaInfer} from '../main/src/zJson'
 
 export type TypeLevelRecord<
   TShape extends object,
@@ -19,7 +19,7 @@ export type IpcMainEvents = TypeLevelRecord<
   IpcMainEventShape,
   {
     startTaggerClient: {
-      args: [path: string | string[]]
+      args: [rootPath: string]
       return: void
     }
     openDialog: {
@@ -36,10 +36,10 @@ export type IpcMainEvents = TypeLevelRecord<
     }
     getTaggerImages: {
       args: {
-        pagination?: {page: number; pageSize: number}
+        pagination?: {offset: number; limit: number}
         tags?: Tag[]
       }
-      return: {content: Content[]; count: number}
+      return: {content: Content[]; nextCursor?: {offset: number; limit: number}}
     }
     addTagToContent: {
       args: {contentId: number; tagId: number}

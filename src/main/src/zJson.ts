@@ -7,13 +7,14 @@ export type zJsonValues<T extends zJsonSchema> = {
   [key in keyof T]: z.infer<T[key]>
 }
 
-export type ExtractzJsonSchema<T extends zJsonSchema> = {
+export type zJsonSchemaInfer<T extends zJsonSchema> = {
   [key in keyof T]: z.infer<T[key]>
 }
+type Prettify<T> = T & {}
 
 export class zJson<
   TSchema extends {[key: string]: ZodTypeAny},
-  TValues extends {[key in keyof TSchema]: z.infer<TSchema[key]>},
+  TValues extends zJsonSchemaInfer<TSchema>,
 > {
   readonly _schema: TSchema
   private _defaults: TValues
@@ -37,6 +38,7 @@ export class zJson<
     this._schema = parser
     this._defaults = defaults
     this._values = defaults
+    this._values as zJsonSchemaInfer<TSchema>
 
     if (!this.isNew && options.load) {
       this.load()
@@ -47,18 +49,18 @@ export class zJson<
     }
   }
 
-  get<K extends keyof TValues>(key: K, load = false) {
+  get<K extends keyof zJsonSchemaInfer<TSchema>>(key: K, load = false) {
     if (load) {
       this.load()
     }
-    return this._values[key]
+    return this._values[key] as zJsonSchemaInfer<TSchema>[K]
   }
 
   getAll(load = false) {
     if (load) {
       this.load
     }
-    return this._values
+    return this._values as Prettify<zJsonSchemaInfer<TSchema>>
   }
 
   set<K extends keyof TSchema>(

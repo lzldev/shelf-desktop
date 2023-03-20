@@ -101,11 +101,7 @@ class TaggerClient {
         ? options.tags.map((tag) => tag.id)
         : undefined
 
-    const offset = options?.pagination
-      ? options.pagination.page * options.pagination.pageSize
-      : undefined
-
-    const limit = options?.pagination?.pageSize || undefined
+    const {offset, limit} = options?.pagination || {}
 
     const {rows, count} = await Content.findAndCountAll({
       attributes: ['id', 'extension'],
@@ -125,7 +121,20 @@ class TaggerClient {
       ],
     })
 
-    return {content: rows, count: count}
+    let nextCursor
+    if (typeof offset === 'number' && typeof limit === 'number') {
+      const nextOffset = offset + limit
+      const diffToEnd = count - nextOffset
+
+      if (nextOffset < count) {
+        nextCursor = {
+          offset: nextOffset,
+          limit: diffToEnd < limit ? diffToEnd : limit,
+        }
+      }
+    }
+
+    return {content: rows, nextCursor}
   }
   async getDetailedContent(options: {id: number}) {
     if (!this._ready) {

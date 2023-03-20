@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import {HTMLAttributes, useEffect, useMemo, useState} from 'react'
+import {HTMLAttributes, useState} from 'react'
 import {Content} from 'src/main/src/db/models'
 
 const TaggerContent = ({
@@ -11,24 +11,20 @@ const TaggerContent = ({
   content: Content
   contentProps?: HTMLAttributes<HTMLImageElement | HTMLVideoElement>
 } & HTMLAttributes<HTMLDivElement>) => {
-  const [hidden, setHidden] = useState(true)
-
-  useEffect(() => {
-    if (content.paths.length === 0) {
-      setHidden(true)
-    }
-  }, [content])
+  const video = content.extension == '.mp4' || content.extension == '.avi'
+  const [hidden, setHidden] = useState(!video)
+  const [prog, setProg] = useState(0)
 
   const uri = new URL('tagger://' + content?.paths[0]?.path || '').toString()
-  const video = content.extension == '.mp4' || content.extension == '.avi'
 
   return (
     <div
       {...props}
       className={clsx(
         'relative -z-20 overflow-clip transition-all',
-        hidden
-          ? 'animate-gradient_x bg-gradient-to-r from-gray-600 to-gray-500 opacity-50'
+        !hidden && video ? '' : '',
+        hidden && !video
+          ? 'animate-gradient_x bg-opacity-50 bg-gradient-to-r from-gray-600 to-gray-800 opacity-50'
           : '',
         className,
       )}
@@ -58,11 +54,14 @@ const TaggerContent = ({
         <video
           {...contentProps}
           className={clsx(
-            'mx-auto h-full object-contain transition-all',
+            'relative mx-auto h-full object-contain transition-all',
             className,
           )}
           src={uri}
           muted={true}
+          onProgress={(evt) => {
+            setProg(evt.timeStamp)
+          }}
           onClick={(evt) => {
             const videoPlayer = evt.currentTarget
             videoPlayer.paused ? videoPlayer.play() : videoPlayer.pause()
@@ -78,7 +77,11 @@ const TaggerContent = ({
               evt.currentTarget.play()
             }
           }}
-        />
+        >
+          <span className='right-0 bottom-0 bg-red-500 font-mono'>
+            T:{prog}
+          </span>
+        </video>
       )}
       {props.children}
     </div>

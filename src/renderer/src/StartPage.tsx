@@ -12,9 +12,9 @@ function StartPage(): JSX.Element {
     const dialog = await window.api.invokeOnMain('openDialog', {
       dialogType: dir,
     })
-    if (dialog.canceled) return
+    if (dialog.canceled || dialog.filePaths.length === 0) return
 
-    await window.api.invokeOnMain('startTaggerClient', dialog.filePaths)
+    await window.api.invokeOnMain('startTaggerClient', dialog.filePaths[0])
   }
 
   return (
