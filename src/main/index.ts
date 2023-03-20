@@ -23,10 +23,12 @@ import {z} from 'zod'
 const CONFIGPATH = join(app.getPath('userData'), 'config.json')
 export const CONFIGSCHEMA = {
   recentFiles: z.array(z.string()),
+  pageSize: z.number().min(0),
 } as const
 
 const TaggerConfig = new zJson(CONFIGPATH, CONFIGSCHEMA, {
   recentFiles: [],
+  pageSize: 25,
 })
 
 //TODO: Move
@@ -93,7 +95,6 @@ function createWindow(route: keyof typeof _WindowRoutes): void {
       sandbox: false,
     },
   })
-
   newWindow.removeMenu()
 
   newWindow.on('ready-to-show', () => {
@@ -108,12 +109,9 @@ function createWindow(route: keyof typeof _WindowRoutes): void {
       process.env['ELECTRON_RENDERER_URL'] + `#/${_WindowRoutes[route].route}`,
     )
   } else {
-    newWindow.loadFile(
-      path.join(
-        __dirname,
-        '../renderer/index.html' + `#/${_WindowRoutes[route].route}`,
-      ),
-    )
+    newWindow.loadFile(path.join(__dirname, '../renderer/index.html'), {
+      hash: `/${_WindowRoutes[route].route}`,
+    })
   }
 
   newWindow.on('closed', () => {
