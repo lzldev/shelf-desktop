@@ -23,15 +23,24 @@ import {z} from 'zod'
 const CONFIGPATH = join(app.getPath('userData'), 'config.json')
 export const CONFIGSCHEMA = {
   recentFiles: z.array(z.string()),
+  ignorePaths: z.array(z.string()),
+  lastFilter: z.object({
+    order: z.string(),
+    field: z.string(),
+  }),
   pageSize: z.number().min(0),
 } as const
 
 const TaggerConfig = new zJson(CONFIGPATH, CONFIGSCHEMA, {
   recentFiles: [],
+  ignorePaths: [],
+  lastFilter: {
+    field: 'createdAt',
+    order: 'ascending',
+  },
   pageSize: 25,
 })
 
-//TODO: Move
 const _WindowRoutes = {
   main: {
     route: '',

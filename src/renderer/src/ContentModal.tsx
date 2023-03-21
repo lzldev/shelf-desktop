@@ -13,9 +13,14 @@ import {Content, Tag} from 'src/main/src/db/models'
 import clsx from 'clsx'
 import {useToggle} from './hooks/useToggle'
 import {InlineButton} from './components/InlineButton'
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {useTagQuery} from './hooks/useTagQuery'
-import {BackArrow} from './assets/icons'
+import {PageHeader} from './components/PageHeader'
+import {Dropdown} from './components/Dropdown'
+import {
+  DropdownMenuArrow,
+  DropdownMenuItem,
+  DropdownMenuProps,
+} from '@radix-ui/react-dropdown-menu'
 
 function ContentModal({
   content: contentProp,
@@ -80,6 +85,7 @@ function ContentModal({
         }
         case 'd': {
           if (content) {
+            //TODO: MOVE THIS ELSEWHERE
             window.open(
               'file://' +
                 content?.paths[0].path.substring(
@@ -145,14 +151,7 @@ function ContentModal({
       id={'taggerModal'}
       className={containerClass}
     >
-      <div className='flex justify-between  bg-gray-200 p-5'>
-        <BackArrow
-          className={
-            'h-16 w-16 stroke-gray-600 px-2 transition-all hover:stroke-white'
-          }
-          onClick={onClose}
-        />
-      </div>
+      <PageHeader onClose={onClose} />
       <div onClick={() => toggleFullscreen()}>
         <TaggerContent
           {...contentProps}
@@ -165,10 +164,10 @@ function ContentModal({
           'max-h-full min-h-full overflow-y-auto bg-gray-200 px-4 pt-4'
         }
       >
-        <div className={'float-right flex flex-row-reverse'}>
+        {/* <div className={'float-right flex flex-row-reverse'}>
           <InlineButton>Open Directory</InlineButton>
           <InlineButton>Open File</InlineButton>
-        </div>
+        </div> */}
         <div className={'my-2 flex flex-col'}>
           {(content?.paths || []).map((p, idx) => {
             return (
@@ -228,31 +227,25 @@ export const InlineTagDropdown = ({
   removeTag: (tag: Tag) => any
   tag: Tag
   modalRef: RefObject<HTMLDivElement>
-} & DropdownMenu.DropdownMenuProps) => {
+} & DropdownMenuProps) => {
   return (
-    <DropdownMenu.Root
+    <Dropdown
       {...props}
-      modal={false}
+      triggerRender={() => <InlineTag tag={tag} />}
+      modalRef={modalRef}
     >
-      <DropdownMenu.Trigger className='outline-none'>
-        <InlineTag tag={tag} />
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal container={modalRef.current}>
-        <DropdownMenu.Content className='overflow-y-clip rounded-md bg-white shadow-md'>
-          <DropdownMenu.Arrow className='fill-white' />
-          <DropdownMenu.Item
-            className='select-none p-4 outline-none transition-colors hover:bg-gray-500 hover:text-white'
-            onClick={() => removeTag(tag)}
-          >
-            Remove
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+      <DropdownMenuArrow className='fill-white' />
+      <DropdownMenuItem
+        className='select-none p-4 outline-none transition-colors hover:bg-gray-500 hover:text-white'
+        onClick={() => removeTag(tag)}
+      >
+        Remove
+      </DropdownMenuItem>
+    </Dropdown>
   )
 }
+
 export const AddTagDropdown = ({
-  children,
   addTag,
   modalRef,
   ...props
@@ -260,49 +253,49 @@ export const AddTagDropdown = ({
   addTag: (tag: Tag) => any
   modalRef: RefObject<HTMLDivElement>
 } & PropsWithChildren &
-  DropdownMenu.DropdownMenuProps) => {
+  DropdownMenuProps) => {
   const {query, setQuery, foundTags} = useTagQuery()
 
   return (
-    <DropdownMenu.Root
+    <Dropdown
       {...props}
-      modal={false}
+      modalRef={modalRef}
+      contentClass={clsx('p-2')}
+      triggerRender={() => {
+        return <InlineButton>{'+ ADD'}</InlineButton>
+      }}
     >
-      <DropdownMenu.Trigger className='outline-none'>
-        <InlineButton>{children}</InlineButton>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal container={modalRef.current}>
-        <DropdownMenu.Content className='min-w-full rounded-md bg-white p-3 shadow-md'>
-          <DropdownMenu.Arrow className='fill-white' />
-          <div className='group relative flex max-h-[30vh] select-none flex-col items-center overflow-y-scroll p-2 text-sm'>
-            {foundTags.map((tag) => {
-              return (
-                <InlineTag
-                  key={tag.id}
-                  tag={tag}
-                  onClick={() => {
-                    addTag(tag)
-                  }}
-                />
-              )
-            })}
-          </div>
-          <input
-            type='text'
-            className='mt-4 w-full rounded-md p-2 outline-none ring ring-gray-300'
-            value={query}
-            onClick={(evt) => {
-              evt.stopPropagation()
-            }}
-            onChange={(evt) => {
-              evt.stopPropagation()
-              setQuery(evt.target.value)
-            }}
-          />
-          <DropdownMenu.Separator />
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+      <DropdownMenuArrow className='fill-white' />
+      <div
+        className={
+          'group relative flex max-h-[30vh] select-none flex-col items-center overflow-y-scroll p-2 text-sm'
+        }
+      >
+        {foundTags.map((tag) => {
+          return (
+            <InlineTag
+              key={tag.id}
+              tag={tag}
+              onClick={() => {
+                addTag(tag)
+              }}
+            />
+          )
+        })}
+      </div>
+      <input
+        type='text'
+        className='mt-4 w-full rounded-md p-2 outline-none ring ring-gray-300'
+        value={query}
+        onClick={(evt) => {
+          evt.stopPropagation()
+        }}
+        onChange={(evt) => {
+          evt.stopPropagation()
+          setQuery(evt.target.value)
+        }}
+      />
+    </Dropdown>
   )
 }
 
