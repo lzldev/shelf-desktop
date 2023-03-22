@@ -24,8 +24,8 @@ const CONFIGPATH = join(app.getPath('userData'), 'config.json')
 export const CONFIGSCHEMA = {
   recentFiles: z.array(z.string()),
   ignorePaths: z.array(z.string()),
-  lastFilter: z.object({
-    order: z.string(),
+  order: z.object({
+    direction: z.string(),
     field: z.string(),
   }),
   pageSize: z.number().min(0),
@@ -34,9 +34,9 @@ export const CONFIGSCHEMA = {
 const TaggerConfig = new zJson(CONFIGPATH, CONFIGSCHEMA, {
   recentFiles: [],
   ignorePaths: [],
-  lastFilter: {
+  order: {
     field: 'createdAt',
-    order: 'ascending',
+    direction: 'ASC',
   },
   pageSize: 25,
 })
@@ -264,4 +264,5 @@ ipcMain.handle('getDetailedImage', async (_, id) => {
   return JSON.parse(JSON.stringify(res))
 })
 
-ipcMain.handle('getConfig', async (evt) => TaggerConfig.getAll())
+ipcMain.handle('getConfig', async () => TaggerConfig.getAll())
+ipcMain.handle('saveConfig', async (_, config) => TaggerConfig.setAll(config))

@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react'
 
+//FIXME: ...
 export class ProgressMap<
   TK extends keyof ProgressType,
   TR extends ProgressType[TK],

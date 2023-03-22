@@ -34,9 +34,14 @@ export type IpcMainEvents = TypeLevelRecord<
       args: never
       return: zJsonSchemaInfer<typeof CONFIGSCHEMA>
     }
+    saveConfig: {
+      args: [config: zJsonSchemaInfer<typeof CONFIGSCHEMA>]
+      return: boolean
+    }
     getTaggerImages: {
       args: {
         pagination?: {offset: number; limit: number}
+        order?: ['ASC' | 'DESC', string]
         tags?: Tag[]
       }
       return: {content: Content[]; nextCursor?: {offset: number; limit: number}}

@@ -18,7 +18,6 @@ import ContentModal from './ContentModal'
 import {useToggle} from './hooks/useToggle'
 import {Cog} from './assets/icons'
 
-//TODO: Get this from the APP config
 const pageSize = 25
 
 function Main(): JSX.Element {
@@ -27,6 +26,7 @@ function Main(): JSX.Element {
   const [selected, setSelected] = useState<Set<Tag>>(new Set())
   const [selectedContent, setSelectedContent] = useState<Content | undefined>()
   const [showDetailsModal, toggleShowDetailsModal] = useToggle(false)
+  const bodyRef = useRef<HTMLDivElement>(null)
 
   const {
     data: content,
@@ -89,9 +89,18 @@ function Main(): JSX.Element {
   }
 
   const containerClass = clsx('min-h-screen max-h-fit w-full p-10')
+  if (error || !content?.pages) {
+    return <>{error}</>
+  }
+  if (isLoading) {
+    return <>{isLoading}</>
+  }
 
   return (
-    <div className={containerClass}>
+    <div
+      className={containerClass}
+      ref={bodyRef}
+    >
       {showDetailsModal &&
         createPortal(
           <ContentModal
@@ -104,7 +113,7 @@ function Main(): JSX.Element {
             onPrevious={() => {}}
             onClose={() => closeContentModal()}
           />,
-          document.getElementById('root') as HTMLElement,
+          document.body,
         )}
       <SearchBar
         tags={tags}
@@ -128,10 +137,10 @@ function Main(): JSX.Element {
         }}
       />
       <div className={'flex h-full w-full flex-row-reverse space-x-2 text-end'}>
-        <Cog className='ml-1 inline-flex fill-gray-100 transition-all hover:fill-gray-300 hover:stroke-white' />
+        <Cog className='ml-1  fill-gray-100 transition-all hover:fill-gray-300 hover:stroke-white' />
         <a className='text-end font-mono text-gray-400'>
           PAGES:
-          {content?.pages.length}
+          {content?.pages?.length}
         </a>
         <a className='text-end font-mono text-gray-400'>
           TAGS:
@@ -139,7 +148,7 @@ function Main(): JSX.Element {
         </a>
         <a className='text-end font-mono text-gray-400'>
           TOTAL:
-          {content?.pages
+          {(content?.pages || [])
             .map((page) => {
               return page.content.length
             })
@@ -154,7 +163,7 @@ function Main(): JSX.Element {
           'grid w-full sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8'
         }
       >
-        {content?.pages.map((page) => {
+        {content?.pages?.map((page) => {
           return (page.content || []).map((content) => {
             if (!content?.paths[0]) {
               return

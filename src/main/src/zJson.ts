@@ -10,7 +10,6 @@ export type zJsonValues<T extends zJsonSchema> = {
 export type zJsonSchemaInfer<T extends zJsonSchema> = {
   [key in keyof T]: z.infer<T[key]>
 }
-type Prettify<T> = T & {}
 
 export class zJson<
   TSchema extends {[key: string]: ZodTypeAny},
@@ -60,7 +59,17 @@ export class zJson<
     if (load) {
       this.load
     }
-    return this._values as Prettify<zJsonSchemaInfer<TSchema>>
+    return this._values as zJsonSchemaInfer<TSchema>
+  }
+
+  setAll(newValue: zJsonSchemaInfer<TSchema>, save = true) {
+    this._values = newValue as TValues
+    console.log('nv ->', newValue)
+
+    if (save) {
+      return this.save()
+    }
+    return true
   }
 
   set<K extends keyof TSchema>(
@@ -108,11 +117,16 @@ export class zJson<
   }
 
   save(overwrite = false) {
-    if (overwrite && fs.existsSync(this._filePath)) {
-      fs.rmSync(this._filePath)
-    }
+    try {
+      if (overwrite && fs.existsSync(this._filePath)) {
+        fs.rmSync(this._filePath)
+      }
 
-    fs.writeFileSync(this._filePath, JSON.stringify(this._values))
+      fs.writeFileSync(this._filePath, JSON.stringify(this._values))
+    } catch (err) {
+      return false
+    }
+    return true
   }
 
   safeSave() {

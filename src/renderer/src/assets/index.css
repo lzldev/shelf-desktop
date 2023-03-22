@@ -12,6 +12,7 @@
 .unselectable,
 * {
   user-select: none;
+  @apply outline-none;
 }
 .selectable {
   user-select: text;

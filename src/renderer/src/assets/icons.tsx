@@ -40,9 +40,7 @@ export const BackArrow = (props: HTMLAttributes<SVGElement>) => (
     />
   </svg>
 )
-export const Check = (
-  props: {checked: boolean} & HTMLAttributes<SVGElement>,
-) => (
+export const Check = (props: HTMLAttributes<SVGElement>) => (
   <svg
     {...props}
     xmlns='http://www.w3.org/2000/svg'

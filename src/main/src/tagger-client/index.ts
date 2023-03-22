@@ -8,13 +8,6 @@ import {z} from 'zod'
 import {zJson, zJsonValues} from '../zJson'
 import {join} from 'path'
 
-/* 
-    TODO: Implement
-        process.on('SIGINT', saveWatchedFiles)
-        process.on('exit', saveWatchedFiles)
-        function saveWatchedFiles(){}
-*/
-
 const CONFIG_FILE_NAME = '/.taggercfg' //TODO: Move this elsewhere
 
 const configSchema = {
@@ -96,6 +89,8 @@ class TaggerClient {
       throw "Client isn't ready yet"
     }
 
+    const order = options?.order ? [options?.order] : undefined
+
     const TagIdArray =
       options?.tags && options?.tags?.length !== 0
         ? options.tags.map((tag) => tag.id)
@@ -104,7 +99,7 @@ class TaggerClient {
     const {offset, limit} = options?.pagination || {}
 
     const {rows, count} = await Content.findAndCountAll({
-      attributes: ['id', 'extension'],
+      order: order,
       offset: offset,
       limit: limit,
       include: [
