@@ -14,9 +14,11 @@ import {useInfiniteQuery} from '@tanstack/react-query'
 import {InlineTag} from './components/InlineTag'
 import {TaggerContent} from './components/TaggerContent'
 import {createPortal} from 'react-dom'
-import ContentModal from './ContentModal'
+import ContentDetails from './ContentDetails'
 import {useToggle} from './hooks/useToggle'
 import {Cog} from './assets/icons'
+import {useOrderStore} from './hooks/useOrderStore'
+import {Dropdown} from './components/Dropdown'
 
 const pageSize = 25
 
@@ -25,8 +27,10 @@ function Main(): JSX.Element {
   const body = useRef<HTMLDivElement>(null)
   const [selected, setSelected] = useState<Set<Tag>>(new Set())
   const [selectedContent, setSelectedContent] = useState<Content | undefined>()
-  const [showDetailsModal, toggleShowDetailsModal] = useToggle(false)
+  const [showContentDetailsModal, toggleContentShowDetailsModal] =
+    useToggle(false)
   const bodyRef = useRef<HTMLDivElement>(null)
+  const {orderDirection, orderField, toggleDirection} = useOrderStore()
 
   const {
     data: content,
@@ -49,6 +53,7 @@ function Main(): JSX.Element {
           offset: pagination.offset,
           limit: pagination.limit,
         },
+        order: [orderField, orderDirection],
         tags,
       })
       return files || []
@@ -81,11 +86,11 @@ function Main(): JSX.Element {
 
   const openContentModal = (content: Content) => {
     setSelectedContent(content)
-    toggleShowDetailsModal(true)
+    toggleContentShowDetailsModal(true)
   }
   const closeContentModal = () => {
     setSelectedContent(undefined)
-    toggleShowDetailsModal(false)
+    toggleContentShowDetailsModal(false)
   }
 
   const containerClass = clsx('min-h-screen max-h-fit w-full p-10')
@@ -101,9 +106,9 @@ function Main(): JSX.Element {
       className={containerClass}
       ref={bodyRef}
     >
-      {showDetailsModal &&
+      {showContentDetailsModal &&
         createPortal(
-          <ContentModal
+          <ContentDetails
             className={'text-6 fixed inset-0 z-50 max-h-screen w-full'}
             content={selectedContent}
             contentProps={{
@@ -120,7 +125,6 @@ function Main(): JSX.Element {
         selected={selected}
         onQuery={() => {
           remove()
-          refetch()
         }}
         addSelected={(tag: Tag) => {
           setSelected((_selected) => {
@@ -137,7 +141,25 @@ function Main(): JSX.Element {
         }}
       />
       <div className={'flex h-full w-full flex-row-reverse space-x-2 text-end'}>
-        <Cog className='ml-1  fill-gray-100 transition-all hover:fill-gray-300 hover:stroke-white' />
+        <Dropdown
+          triggerRender={() => (
+            <Cog className='ml-1  fill-gray-100 transition-all hover:fill-gray-300 hover:stroke-white' />
+          )}
+        >
+          <div className='p-2'>
+            <span>PLACEHOLDER</span>
+          </div>
+        </Dropdown>
+        <a
+          className='text-end font-mono text-gray-400'
+          onClick={() => {
+            toggleDirection()
+            refetch()
+          }}
+        >
+          ORDER:
+          {`${orderField} ${orderDirection[0]}`}
+        </a>
         <a className='text-end font-mono text-gray-400'>
           PAGES:
           {content?.pages?.length}
@@ -148,8 +170,8 @@ function Main(): JSX.Element {
         </a>
         <a className='text-end font-mono text-gray-400'>
           TOTAL:
-          {(content?.pages || [])
-            .map((page) => {
+          {content
+            .pages!.map((page) => {
               return page.content.length
             })
             .reduce((total, n) => (total += n))}
@@ -164,7 +186,7 @@ function Main(): JSX.Element {
         }
       >
         {content?.pages?.map((page) => {
-          return (page.content || []).map((content) => {
+          return page.content!.map((content) => {
             if (!content?.paths[0]) {
               return
             }

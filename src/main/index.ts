@@ -11,7 +11,7 @@ import {
   Menu,
 } from 'electron'
 
-import '../preload/ipcTypes'
+import '../preload/ipcMainTypes'
 import * as fs from 'fs'
 import * as path from 'path'
 import {electronApp, optimizer, is} from '@electron-toolkit/utils'
@@ -19,6 +19,8 @@ import {TaggerClient} from './src/tagger-client'
 import {zJson} from './src/zJson'
 import {join} from 'path'
 import {z} from 'zod'
+import '../preload/ipcMainTypes'
+import {TaggerWebContentsSend} from '../preload/ipcRendererTypes'
 
 const CONFIGPATH = join(app.getPath('userData'), 'config.json')
 export const CONFIGSCHEMA = {
@@ -49,6 +51,13 @@ const _WindowRoutes = {
       y: 850,
     },
   },
+  options: {
+    route: 'options',
+    startOptions: {
+      x: 600,
+      y: 800,
+    },
+  },
   start: {
     route: 'start',
     startOptions: {
@@ -60,7 +69,7 @@ const _WindowRoutes = {
     route: 'progress',
     startOptions: {
       x: 600,
-      y: 400,
+      y: 250,
       resizable: false,
     },
   },
@@ -153,6 +162,14 @@ app.whenReady().then(() => {
       },
     },
     {
+      label: 'Open',
+      click: () => {
+        if (Client && !windows.has('options')) {
+          createWindow('options')
+        }
+      },
+    },
+    {
       label: 'Exit',
       click: () => {
         app.quit()
@@ -174,6 +191,14 @@ app.on('window-all-closed', () => {
   }
 })
 
+export const sendEventToAllWindows: TaggerWebContentsSend = (evt, ...args) => {
+  windows.forEach((window) => {
+    window.webContents.send(evt, ...args)
+  })
+}
+//TODO: sendEventToWindow
+
+//TODO: Refactor using sendEventToWindows
 export const updateProgress = (args: {key: string; value: any}) => {
   windows.get('progress')?.webContents.send('updateProgress', args)
 }
@@ -184,9 +209,9 @@ async function startNewClient(path: string) {
   }
 
   Client = await TaggerClient.create(path, () => {
-    const progWindow = windows.get('progress')
-    if (progWindow) {
-      progWindow.close()
+    const progressWindow = windows.get('progress')
+    if (progressWindow) {
+      progressWindow.close()
     }
     createWindow('main')
   })
@@ -265,4 +290,8 @@ ipcMain.handle('getDetailedImage', async (_, id) => {
 })
 
 ipcMain.handle('getConfig', async () => TaggerConfig.getAll())
-ipcMain.handle('saveConfig', async (_, config) => TaggerConfig.setAll(config))
+ipcMain.handle('saveConfig', async (_, config) => {
+  TaggerConfig.setAll(config)
+
+  return true
+})

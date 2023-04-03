@@ -1,11 +1,14 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import './assets/index.css'
-import Main from './Main'
-import StartPage from './StartPage'
-import ProgressDialog from './ProgressDialog'
 import {QueryClientProvider, QueryClient} from '@tanstack/react-query'
 import {createHashRouter, RouterProvider} from 'react-router-dom'
+
+import './assets/index.css'
+
+import Main from './Main'
+import Start from './Start'
+import Progress from './Progress'
+import Options from './Options'
 
 const WindowRouter = createHashRouter([
   {
@@ -14,11 +17,15 @@ const WindowRouter = createHashRouter([
   },
   {
     path: '/start',
-    element: <StartPage />,
+    element: <Start />,
   },
   {
     path: '/progress',
-    element: <ProgressDialog />,
+    element: <Progress />,
+  },
+  {
+    path: '/options',
+    element: <Options />,
   },
 ])
 

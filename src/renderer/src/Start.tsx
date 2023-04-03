@@ -1,7 +1,7 @@
 import {useQuery} from '@tanstack/react-query'
 import Versions from './components/Versions'
 
-function StartPage(): JSX.Element {
+function Start(): JSX.Element {
   const {data: paths} = useQuery(['recentPath'], async () => {
     return await (
       await window.api.invokeOnMain('getConfig')
@@ -18,8 +18,8 @@ function StartPage(): JSX.Element {
   }
 
   return (
-    <div className='container'>
-      <div className='horizontalContainer'>
+    <div className='flex min-h-screen min-w-full flex-col'>
+      <div className='flex flex-row'>
         <div
           className='flex-1 justify-center text-center transition-all hover:bg-slate-200'
           onClick={() => openDialog('openDirectory')}
@@ -33,21 +33,23 @@ function StartPage(): JSX.Element {
           <h1 className='text-3xl font-bold'>Open TaggerDB</h1>
         </div>
       </div>
-      <hr style={{marginTop: '10px', marginBottom: '10px'}} />
-      {(paths || []).map((recentPath, idx) => (
-        <h1
-          key={idx}
-          className='recentPath text-3xl font-bold hover:bg-sky-200'
-          onClick={() => {
-            window.api.invokeOnMain('startTaggerClient', recentPath)
-          }}
-        >
-          {recentPath}
-        </h1>
-      ))}
+      <div className='h-1 bg-black bg-opacity-10 py-2' />
+      <div className='flex h-1 grow flex-col overflow-y-auto'>
+        {(paths || []).map((recentPath, idx) => (
+          <h1
+            key={idx}
+            className='recentPath text-3xl font-bold hover:bg-sky-200'
+            onClick={() => {
+              window.api.invokeOnMain('startTaggerClient', recentPath)
+            }}
+          >
+            {recentPath}
+          </h1>
+        ))}
+      </div>
       <Versions />
     </div>
   )
 }
 
-export default StartPage
+export default Start

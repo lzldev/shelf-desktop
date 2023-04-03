@@ -22,7 +22,7 @@ import {
   DropdownMenuProps,
 } from '@radix-ui/react-dropdown-menu'
 
-function ContentModal({
+function ContentDetails({
   content: contentProp,
   contentProps,
   onClose,
@@ -299,4 +299,4 @@ export const AddTagDropdown = ({
   )
 }
 
-export default ContentModal
+export default ContentDetails
