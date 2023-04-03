@@ -20,6 +20,7 @@ import {Cog, PlusSign} from './assets/icons'
 import {useOrderStore} from './hooks/useOrderStore'
 import {Dropdown} from './components/Dropdown'
 import {useConfig} from './hooks/useConfig'
+import CreateTag from './CreateTag'
 
 function Main(): JSX.Element {
   const {config} = useConfig()
@@ -29,6 +30,7 @@ function Main(): JSX.Element {
   const [selectedContent, setSelectedContent] = useState<Content | undefined>()
   const [showContentDetailsModal, toggleContentShowDetailsModal] =
     useToggle(false)
+  const [showCreateTagModal, toggleContentShowCreateTagModal] = useToggle(false)
   const bodyRef = useRef<HTMLDivElement>(null)
   const {orderDirection, orderField, toggleDirection} = useOrderStore()
 
@@ -101,6 +103,12 @@ function Main(): JSX.Element {
     setSelectedContent(undefined)
     toggleContentShowDetailsModal(false)
   }
+  const openCreateTagModal = () => {
+    toggleContentShowCreateTagModal(true)
+  }
+  const closeCreateTagModal = () => {
+    toggleContentShowCreateTagModal(false)
+  }
 
   const containerClass = clsx('min-h-screen max-h-fit w-full p-10')
   if (error || !content?.pages) {
@@ -126,6 +134,16 @@ function Main(): JSX.Element {
             onNext={() => {}}
             onPrevious={() => {}}
             onClose={() => closeContentModal()}
+          />,
+          document.body,
+        )}
+      {showCreateTagModal &&
+        createPortal(
+          <CreateTag
+            className={
+              'text-6 fixed inset-0 z-50 flex max-h-screen min-h-screen  w-full items-center justify-center bg-black bg-opacity-40'
+            }
+            onClose={() => closeCreateTagModal()}
           />,
           document.body,
         )}
@@ -157,7 +175,9 @@ function Main(): JSX.Element {
         >
           <div
             className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
-            onClick={() => {}}
+            onClick={() => {
+              openCreateTagModal()
+            }}
           >
             <PlusSign />
             <span>ADD TAG</span>

@@ -271,14 +271,19 @@ ipcMain.handle('getTaggerTags', async () => {
   return JSON.parse(JSON.stringify(res))
 })
 
+ipcMain.handle('createTag', async (_, options) => {
+  const created = await Client.createTag(options)
+  return created
+})
+
 ipcMain.handle('addTagToContent', async (_, options) => {
-  const tag = await Client.addTagToContent(options)
-  return !!tag
+  const added = await Client.addTagToContent(options)
+  return added
 })
 
 ipcMain.handle('removeTagfromContent', async (_, options) => {
-  const tag = await Client.removeTagFromContent(options)
-  return !!tag
+  const removed = await Client.removeTagFromContent(options)
+  return removed
 })
 
 ipcMain.handle('getTaggerImages', async (_, options) => {

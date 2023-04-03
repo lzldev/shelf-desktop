@@ -45,6 +45,10 @@ export type IpcMainEvents = TypeLevelRecord<
       }
       return: {content: Content[]; nextCursor?: {offset: number; limit: number}}
     }
+    createTag: {
+      args: {name: string; parentOnly: boolean}
+      return: boolean
+    }
     addTagToContent: {
       args: {contentId: number; tagId: number}
       return: boolean

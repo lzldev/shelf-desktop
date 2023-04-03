@@ -190,6 +190,23 @@ class TaggerClient {
       return false
     }
   }
+  async createTag(options: IpcMainEvents['createTag']['args']) {
+    const tagBuild = Tag.build({
+      name: options.name,
+      parentOnly: options.parentOnly,
+    })
+
+    let newTag
+
+    try {
+      newTag = await tagBuild.save()
+    } catch (err) {
+      //TODO:Handle this better
+      return false
+    }
+
+    return !!newTag
+  }
 }
 
 export {TaggerClient}
