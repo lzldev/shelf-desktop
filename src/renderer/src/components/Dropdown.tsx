@@ -5,6 +5,7 @@ import {
   DropdownMenuPortal,
   DropdownMenuContent,
   DropdownMenuProps,
+  DropdownMenuItem,
 } from '@radix-ui/react-dropdown-menu'
 import clsx from 'clsx'
 import {ReactNode, RefObject} from 'react'
@@ -33,6 +34,7 @@ export const Dropdown = ({
             contentClass,
           )}
         >
+          <DropdownMenuArrow className='fill-white' />
           {props.children}
         </DropdownMenuContent>
       </DropdownMenuPortal>

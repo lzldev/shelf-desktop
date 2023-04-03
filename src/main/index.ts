@@ -16,34 +16,35 @@ import * as fs from 'fs'
 import * as path from 'path'
 import {electronApp, optimizer, is} from '@electron-toolkit/utils'
 import {TaggerClient} from './src/tagger-client'
-import {zJson} from './src/zJson'
+import {zJson, zJsonSchemaInfer} from './src/zJson'
 import {join} from 'path'
 import {z} from 'zod'
 import '../preload/ipcMainTypes'
 import {TaggerWebContentsSend} from '../preload/ipcRendererTypes'
 
-const CONFIGPATH = join(app.getPath('userData'), 'config.json')
-export const CONFIGSCHEMA = {
+const TAGGER_CONFIG_PATH = join(app.getPath('userData'), 'config.json')
+export const TAGGER_CONFIG_SCHEMA = {
   recentFiles: z.array(z.string()),
   ignorePaths: z.array(z.string()),
-  order: z.object({
-    direction: z.string(),
-    field: z.string(),
-  }),
   pageSize: z.number().min(0),
 } as const
+export type TaggerConfigType = zJsonSchemaInfer<typeof TAGGER_CONFIG_SCHEMA>
 
-const TaggerConfig = new zJson(CONFIGPATH, CONFIGSCHEMA, {
+const TaggerConfig = new zJson(TAGGER_CONFIG_PATH, TAGGER_CONFIG_SCHEMA, {
   recentFiles: [],
   ignorePaths: [],
-  order: {
-    field: 'createdAt',
-    direction: 'ASC',
-  },
   pageSize: 25,
 })
 
-const _WindowRoutes = {
+//TODO: Find a better name for this.
+type _WINDOWROUTESMAPSETTINGSTHINGTYPE = {
+  [key: string]: {
+    route: string
+    startOptions: Electron.BrowserWindowConstructorOptions
+  }
+}
+//TODO: Find a better name for this.
+const _WindowRoutes: _WINDOWROUTESMAPSETTINGSTHINGTYPE = {
   main: {
     route: '',
     startOptions: {
@@ -54,51 +55,53 @@ const _WindowRoutes = {
   options: {
     route: 'options',
     startOptions: {
-      x: 600,
-      y: 800,
+      height: 600,
+      width: 800,
     },
   },
   start: {
     route: 'start',
     startOptions: {
-      x: 600,
-      y: 800,
+      width: 600,
+      height: 800,
     },
   },
   progress: {
     route: 'progress',
     startOptions: {
-      x: 600,
-      y: 250,
+      width: 600,
+      height: 250,
       resizable: false,
     },
   },
 } as const
 
 let Client: TaggerClient
-const windows = new Map<keyof typeof _WindowRoutes, BrowserWindow>()
+const Windows = new Map<keyof typeof _WindowRoutes, BrowserWindow>()
 
 function createWindow(route: keyof typeof _WindowRoutes): void {
-  if (windows.has(route)) {
-    console.log('Window Already Exists.')
-    return
-  }
+  if (Windows.has(route)) return
 
-  //TODO: Clean this up.
+  const windowOptions = _WindowRoutes[route]!
+
   const screenArea = screen.getPrimaryDisplay().bounds
-  const sizeX = _WindowRoutes[route].startOptions?.x || 900
-  const sizeY = _WindowRoutes[route].startOptions?.y || 900
-  const x = Math.max(screenArea.width / 2 + screenArea.x - sizeX / 2, 0)
-  const y = Math.max(screenArea.height / 2 + screenArea.y - sizeY / 2, 0)
+  const positionX = Math.max(
+    screenArea.width / 2 + screenArea.x - windowOptions.startOptions.width! / 2,
+    0,
+  )
+  const positionY = Math.max(
+    screenArea.height / 2 +
+      screenArea.y -
+      windowOptions.startOptions.height! / 2,
+    0,
+  )
 
   const [currentWindowX, currentWindowY] =
-    BrowserWindow.getFocusedWindow()?.getPosition() || [x, y]
+    BrowserWindow.getFocusedWindow()?.getPosition() || [positionX, positionY]
 
   const newWindow = new BrowserWindow({
     ..._WindowRoutes[route].startOptions,
     show: false,
-    width: sizeX,
-    height: sizeY,
     x: currentWindowX,
     y: currentWindowY,
     autoHideMenuBar: true,
@@ -133,10 +136,10 @@ function createWindow(route: keyof typeof _WindowRoutes): void {
   }
 
   newWindow.on('closed', () => {
-    windows.delete('main')
+    Windows.delete(route)
   })
 
-  windows.set(route, newWindow)
+  Windows.set(route, newWindow)
 }
 
 app.whenReady().then(() => {
@@ -156,15 +159,15 @@ app.whenReady().then(() => {
     {
       label: 'Open',
       click: () => {
-        if (Client && !windows.has('main')) {
+        if (Client && !Windows.has('main')) {
           createWindow('main')
         }
       },
     },
     {
-      label: 'Open',
+      label: 'Options',
       click: () => {
-        if (Client && !windows.has('options')) {
+        if (Client && !Windows.has('options')) {
           createWindow('options')
         }
       },
@@ -192,7 +195,7 @@ app.on('window-all-closed', () => {
 })
 
 export const sendEventToAllWindows: TaggerWebContentsSend = (evt, ...args) => {
-  windows.forEach((window) => {
+  Windows.forEach((window, key) => {
     window.webContents.send(evt, ...args)
   })
 }
@@ -200,16 +203,16 @@ export const sendEventToAllWindows: TaggerWebContentsSend = (evt, ...args) => {
 
 //TODO: Refactor using sendEventToWindows
 export const updateProgress = (args: {key: string; value: any}) => {
-  windows.get('progress')?.webContents.send('updateProgress', args)
+  Windows.get('progress')?.webContents.send('updateProgress', args)
 }
 
 async function startNewClient(path: string) {
-  if (!windows.has('progress')) {
+  if (!Windows.has('progress')) {
     createWindow('progress')
   }
 
   Client = await TaggerClient.create(path, () => {
-    const progressWindow = windows.get('progress')
+    const progressWindow = Windows.get('progress')
     if (progressWindow) {
       progressWindow.close()
     }
@@ -249,7 +252,7 @@ ipcMain.handle('startTaggerClient', async (Event, path) => {
     return
   }
 
-  windows.get('start')?.close()
+  Windows.get('start')?.close()
 
   recentFiles.push(path)
   if (recentFiles.length >= 8) {
@@ -292,6 +295,6 @@ ipcMain.handle('getDetailedImage', async (_, id) => {
 ipcMain.handle('getConfig', async () => TaggerConfig.getAll())
 ipcMain.handle('saveConfig', async (_, config) => {
   TaggerConfig.setAll(config)
-
+  sendEventToAllWindows('updateConfig')
   return true
 })

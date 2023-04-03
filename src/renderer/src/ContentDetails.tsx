@@ -22,6 +22,8 @@ import {
   DropdownMenuProps,
 } from '@radix-ui/react-dropdown-menu'
 
+const prevTitle = window.document.title
+
 function ContentDetails({
   content: contentProp,
   contentProps,
@@ -112,6 +114,14 @@ function ContentDetails({
       removeEventListener('keydown', hotkeysListener)
     }
   }, [hotkeys, content])
+
+  useEffect(() => {
+    if (!content) return
+    window.document.title = `${prevTitle} - ${content?.paths[0]?.path}`
+    return () => {
+      window.document.title = prevTitle
+    }
+  }, [content])
 
   if (isLoading) {
     return (

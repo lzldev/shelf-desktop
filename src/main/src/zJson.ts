@@ -64,7 +64,6 @@ export class zJson<
 
   setAll(newValue: zJsonSchemaInfer<TSchema>, save = true) {
     this._values = newValue as TValues
-    console.log('nv ->', newValue)
 
     if (save) {
       return this.save()

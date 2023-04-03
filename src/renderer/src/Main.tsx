@@ -16,13 +16,13 @@ import {TaggerContent} from './components/TaggerContent'
 import {createPortal} from 'react-dom'
 import ContentDetails from './ContentDetails'
 import {useToggle} from './hooks/useToggle'
-import {Cog} from './assets/icons'
+import {Cog, PlusSign} from './assets/icons'
 import {useOrderStore} from './hooks/useOrderStore'
 import {Dropdown} from './components/Dropdown'
-
-const pageSize = 25
+import {useConfig} from './hooks/useConfig'
 
 function Main(): JSX.Element {
+  const {config} = useConfig()
   const {tags} = useTags()
   const body = useRef<HTMLDivElement>(null)
   const [selected, setSelected] = useState<Set<Tag>>(new Set())
@@ -40,12 +40,17 @@ function Main(): JSX.Element {
     refetch,
     hasNextPage,
     fetchNextPage,
-    remove,
   } = useInfiniteQuery(
     ['content'],
     async (context) => {
-      const {pageParam = {offset: 0, limit: pageSize}} = context
-      const pagination = pageParam || {offset: 0, limit: pageSize}
+      const {orderDirection, orderField} = useOrderStore.getState()
+      console.log('[orderField, orderDirection] ->', [
+        orderField,
+        orderDirection,
+      ])
+
+      const {pageParam = {offset: 0, limit: config.pageSize}} = context
+      const pagination = pageParam || {offset: 0, limit: config.pageSize}
       const tags = selected.size > 0 ? Array.from(selected.values()) : undefined
 
       const files = await window.api.invokeOnMain('getTaggerImages', {
@@ -62,6 +67,10 @@ function Main(): JSX.Element {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
     },
   )
+
+  useEffect(() => {
+    useOrderStore.subscribe(() => refetch())
+  }, [])
 
   useEffect(() => {
     if (!body.current) return
@@ -124,7 +133,7 @@ function Main(): JSX.Element {
         tags={tags}
         selected={selected}
         onQuery={() => {
-          remove()
+          refetch()
         }}
         addSelected={(tag: Tag) => {
           setSelected((_selected) => {
@@ -146,7 +155,17 @@ function Main(): JSX.Element {
             <Cog className='ml-1  fill-gray-100 transition-all hover:fill-gray-300 hover:stroke-white' />
           )}
         >
-          <div className='p-2'>
+          <div
+            className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
+            onClick={() => {}}
+          >
+            <PlusSign />
+            <span>ADD TAG</span>
+          </div>
+          <div
+            className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
+            onClick={() => {}}
+          >
             <span>PLACEHOLDER</span>
           </div>
         </Dropdown>
@@ -154,11 +173,10 @@ function Main(): JSX.Element {
           className='text-end font-mono text-gray-400'
           onClick={() => {
             toggleDirection()
-            refetch()
           }}
         >
           ORDER:
-          {`${orderField} ${orderDirection[0]}`}
+          {`${orderField}-${orderDirection}`}
         </a>
         <a className='text-end font-mono text-gray-400'>
           PAGES:
@@ -169,7 +187,7 @@ function Main(): JSX.Element {
           {tags.length}
         </a>
         <a className='text-end font-mono text-gray-400'>
-          TOTAL:
+          SHOWING:
           {content
             .pages!.map((page) => {
               return page.content.length

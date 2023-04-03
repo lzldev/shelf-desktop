@@ -11,17 +11,18 @@ interface sessionStore {
   toggleDirection: () => void
 }
 
-const useOrderStore = create<sessionStore>((set) => ({
+const useOrderStore = create<sessionStore>()((set) => ({
   orderDirection: 'ASC',
   orderField: 'createdAt',
-  toggleDirection: () =>
+  toggleDirection: () => {
     set((state) => {
       if (state.orderDirection === 'ASC') {
-        return {...state, orderDirection: 'DESC'}
+        return {orderDirection: 'DESC'}
       } else {
-        return {...state, orderDirection: 'ASC'}
+        return {orderDirection: 'ASC'}
       }
-    }),
+    })
+  },
 }))
 
 export {useOrderStore}

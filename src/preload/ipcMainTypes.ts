@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import type {IpcMainInvokeEvent} from 'electron'
-import type {OpenDialogReturn, CONFIGSCHEMA} from '../main'
+import type {OpenDialogReturn} from '../main'
 import {Content, Tag} from '../main/src/db/models'
-import {zJsonSchemaInfer} from '../main/src/zJson'
+import {TaggerConfigType} from '../main'
 
 export type TypeLevelRecord<
   TShape extends object,
@@ -31,10 +31,10 @@ export type IpcMainEvents = TypeLevelRecord<
     }
     getConfig: {
       args: never
-      return: zJsonSchemaInfer<typeof CONFIGSCHEMA>
+      return: TaggerConfigType
     }
     saveConfig: {
-      args: [config: zJsonSchemaInfer<typeof CONFIGSCHEMA>]
+      args: [config: TaggerConfigType]
       return: boolean
     }
     getTaggerImages: {
