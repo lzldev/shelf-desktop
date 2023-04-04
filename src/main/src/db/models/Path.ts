@@ -4,6 +4,7 @@ import {
   Column,
   DataType,
   ForeignKey,
+  Index,
   Model,
   Table,
 } from 'sequelize-typescript'
@@ -19,6 +20,7 @@ interface _Path {
 
 @Table
 class Path extends Model<_Path, InferCreationAttributes<Path, {omit: 'id'}>> {
+  @Index
   @Column({type: DataType.TEXT})
   path!: string
 

@@ -183,7 +183,7 @@ function ContentDetails({
             return (
               <p
                 key={idx}
-                className='trucate selectable overflow-hidden font-mono font-medium selection:bg-fuchsia-400'
+                className='trucate selectableText overflow-hidden font-mono font-medium selection:bg-fuchsia-400'
               >
                 {p.path}
               </p>

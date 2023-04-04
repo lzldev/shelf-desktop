@@ -9,7 +9,9 @@ import {
 import {Tag} from './Tag'
 import {Path} from './Path'
 import {ContentTag} from './ContentTag'
-import {Optional} from 'sequelize'
+import {InferAttributes, Optional} from 'sequelize'
+
+export type ContentFields = InferAttributes<Content>
 
 interface _Content {
   id: number

@@ -42,6 +42,7 @@ export type IpcMainEvents = TypeLevelRecord<
         pagination?: {offset: number; limit: number}
         order?: [string, 'ASC' | 'DESC']
         tags?: Tag[]
+        paths?: {value: string}[]
       }
       return: {content: Content[]; nextCursor?: {offset: number; limit: number}}
     }

@@ -1,17 +1,15 @@
 import {create} from 'zustand'
-import {Content} from 'src/main/src/db/models'
-import {InferAttributes} from 'sequelize'
+import type {ContentFields} from 'src/main/src/db/models/Content'
 
-type contentFields = keyof InferAttributes<Content>
 type sequelizeDirections = 'ASC' | 'DESC'
 
-interface sessionStore {
-  orderField: contentFields
+interface orderStore {
+  orderField: keyof ContentFields
   orderDirection: sequelizeDirections
   toggleDirection: () => void
 }
 
-const useOrderStore = create<sessionStore>()((set) => ({
+const useOrderStore = create<orderStore>()((set) => ({
   orderDirection: 'ASC',
   orderField: 'createdAt',
   toggleDirection: () => {

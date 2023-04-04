@@ -21,12 +21,14 @@ import {useOrderStore} from './hooks/useOrderStore'
 import {Dropdown} from './components/Dropdown'
 import {useConfig} from './hooks/useConfig'
 import CreateTag from './CreateTag'
+import {InlineButton} from './components/InlineButton'
 
 function Main(): JSX.Element {
   const {config} = useConfig()
   const {tags} = useTags()
   const body = useRef<HTMLDivElement>(null)
-  const [selected, setSelected] = useState<Set<Tag>>(new Set())
+  const [selectedTags, setSelectedTags] = useState<Set<Tag>>(new Set())
+  const [pathQueries, setPathQueries] = useState<Set<pathQuery>>(new Set())
   const [selectedContent, setSelectedContent] = useState<Content | undefined>()
   const [showContentDetailsModal, toggleContentShowDetailsModal] =
     useToggle(false)
@@ -53,13 +55,15 @@ function Main(): JSX.Element {
 
       const {pageParam = {offset: 0, limit: config.pageSize}} = context
       const pagination = pageParam || {offset: 0, limit: config.pageSize}
-      const tags = selected.size > 0 ? Array.from(selected.values()) : undefined
+      const tags =
+        selectedTags.size > 0 ? Array.from(selectedTags.values()) : undefined
 
       const files = await window.api.invokeOnMain('getTaggerImages', {
         pagination: {
           offset: pagination.offset,
           limit: pagination.limit,
         },
+        paths: Array.from(pathQueries),
         order: [orderField, orderDirection],
         tags,
       })
@@ -149,21 +153,35 @@ function Main(): JSX.Element {
         )}
       <SearchBar
         tags={tags}
-        selected={selected}
+        selected={selectedTags}
         onQuery={() => {
           refetch()
         }}
-        addSelected={(tag: Tag) => {
-          setSelected((_selected) => {
+        addPathQuery={(query) => {
+          setPathQueries((_pathQueries) => {
+            _pathQueries.add(query)
+            return _pathQueries
+          })
+        }}
+        removePathQuery={(query) => {
+          setPathQueries((oldSet) => {
+            const pathQueries = new Set(oldSet)
+            pathQueries.delete(query)
+            return pathQueries
+          })
+        }}
+        pathQueries={pathQueries}
+        addSelected={(tag) => {
+          setSelectedTags((_selected) => {
             _selected.add(tag)
             return _selected
           })
         }}
         removeSelected={(tag: Tag) => {
-          setSelected((_selected) => {
-            const s = new Set(_selected)
-            s.delete(tag)
-            return s
+          setSelectedTags((oldSet) => {
+            const selected = new Set(oldSet)
+            selected.delete(tag)
+            return selected
           })
         }}
       />
@@ -264,58 +282,39 @@ function Main(): JSX.Element {
   )
 }
 
-const _Body = (
-  {
-    isLoading,
-    error,
-    ...props
-  }: {isLoading: boolean; error: unknown} & PropsWithChildren &
-    HTMLAttributes<HTMLDivElement>,
-  ref: Ref<HTMLDivElement>,
-) => {
-  if (error) {
-    return (
-      <div
-        {...props}
-        ref={ref}
-      >
-        <h1 className='text-6xl'>{error.toString()}</h1>
-      </div>
-    )
-  }
-  return (
-    <div
-      {...props}
-      ref={ref}
-      className='grid sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8'
-    >
-      {isLoading ? <></> : props.children}
-    </div>
-  )
+type pathQuery = {
+  value: string
 }
 
-const Body = forwardRef(_Body)
+export default Main
 
 export const SearchBar = ({
   tags,
   selected,
+  pathQueries,
   onQuery,
+  addPathQuery,
+  removePathQuery,
   addSelected,
   removeSelected,
   hidden,
 }: {
   tags: Tag[]
   selected: Set<Tag>
+  pathQueries: Set<pathQuery>
   onQuery: () => any
+  addPathQuery: (query: pathQuery) => any
+  removePathQuery: (query: pathQuery) => any
   addSelected: (tag: Tag) => any
   removeSelected: (tag: Tag) => any
   hidden?: boolean
 } & HTMLAttributes<HTMLDivElement>) => {
   const [query, setQuery] = useState<string>('')
-  const selectedTags = Array.from(selected)
   const TransformedQuery = query?.split(' ')
-  const hideDrop = !!TransformedQuery[TransformedQuery.length - 1]
-  const DropDownTags = hideDrop
+  const hideDrop =
+    !TransformedQuery[TransformedQuery.length - 1] &&
+    TransformedQuery.length === 1
+  const DropDownTags = !hideDrop
     ? tags.filter((tag) =>
         tag.name
           .toLowerCase()
@@ -324,7 +323,8 @@ export const SearchBar = ({
           ),
       )
     : []
-  const hideSelected = selectedTags.length === 0
+
+  const hideSelected = selected.size === 0 && pathQueries.size === 0
 
   if (hidden === true) {
     return <></>
@@ -333,7 +333,7 @@ export const SearchBar = ({
   return (
     <div
       className={clsx(
-        'min-w-screen sticky top-0 z-20 -m-10 bg-gray-300 px-10 pt-7 pb-7',
+        'min-w-screen : sticky top-0 z-20 -m-10 bg-gray-300 px-10 pt-7 pb-7',
       )}
     >
       <div className='relative'>
@@ -375,9 +375,15 @@ export const SearchBar = ({
           className={
             'absolute top-10 -right-0.5 -left-0.5 z-10 -mt-5 h-auto origin-top border-x-2 border-b-2 border-pink-500 bg-white pt-5'
           }
-          hidden={!hideDrop}
+          hidden={hideDrop}
         >
-          <div className='w-full bg-gray-200 p-2 hover:bg-gray-100 hover:text-white'>
+          <div
+            className='selectable w-full overflow-hidden text-ellipsis bg-gray-400 p-2 text-white transition-colors hover:bg-gray-50 hover:text-black'
+            onClick={() => {
+              addPathQuery({value: query})
+              setQuery('')
+            }}
+          >
             Search By Path {query}
           </div>
           {DropDownTags.map((tag) => {
@@ -399,22 +405,62 @@ export const SearchBar = ({
           })}
         </div>
         <div
-          className={clsx('-mx-10 mt-8 bg-gray-200 px-10 py-2')}
-          hidden={hideSelected}
+          className={clsx(
+            '-mx-10 mt-8 flex flex-wrap justify-center bg-gray-200 px-10 py-2',
+            hideSelected ? 'hidden' : '',
+          )}
         >
-          {selectedTags.map((tag) => {
-            return (
-              <InlineTag
-                key={tag.id}
-                tag={tag}
-                onClick={() => removeSelected(tag)}
-              />
-            )
-          })}
+          {Array.from(pathQueries).map((query, idx) => (
+            <InlineButton
+              key={idx}
+              onClick={() => {
+                removePathQuery(query)
+              }}
+            >
+              {query.value}
+            </InlineButton>
+          ))}
+          {Array.from(selected).map((tag) => (
+            <InlineTag
+              key={tag.id}
+              tag={tag}
+              onClick={() => removeSelected(tag)}
+            />
+          ))}
         </div>
       </div>
     </div>
   )
 }
 
-export default Main
+const _Body = (
+  {
+    isLoading,
+    error,
+    ...props
+  }: {isLoading: boolean; error: unknown} & PropsWithChildren &
+    HTMLAttributes<HTMLDivElement>,
+  ref: Ref<HTMLDivElement>,
+) => {
+  if (error) {
+    return (
+      <div
+        {...props}
+        ref={ref}
+      >
+        <h1 className='text-6xl'>{error.toString()}</h1>
+      </div>
+    )
+  }
+  return (
+    <div
+      {...props}
+      ref={ref}
+      className='grid sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8'
+    >
+      {isLoading ? <></> : props.children}
+    </div>
+  )
+}
+
+const Body = forwardRef(_Body)

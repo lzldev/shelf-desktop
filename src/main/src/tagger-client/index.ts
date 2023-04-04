@@ -7,6 +7,7 @@ import {Content, ContentTag, Path, Tag} from '../db/models'
 import {z} from 'zod'
 import {zJson, zJsonValues} from '../zJson'
 import {join} from 'path'
+import {Op} from 'sequelize'
 
 const CONFIG_FILE_NAME = '/.taggercfg' //TODO: Move this elsewhere
 
@@ -84,7 +85,7 @@ class TaggerClient {
     if (!this._ready) return "Client isn't ready"
     return this._choki.getWatched()
   }
-  async getContent(options?: IpcMainEvents['getTaggerImages']['args']) {
+  async getContent(options: IpcMainEvents['getTaggerImages']['args']) {
     if (!this._ready) {
       throw "Client isn't ready yet"
     }
@@ -103,7 +104,16 @@ class TaggerClient {
       offset: offset,
       limit: limit,
       include: [
-        {model: Path},
+        {
+          model: Path,
+          where: {
+            path: {
+              [Op.or]: options.paths?.map((p) => {
+                return {[Op.like]: `%${p.value}%`}
+              }),
+            },
+          },
+        },
         {
           model: Tag,
           attributes: ['id'],
