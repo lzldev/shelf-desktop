@@ -167,7 +167,11 @@ function Main(): JSX.Element {
           })
         }}
       />
-      <div className={'flex h-full w-full flex-row-reverse space-x-2 text-end'}>
+      <div
+        className={clsx(
+          'mt-12 flex h-full w-full flex-row-reverse space-x-2 text-end',
+        )}
+      >
         <Dropdown
           triggerRender={() => (
             <Cog className='ml-1  fill-gray-100 transition-all hover:fill-gray-300 hover:stroke-white' />
@@ -327,79 +331,87 @@ export const SearchBar = ({
   }
 
   return (
-    <div className={clsx('relative', hideSelected ? 'mb-5' : '')}>
-      <form
-        className={
-          'z-20 flex w-full place-content-stretch overflow-clip rounded-full bg-white pl-2 ring-2 ring-pink-500'
-        }
-      >
-        <input
+    <div
+      className={clsx(
+        'min-w-screen sticky top-0 z-20 -m-10 bg-gray-300 px-10 pt-7 pb-7',
+      )}
+    >
+      <div className='relative'>
+        <form
           className={
-            'z-20 w-full bg-transparent p-2 text-pink-500 outline-none selection:bg-pink-200 hover:border-none active:border-none'
+            'z-20 flex w-full place-content-stretch overflow-clip rounded-full bg-white pl-2 ring-2 ring-pink-500'
           }
-          type={'text'}
-          value={query}
-          list='tag-list'
-          onChange={(evt) => {
-            setQuery(evt.target.value)
-          }}
-          onSubmit={(evt) => {
-            evt.preventDefault()
-            evt.stopPropagation()
-          }}
-          onKeyDown={(evt) => {
-            if (evt.key === 'Enter') {
-              onQuery()
-            }
-          }}
-        />
-        <button
-          className={
-            'z-20 bg-gradient-to-r from-pink-500 to-cyan-600 bg-clip-text px-10 font-bold text-transparent text-gray-700 ring-gray-300 transition-all hover:bg-clip-border hover:text-white hover:ring-0'
-          }
-          onClick={onQuery}
         >
-          Search
-        </button>
-      </form>
-
-      <div
-        className={
-          'absolute top-10 -right-0.5 -left-0.5 z-10 -mt-5 h-auto origin-top border-x-2 border-b-2 border-pink-500 bg-white pt-6'
-        }
-        hidden={!hideDrop || DropDownTags.length === 0}
-      >
-        {DropDownTags.map((tag) => {
-          return (
-            <a
-              key={tag.id}
-              className='p2 mx-2 my-1  inline-block
+          <input
+            className={
+              'z-20 w-full bg-transparent p-2 text-pink-500 outline-none selection:bg-pink-200 hover:border-none active:border-none'
+            }
+            type={'text'}
+            value={query}
+            list='tag-list'
+            onChange={(evt) => {
+              setQuery(evt.target.value)
+            }}
+            onSubmit={(evt) => {
+              evt.preventDefault()
+              evt.stopPropagation()
+            }}
+            onKeyDown={(evt) => {
+              if (evt.key === 'Enter') {
+                onQuery()
+              }
+            }}
+          />
+          <button
+            className={
+              'z-20 bg-gradient-to-r from-pink-500 to-cyan-600 bg-clip-text px-10 font-bold text-transparent text-gray-700 ring-gray-300 transition-all hover:bg-clip-border hover:text-white hover:ring-0'
+            }
+            onClick={onQuery}
+          >
+            Search
+          </button>
+        </form>
+        <div
+          className={
+            'absolute top-10 -right-0.5 -left-0.5 z-10 -mt-5 h-auto origin-top border-x-2 border-b-2 border-pink-500 bg-white pt-5'
+          }
+          hidden={!hideDrop}
+        >
+          <div className='w-full bg-gray-200 p-2 hover:bg-gray-100 hover:text-white'>
+            Search By Path {query}
+          </div>
+          {DropDownTags.map((tag) => {
+            return (
+              <a
+                key={tag.id}
+                className='p2 mx-2 my-1  inline-block
             font-mono text-gray-700 underline 
             decoration-pink-500 
             hover:decoration-fuchsia-700 hover:decoration-2'
-              onClick={() => {
-                setQuery('')
-                addSelected(tag)
-              }}
-            >
-              {tag.name}
-            </a>
-          )
-        })}
-      </div>
-      <div
-        className={clsx('-mx-10 my-5 bg-gray-200 px-10 py-2')}
-        hidden={hideSelected}
-      >
-        {selectedTags.map((tag) => {
-          return (
-            <InlineTag
-              key={tag.id}
-              tag={tag}
-              onClick={() => removeSelected(tag)}
-            />
-          )
-        })}
+                onClick={() => {
+                  setQuery('')
+                  addSelected(tag)
+                }}
+              >
+                {tag.name}
+              </a>
+            )
+          })}
+        </div>
+        <div
+          className={clsx('-mx-10 mt-8 bg-gray-200 px-10 py-2')}
+          hidden={hideSelected}
+        >
+          {selectedTags.map((tag) => {
+            return (
+              <InlineTag
+                key={tag.id}
+                tag={tag}
+                onClick={() => removeSelected(tag)}
+              />
+            )
+          })}
+        </div>
       </div>
     </div>
   )

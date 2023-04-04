@@ -19,6 +19,9 @@ export type IpcRendererEvents = TypeLevelRecord<
     updateConfig: {
       args: []
     }
+    updateTags: {
+      args: []
+    }
   }
 >
 

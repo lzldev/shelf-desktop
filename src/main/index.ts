@@ -11,7 +11,7 @@ import {
   Menu,
 } from 'electron'
 
-import '../preload/ipcMainTypes'
+import '../preload/ipcTypes'
 import * as fs from 'fs'
 import * as path from 'path'
 import {electronApp, optimizer, is} from '@electron-toolkit/utils'
@@ -19,7 +19,6 @@ import {TaggerClient} from './src/tagger-client'
 import {zJson, zJsonSchemaInfer} from './src/zJson'
 import {join} from 'path'
 import {z} from 'zod'
-import '../preload/ipcMainTypes'
 import {TaggerWebContentsSend} from '../preload/ipcRendererTypes'
 
 const TAGGER_CONFIG_PATH = join(app.getPath('userData'), 'config.json')
@@ -195,7 +194,7 @@ app.on('window-all-closed', () => {
 })
 
 export const sendEventToAllWindows: TaggerWebContentsSend = (evt, ...args) => {
-  Windows.forEach((window, key) => {
+  Windows.forEach((window) => {
     window.webContents.send(evt, ...args)
   })
 }
@@ -273,6 +272,7 @@ ipcMain.handle('getTaggerTags', async () => {
 
 ipcMain.handle('createTag', async (_, options) => {
   const created = await Client.createTag(options)
+  await sendEventToAllWindows('updateTags')
   return created
 })
 
