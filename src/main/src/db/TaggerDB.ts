@@ -1,5 +1,13 @@
 import {Sequelize} from 'sequelize-typescript'
-import {Content, ContentTag, Path, Tag, TagParents} from './models'
+import {
+  Content,
+  ContentTag,
+  Path,
+  Tag,
+  TagParents,
+  TagColor,
+  TagToColor,
+} from './models'
 
 const __DBFILENAME = 'taggerdb.tagger'
 
@@ -23,7 +31,15 @@ const createSQLiteDB = (dbPath: string) => {
 export const createTaggerDB = async (dbPath: string) => {
   const TaggerDB = createSQLiteDB(dbPath)
 
-  TaggerDB.addModels([Content, Path, Tag, ContentTag, TagParents])
+  TaggerDB.addModels([
+    Content,
+    Path,
+    Tag,
+    TagColor,
+    TagToColor,
+    ContentTag,
+    TagParents,
+  ])
 
   await TaggerDB.sync()
 

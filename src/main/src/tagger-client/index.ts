@@ -3,7 +3,7 @@ import {createTaggerDB, TaggerDBModels} from '../db/TaggerDB'
 import {addChokiEvents} from './chokiEvents'
 import {FSWatcher} from 'chokidar'
 import {IpcMainEvents} from '../../../preload/ipcMainTypes'
-import {Content, ContentTag, Path, Tag} from '../db/models'
+import {Content, ContentTag, Path, Tag, TagColor} from '../db/models'
 import {z} from 'zod'
 import {zJson, zJsonValues} from '../zJson'
 import {join} from 'path'
@@ -39,7 +39,6 @@ class TaggerClient {
   set ready(value) {
     this._ready = value
   }
-
   static async create(basePath: string, mainCallback: () => void) {
     const TaggerDB = await createTaggerDB(
       Array.isArray(basePath) ? basePath[0] : basePath,
@@ -65,7 +64,6 @@ class TaggerClient {
       config,
     })
   }
-
   protected constructor(newInstance: {
     choki: FSWatcher
     TaggerDB: TaggerDBModels
@@ -80,16 +78,15 @@ class TaggerClient {
 
     return this
   }
-
   getWatchedFiles() {
     if (!this._ready) return "Client isn't ready"
     return this._choki.getWatched()
   }
+
   async getContent(options: IpcMainEvents['getTaggerImages']['args']) {
     if (!this._ready) {
-      throw "Client isn't ready yet"
+      throw "Client isn't ready"
     }
-
     const order = options?.order ? [options?.order] : undefined
 
     const TagIdArray =

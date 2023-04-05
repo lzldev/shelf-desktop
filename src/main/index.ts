@@ -198,6 +198,7 @@ export const sendEventToAllWindows: TaggerWebContentsSend = (evt, ...args) => {
     window.webContents.send(evt, ...args)
   })
 }
+
 //TODO: sendEventToWindow
 
 //TODO: Refactor using sendEventToWindows

@@ -40,6 +40,7 @@ function Main(): JSX.Element {
     data: content,
     error,
     isLoading,
+    isFetching,
     isRefetching,
     refetch,
     hasNextPage,
@@ -278,6 +279,11 @@ function Main(): JSX.Element {
           })
         })}
       </Body>
+      {isFetching ? (
+        <div className='flex items-center justify-center py-10'>
+          <Cog className='h-14 w-14 animate-spin' />
+        </div>
+      ) : null}
     </div>
   )
 }

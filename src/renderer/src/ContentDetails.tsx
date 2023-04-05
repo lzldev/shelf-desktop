@@ -174,10 +174,6 @@ function ContentDetails({
           'max-h-full min-h-full overflow-y-auto bg-gray-200 px-4 pt-4'
         }
       >
-        {/* <div className={'float-right flex flex-row-reverse'}>
-          <InlineButton>Open Directory</InlineButton>
-          <InlineButton>Open File</InlineButton>
-        </div> */}
         <div className={'my-2 flex flex-col'}>
           {(content?.paths || []).map((p, idx) => {
             return (
