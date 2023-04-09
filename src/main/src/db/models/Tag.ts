@@ -1,19 +1,25 @@
-import {Optional} from 'sequelize'
+import {InferAttributes, Optional} from 'sequelize'
 import {
   BelongsToMany,
   Column,
   DataType,
+  ForeignKey,
   Model,
   Table,
 } from 'sequelize-typescript'
 import {Content} from './Content'
 import {ContentTag} from './ContentTag'
 import {TagParents} from './TagParents'
+import {TagColor} from './TagColor'
+import {Prettify} from '../../../../types/utils'
+
+export type TagFields = Prettify<InferAttributes<Tag>>
 
 interface _Tag {
   id: number
   name: string
   parentOnly: boolean
+  colorId?: number
   content?: Content
   parents?: Tag[]
 }
@@ -24,6 +30,10 @@ class Tag extends Model<_Tag, Optional<_Tag, 'id'>> {
   name!: string
   @Column({type: DataType.BOOLEAN})
   parentOnly!: boolean
+
+  @ForeignKey(() => TagColor)
+  @Column({type: DataType.INTEGER, allowNull: true})
+  colorId?: number
 
   @BelongsToMany(() => Content, () => ContentTag)
   content?: Content[]

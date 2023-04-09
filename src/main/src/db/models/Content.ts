@@ -5,13 +5,15 @@ import {
   BelongsToMany,
   HasMany,
   DataType,
+  Index,
 } from 'sequelize-typescript'
 import {Tag} from './Tag'
 import {Path} from './Path'
 import {ContentTag} from './ContentTag'
 import {InferAttributes, Optional} from 'sequelize'
+import {Prettify} from '../../../../types/utils'
 
-export type ContentFields = InferAttributes<Content>
+export type ContentFields = Prettify<InferAttributes<Content>>
 
 interface _Content {
   id: number
@@ -25,6 +27,7 @@ interface _Content {
   paranoid: true,
 })
 class Content extends Model<_Content, Optional<_Content, 'id'>> {
+  @Index
   @Column(DataType.TEXT)
   hash!: string
   @Column(DataType.TEXT)

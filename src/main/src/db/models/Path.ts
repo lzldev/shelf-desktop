@@ -27,6 +27,7 @@ class Path extends Model<_Path, InferCreationAttributes<Path, {omit: 'id'}>> {
   @Column({type: DataType.FLOAT})
   mTimeMs!: number
 
+  @Index
   @ForeignKey(() => Content)
   @Column({type: DataType.INTEGER})
   contentId?: number

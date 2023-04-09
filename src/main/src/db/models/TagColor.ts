@@ -1,14 +1,9 @@
-import {Optional} from 'sequelize'
-import {
-  BelongsToMany,
-  Column,
-  DataType,
-  ForeignKey,
-  Model,
-  Table,
-} from 'sequelize-typescript'
+import {InferAttributes, Optional} from 'sequelize'
+import {Column, DataType, HasMany, Model, Table} from 'sequelize-typescript'
 import {Tag} from './Tag'
-import {TagToColor} from './TagToColor'
+import {Prettify} from '../../../../types/utils'
+
+export type TagColorFields = Prettify<InferAttributes<TagColor>>
 
 interface _TagColor {
   id: number
@@ -23,12 +18,7 @@ class TagColor extends Model<_TagColor, Optional<_TagColor, 'id'>> {
   name!: string
   @Column({type: DataType.TEXT})
   color!: string
-
-  @ForeignKey(() => Tag)
-  @Column({type: DataType.INTEGER})
-  tagId?: number
-
-  @BelongsToMany(() => Tag, () => TagToColor)
+  @HasMany(() => Tag)
   tags?: Tag[]
 }
 
