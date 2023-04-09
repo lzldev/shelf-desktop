@@ -1,13 +1,14 @@
 import {createReadStream, statSync} from 'fs'
 import * as fsPath from 'path'
 import {createHash} from 'crypto'
-import {flattenDirectoryTree} from '../utils'
+import {flattenDirectoryTree} from '../utils/chokiUtils'
 import {updateProgress} from '../..'
 import {TaggerClient} from '.'
-import {mockTags} from './mockTags'
-import {Content, Path, Tag} from '../db/models'
+import {mockTags} from '../utils/mockTags'
+import {Content, Path, Tag, TagColor} from '../db/models'
 import {toFileTuple} from '../utils/chokiUtils'
 import {normalize} from 'path'
+import {defaultColors} from '../utils/defaultColors'
 
 export const addChokiEvents = (
   taggerClient: TaggerClient,
@@ -49,24 +50,6 @@ export const addChokiEvents = (
       }
     }
 
-    //REMOVEME : MOCK TAGS ---------------------------------------
-    const tagTransaction = await sequelize.transaction()
-
-    for (const tag of mockTags) {
-      await Tag.findOrCreate({
-        where: {
-          name: tag.name,
-        },
-        defaults: {
-          name: tag.name,
-          parentOnly: false,
-        },
-        transaction: tagTransaction,
-      })
-    }
-    await tagTransaction.commit()
-    //------------------------------------------------------------
-
     if (!taggerClient.config.isNew) {
       const pathTransaction = await sequelize.transaction()
       console.time('DB CLEANUP ->')
@@ -77,57 +60,84 @@ export const addChokiEvents = (
         transaction: pathTransaction,
       })
       console.timeEnd('PATH FINDALL ->')
-      paths.forEach(
-        await (async (dbPath) => {
-          const path = dbPath.toJSON()
-          const foundPath = newFiles.findIndex((nf) => {
-            const bol = nf[0] === path.path
-            return bol
+
+      for (const dbPath of paths) {
+        const path = dbPath.toJSON()
+        const foundPath = newFiles.findIndex((nf) => {
+          const bol = nf[0] === path.path
+          return bol
+        })
+
+        if (foundPath === -1) {
+          console.log('CLEANING >', path.path)
+          await dbPath.destroy({transaction: pathTransaction})
+          continue
+        }
+
+        if (foundPath !== -1 && path.mTimeMs === newFiles[foundPath][1]) {
+          newFiles.splice(foundPath, 1)
+          continue
+        }
+
+        if (path.mTimeMs !== newFiles[foundPath][1]) {
+          const newHash = await hashFileAsync(path.path)
+          const content = await Content.findOne({
+            where: {
+              id: path.contentId,
+            },
+            transaction: pathTransaction,
           })
 
-          if (foundPath === -1) {
-            console.log('CLEANING >', path.path)
-            await dbPath.destroy({transaction: pathTransaction})
-            return
-          }
-
-          if (foundPath !== -1 && path.mTimeMs === newFiles[foundPath][1]) {
-            newFiles.splice(foundPath, 1)
-            return
-          }
-
-          if (path.mTimeMs !== newFiles[foundPath][1]) {
-            const newHash = await hashFileAsync(path.path)
-            const content = await Content.findOne({
-              where: {
-                id: path.contentId,
-              },
+          await content?.update(
+            {
+              hash: newHash,
+            },
+            {
               transaction: pathTransaction,
-            })
+            },
+          )
 
-            await content?.update(
-              {
-                hash: newHash,
-              },
-              {
-                transaction: pathTransaction,
-              },
-            )
-
-            await dbPath.update(
-              {
-                mTimeMs: newFiles[foundPath][1],
-              },
-              {
-                transaction: pathTransaction,
-              },
-            )
-            return
-          }
-        }),
-      )
+          await dbPath.update(
+            {
+              mTimeMs: newFiles[foundPath][1],
+            },
+            {
+              transaction: pathTransaction,
+            },
+          )
+          continue
+        }
+      }
       await pathTransaction.commit()
       console.timeEnd('DB CLEANUP ->')
+    } else {
+      console.time('TagColor [bulkCreate] >')
+      await TagColor.bulkCreate(defaultColors)
+      console.timeEnd('TagColor [bulkCreate] >')
+
+      //REMOVEME : MOCK TAGS ---------------------------------------
+      const tagTransaction = await sequelize.transaction()
+
+      for (const tag of mockTags) {
+        const randomColor = (await TagColor.findOne({
+          order: sequelize.random(),
+          transaction: tagTransaction,
+        }))!
+
+        await Tag.findOrCreate({
+          where: {
+            name: tag.name,
+          },
+          defaults: {
+            name: tag.name,
+            parentOnly: false,
+            colorId: randomColor.id,
+          },
+          transaction: tagTransaction,
+        })
+      }
+      await tagTransaction.commit()
+      //------------------------------------------------------------
     }
 
     console.time('DB ->')
