@@ -4,6 +4,11 @@ import {Tag} from 'src/main/src/db/models'
 
 let _tags: Tag[]
 
+try {
+  _tags = await window.api.invokeOnMain('getTaggerTags')
+} catch (err) {
+  console.log('no tags')
+}
 const useTags = () => {
   const [tags, setTags] = useState<Tag[]>(_tags)
 
@@ -12,10 +17,6 @@ const useTags = () => {
       const newTags = await window.api.invokeOnMain('getTaggerTags')
       _tags = newTags
       setTags(_tags)
-    }
-
-    if (!_tags) {
-      listener()
     }
 
     window.api.ipcRendererHandle('updateTags', listener)

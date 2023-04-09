@@ -22,6 +22,7 @@ import {Dropdown} from './components/Dropdown'
 import {useConfig} from './hooks/useConfig'
 import CreateTag from './CreateTag'
 import {InlineButton} from './components/InlineButton'
+import {TagColorThing} from './components/TagColorThing'
 
 function Main(): JSX.Element {
   const {config} = useConfig()
@@ -48,12 +49,6 @@ function Main(): JSX.Element {
   } = useInfiniteQuery(
     ['content'],
     async (context) => {
-      const {orderDirection, orderField} = useOrderStore.getState()
-      console.log('[orderField, orderDirection] ->', [
-        orderField,
-        orderDirection,
-      ])
-
       const {pageParam = {offset: 0, limit: config.pageSize}} = context
       const pagination = pageParam || {offset: 0, limit: config.pageSize}
       const tags =
@@ -76,7 +71,9 @@ function Main(): JSX.Element {
   )
 
   useEffect(() => {
-    useOrderStore.subscribe(() => refetch())
+    useOrderStore.subscribe(() => {
+      refetch()
+    })
   }, [])
 
   useEffect(() => {
@@ -144,12 +141,7 @@ function Main(): JSX.Element {
         )}
       {showCreateTagModal &&
         createPortal(
-          <CreateTag
-            className={
-              'text-6 fixed inset-0 z-50 flex max-h-screen min-h-screen  w-full items-center justify-center bg-black bg-opacity-40'
-            }
-            onClose={() => closeCreateTagModal()}
-          />,
+          <CreateTag onClose={() => closeCreateTagModal()} />,
           document.body,
         )}
       <SearchBar
@@ -209,7 +201,13 @@ function Main(): JSX.Element {
             className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
             onClick={() => {}}
           >
-            <span>PLACEHOLDER</span>
+            <span>EDIT TAGS</span>
+          </div>
+          <div
+            className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
+            onClick={() => {}}
+          >
+            <span>EDIT COLORS</span>
           </div>
         </Dropdown>
         <a
@@ -243,40 +241,37 @@ function Main(): JSX.Element {
         isLoading={isLoading}
         error={error}
         className={
-          'grid w-full sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8'
+          'grid w-full auto-rows-[35vh] gap-x-3 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6'
         }
       >
         {content?.pages?.map((page) => {
-          return page.content!.map((content) => {
-            if (!content?.paths[0]) {
-              return
-            }
-
-            return (
-              <div
-                key={content.id}
-                className={
-                  'relative mx-2 flex h-full max-h-fit min-h-[30vh]  flex-col overflow-clip py-2'
-                }
-                onClick={() => {
-                  openContentModal(content)
-                }}
+          return page.content!.map((content) => (
+            <div
+              key={content.id}
+              className={'relative flex flex-col overflow-clip py-2'}
+              onClick={() => {
+                openContentModal(content)
+              }}
+            >
+              <TaggerContent
+                content={content}
+                className={'relative h-full w-full'}
               >
-                <TaggerContent
-                  content={content}
-                  className={'relative h-full w-full'}
+                <TagColorThing
+                  className='absolute inset-x-0 top-0 flex h-1 w-full flex-row overflow-hidden'
+                  tags={content.tags}
+                />
+                <span
+                  dir='rtl'
+                  className={
+                    'absolute inset-x-0 bottom-0 max-h-fit w-full max-w-full overflow-hidden text-ellipsis whitespace-nowrap bg-black bg-opacity-50 px-1 text-center font-mono text-xs text-white'
+                  }
                 >
-                  <span
-                    className={
-                      'via-teal-20 absolute bottom-0 min-w-full max-w-full animate-gradient_x overflow-hidden text-ellipsis  whitespace-nowrap bg-black bg-opacity-50 font-mono font-bold text-white'
-                    }
-                  >
-                    {content.paths[0].path}
-                  </span>
-                </TaggerContent>
-              </div>
-            )
-          })
+                  {content.paths[0].path}
+                </span>
+              </TaggerContent>
+            </div>
+          ))
         })}
       </Body>
       {isFetching ? (
@@ -462,7 +457,6 @@ const _Body = (
     <div
       {...props}
       ref={ref}
-      className='grid sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8'
     >
       {isLoading ? <></> : props.children}
     </div>

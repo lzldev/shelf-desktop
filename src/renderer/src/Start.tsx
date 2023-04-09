@@ -21,13 +21,13 @@ function Start(): JSX.Element {
     <div className='flex min-h-screen min-w-full flex-col'>
       <div className='flex flex-row'>
         <div
-          className='flex-1 justify-center text-center transition-all hover:bg-slate-200'
+          className='flex-1 justify-center py-5 text-center transition-all hover:bg-slate-200'
           onClick={() => openDialog('openDirectory')}
         >
           <h1 className='text-3xl font-bold'>Open Directory</h1>
         </div>
         <div
-          className='flex-1 justify-center text-center transition-all hover:bg-slate-200'
+          className='flex-1 justify-center py-5 text-center transition-all hover:bg-slate-200'
           onClick={() => openDialog('openFile')}
         >
           <h1 className='text-3xl font-bold'>Open TaggerDB</h1>

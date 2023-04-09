@@ -1,10 +1,6 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import type {IpcRendererEvent} from 'electron'
-
-export type TypeLevelRecord<
-  TShape extends object,
-  TRecord extends {[key: string]: TShape},
-> = TRecord
+import {TypeLevelRecord} from '../types/utils'
 
 type IpcRendererEventShape = {
   args: unknown | unknown[]
@@ -20,6 +16,9 @@ export type IpcRendererEvents = TypeLevelRecord<
       args: []
     }
     updateTags: {
+      args: []
+    }
+    updateColors: {
       args: []
     }
   }

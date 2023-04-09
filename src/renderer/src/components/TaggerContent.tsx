@@ -33,7 +33,7 @@ const TaggerContent = ({
         <>
           <img
             className={
-              'absolute inset-auto -z-10 h-full w-full scale-150 object-contain opacity-75 blur-2xl'
+              'absolute inset-auto -z-10 h-full w-full scale-150 object-contain opacity-75 blur-2xl saturate-200'
             }
             src={uri}
           />

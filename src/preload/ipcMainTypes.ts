@@ -1,13 +1,20 @@
 /* eslint-disable @typescript-eslint/no-namespace */
-import type {IpcMainInvokeEvent} from 'electron'
 import type {OpenDialogReturn} from '../main'
-import {Content, Tag} from '../main/src/db/models'
+import {Content, Tag, TagColor} from '../main/src/db/models'
 import {TaggerConfigType} from '../main'
+import {TagFields} from '../main/src/db/models/Tag'
+import {TagColorFields} from '../main/src/db/models/TagColor'
+import {Prettify, SomeRequired, TypeLevelRecord} from '../types/utils'
 
-export type TypeLevelRecord<
-  TShape extends object,
-  TRecord extends {[key: string]: TShape},
-> = TRecord
+type b = Prettify<SomeRequired<TagFields, 'colorId'>>
+
+type Pick_<T, K extends keyof T> = {
+  [P in K]: T[P]
+}
+
+type Required_<T> = {
+  [P in keyof T]-?: T[P]
+}
 
 type IpcMainEventShape = {
   args: unknown | unknown[]
@@ -17,6 +24,10 @@ type IpcMainEventShape = {
 export type IpcMainEvents = TypeLevelRecord<
   IpcMainEventShape,
   {
+    toggleFullscreen: {
+      args: [newvalue: boolean]
+      return: void
+    }
     startTaggerClient: {
       args: [rootPath: string]
       return: void
@@ -47,7 +58,9 @@ export type IpcMainEvents = TypeLevelRecord<
       return: {content: Content[]; nextCursor?: {offset: number; limit: number}}
     }
     createTag: {
-      args: {name: string; parentOnly: boolean}
+      args:
+        | Prettify<SomeRequired<TagFields, 'colorId'>>
+        | Prettify<Omit<TagFields, 'colorId'> & {newColor: Pick<TagColorFields,'color'|'name'>}>
       return: boolean
     }
     addTagToContent: {
@@ -66,6 +79,10 @@ export type IpcMainEvents = TypeLevelRecord<
       args: []
       return: Tag[]
     }
+    getTaggerColors: {
+      args: []
+      return: TagColor[]
+    }
   }
 >
 
@@ -76,7 +93,7 @@ export type TaggerIpcMainHandler = <
 >(
   channel: TKey,
   handler: (
-    event: IpcMainInvokeEvent,
+    event: Electron.IpcMainInvokeEvent,
     ...args: TArgs extends Array<any> ? TArgs : [TArgs]
   ) => Promise<TReturn>,
 ) => void

@@ -8,6 +8,8 @@ import {z} from 'zod'
 import {zJson, zJsonValues} from '../zJson'
 import {join} from 'path'
 import {Op} from 'sequelize'
+import {IpcRendererEvents} from '../../../preload/ipcRendererTypes'
+import {sendEventToAllWindows} from '../..'
 
 const CONFIG_FILE_NAME = '/.taggercfg' //TODO: Move this elsewhere
 
@@ -78,15 +80,56 @@ class TaggerClient {
 
     return this
   }
-  getWatchedFiles() {
-    if (!this._ready) return "Client isn't ready"
-    return this._choki.getWatched()
+  private static isReadyCheck(
+    _target: any,
+    __: any,
+    descriptor: TypedPropertyDescriptor<any>,
+  ) {
+    const original = descriptor.value
+
+    descriptor.value = function (...args: any[]) {
+      //@ts-ignore TypedPropertyDescriptor is wrong
+      if (!this._ready) {
+        throw "Client isn't ready yet"
+      }
+      return original.call(this, ...args)
+    }
+
+    return descriptor
+  }
+  private static SendEventAfter(event: keyof IpcRendererEvents) {
+    return (
+      _target: any,
+      __: any,
+      descriptor: TypedPropertyDescriptor<any>,
+    ) => {
+      const original = descriptor.value
+
+      descriptor.value = function (...args: any[]) {
+        //@ts-ignore TypedPropertyDescriptor is wrong
+        if (!this._ready) {
+          throw "Client isn't ready yet"
+        }
+        const originalReturn = original.call(this, ...args)
+        console.log(
+          'OriginalReturn[Decorator] ->',
+          JSON.stringify(originalReturn),
+        )
+        console.log('sending Event [Decorator] ->', event)
+        sendEventToAllWindows(event)
+        return originalReturn
+      }
+
+      return descriptor
+    }
   }
 
+  @TaggerClient.isReadyCheck
+  getWatchedFiles() {
+    return this._choki.getWatched()
+  }
+  @TaggerClient.isReadyCheck
   async getContent(options: IpcMainEvents['getTaggerImages']['args']) {
-    if (!this._ready) {
-      throw "Client isn't ready"
-    }
     const order = options?.order ? [options?.order] : undefined
 
     const TagIdArray =
@@ -113,7 +156,7 @@ class TaggerClient {
         },
         {
           model: Tag,
-          attributes: ['id'],
+          attributes: ['id', 'colorId'],
           where: TagIdArray
             ? {
                 id: TagIdArray,
@@ -138,11 +181,8 @@ class TaggerClient {
 
     return {content: rows, nextCursor}
   }
+  @TaggerClient.isReadyCheck
   async getDetailedContent(options: {id: number}) {
-    if (!this._ready) {
-      throw "Client isn't ready yet"
-    }
-
     const result = await Content.findOne({
       where: {
         id: options.id,
@@ -151,24 +191,14 @@ class TaggerClient {
         {model: Path},
         {
           model: Tag,
-          attributes: ['id', 'name'],
+          attributes: ['id', 'name', 'colorId'],
         },
       ],
     })
 
     return result
   }
-  async getTags() {
-    if (!this._ready) {
-      throw "Client isn't ready yet"
-    }
-
-    const result = await Tag.findAll({
-      attributes: ['id', 'name'],
-    })
-
-    return result
-  }
+  @TaggerClient.isReadyCheck
   async addTagToContent(options: IpcMainEvents['addTagToContent']['args']) {
     const newRelation = await ContentTag.build({
       contentId: options.contentId,
@@ -181,6 +211,7 @@ class TaggerClient {
       return false
     }
   }
+  @TaggerClient.isReadyCheck
   async removeTagFromContent(
     options: IpcMainEvents['removeTagfromContent']['args'],
   ) {
@@ -197,22 +228,50 @@ class TaggerClient {
       return false
     }
   }
+
+  @TaggerClient.isReadyCheck
+  async getTags() {
+    const result = await Tag.findAll({
+      attributes: ['id', 'name', 'colorId'],
+    })
+    return result
+  }
+  @TaggerClient.isReadyCheck
+  async getColors() {
+    const result = await TagColor.findAll({
+      attributes: ['id', 'color', 'name'],
+    })
+    return result
+  }
+
+  @TaggerClient.isReadyCheck
+  @TaggerClient.SendEventAfter('updateColors')
+  @TaggerClient.SendEventAfter('updateTags')
   async createTag(options: IpcMainEvents['createTag']['args']) {
+    //TODO: REFACTOR Look into this
+    let colorId
+    if ('colorId' in options) {
+      colorId = options.colorId
+    } else {
+      const color = await TagColor.build({
+        name: options.newColor.name,
+        color: options.newColor.color,
+      }).save()
+
+      colorId = color.id
+    }
+
     const tagBuild = Tag.build({
       name: options.name,
       parentOnly: options.parentOnly,
+      colorId,
     })
 
-    let newTag
-
     try {
-      newTag = await tagBuild.save()
+      return !!(await tagBuild.save())
     } catch (err) {
-      //TODO:Handle this better
       return false
     }
-
-    return !!newTag
   }
 }
 

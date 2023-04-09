@@ -271,6 +271,11 @@ ipcMain.handle('getTaggerTags', async () => {
   return JSON.parse(JSON.stringify(res))
 })
 
+ipcMain.handle('getTaggerColors', async () => {
+  const res = await Client.getColors()
+  return JSON.parse(JSON.stringify(res))
+})
+
 ipcMain.handle('createTag', async (_, options) => {
   const created = await Client.createTag(options)
   await sendEventToAllWindows('updateTags')
@@ -296,6 +301,12 @@ ipcMain.handle('getTaggerImages', async (_, options) => {
 ipcMain.handle('getDetailedImage', async (_, id) => {
   const res = await Client.getDetailedContent({id: id})
   return JSON.parse(JSON.stringify(res))
+})
+ipcMain.handle('toggleFullscreen', async (evt, newStatus) => {
+  const window = BrowserWindow.fromId(evt.sender.id)!
+
+  if (window.fullScreen === newStatus) return
+  window.setFullScreen(newStatus ? newStatus : !window.fullScreen)
 })
 
 ipcMain.handle('getConfig', async () => TaggerConfig.getAll())
