@@ -20,9 +20,9 @@ import {Cog, PlusSign} from './assets/icons'
 import {useOrderStore} from './hooks/useOrderStore'
 import {Dropdown} from './components/Dropdown'
 import {useConfig} from './hooks/useConfig'
-import CreateTag from './CreateTag'
 import {InlineButton} from './components/InlineButton'
 import {TagColorThing} from './components/TagColorThing'
+import CreateTagModal from './CreateTagModal'
 
 function Main(): JSX.Element {
   const {config} = useConfig()
@@ -31,9 +31,24 @@ function Main(): JSX.Element {
   const [selectedTags, setSelectedTags] = useState<Set<Tag>>(new Set())
   const [pathQueries, setPathQueries] = useState<Set<pathQuery>>(new Set())
   const [selectedContent, setSelectedContent] = useState<Content | undefined>()
-  const [showContentDetailsModal, toggleContentShowDetailsModal] =
-    useToggle(false)
-  const [showCreateTagModal, toggleContentShowCreateTagModal] = useToggle(false)
+  const {
+    value: showContentModal,
+    turnOn: openContentModal,
+    turnOff: closeContentModal,
+  } = useToggle(
+    false,
+    (content: Content) => {
+      setSelectedContent(content)
+    },
+    () => {
+      setSelectedContent(undefined)
+    },
+  )
+  const {
+    value: showCreateTagModal,
+    turnOn: openCreateTagModal,
+    turnOff: closeCreateTagModal,
+  } = useToggle(false)
   const bodyRef = useRef<HTMLDivElement>(null)
   const {orderDirection, orderField, toggleDirection} = useOrderStore()
 
@@ -49,6 +64,7 @@ function Main(): JSX.Element {
   } = useInfiniteQuery(
     ['content'],
     async (context) => {
+      const {orderDirection, orderField} = useOrderStore.getState()
       const {pageParam = {offset: 0, limit: config.pageSize}} = context
       const pagination = pageParam || {offset: 0, limit: config.pageSize}
       const tags =
@@ -72,6 +88,7 @@ function Main(): JSX.Element {
 
   useEffect(() => {
     useOrderStore.subscribe(() => {
+      console.log('refetch [subscribe] ->')
       refetch()
     })
   }, [])
@@ -97,21 +114,6 @@ function Main(): JSX.Element {
     }
   }, [hasNextPage, body])
 
-  const openContentModal = (content: Content) => {
-    setSelectedContent(content)
-    toggleContentShowDetailsModal(true)
-  }
-  const closeContentModal = () => {
-    setSelectedContent(undefined)
-    toggleContentShowDetailsModal(false)
-  }
-  const openCreateTagModal = () => {
-    toggleContentShowCreateTagModal(true)
-  }
-  const closeCreateTagModal = () => {
-    toggleContentShowCreateTagModal(false)
-  }
-
   const containerClass = clsx('min-h-screen max-h-fit w-full p-10')
   if (error || !content?.pages) {
     return <>{error}</>
@@ -125,7 +127,7 @@ function Main(): JSX.Element {
       className={containerClass}
       ref={bodyRef}
     >
-      {showContentDetailsModal &&
+      {showContentModal &&
         createPortal(
           <ContentDetails
             className={'text-6 fixed inset-0 z-50 max-h-screen w-full'}
@@ -141,7 +143,7 @@ function Main(): JSX.Element {
         )}
       {showCreateTagModal &&
         createPortal(
-          <CreateTag onClose={() => closeCreateTagModal()} />,
+          <CreateTagModal onClose={() => closeCreateTagModal()} />,
           document.body,
         )}
       <SearchBar

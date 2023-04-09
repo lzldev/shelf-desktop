@@ -38,8 +38,8 @@ function ContentDetails({
   onNext: (...any: any[]) => any
   onPrevious: (...any: any[]) => any
 } & HTMLAttributes<HTMLDivElement>): JSX.Element {
-  const [hotkeys, toggleHotkeys] = useToggle(true)
-  const [fullscreen, toggleFullscreen] = useToggle(false)
+  const {value: hotkeys, toggle: toggleHotkeys} = useToggle(true)
+  const {value: fullscreen, toggle: toggleFullscreen} = useToggle(false)
   const containerClass = clsx(props.className)
   const navigate = useNavigate()
   const modalRef = useRef<HTMLDivElement>(null)

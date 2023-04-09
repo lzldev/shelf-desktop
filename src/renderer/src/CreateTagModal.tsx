@@ -6,7 +6,7 @@ import {useColors} from './hooks/useColors'
 import {ModalBackDrop} from './components/ModalBackdrop'
 import {TagColorFields} from 'src/main/src/db/models/TagColor'
 
-function CreateTag({
+function CreateTagModal({
   onClose,
   ...props
 }: {
@@ -138,4 +138,4 @@ function CreateTag({
   )
 }
 
-export default CreateTag
+export default CreateTagModal
