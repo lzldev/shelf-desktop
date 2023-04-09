@@ -19,6 +19,7 @@ describe('Tagger - DB', async () => {
   it('Create content with Path', async () => {
     const path = await Path.build({
       path: 'testPath',
+      mTimeMs: 2555,
     }).save()
 
     let content = await Content.build({
