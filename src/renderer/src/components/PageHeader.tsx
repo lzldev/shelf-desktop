@@ -1,4 +1,4 @@
-import {BackArrow} from '@renderer/assets/icons'
+import {BackArrow} from '@renderer/components/Icons'
 import {clsx} from 'clsx'
 import {HTMLAttributes} from 'react'
 

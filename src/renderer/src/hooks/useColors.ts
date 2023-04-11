@@ -26,7 +26,6 @@ const useColors = () => {
     const listener = async () => {
       const newColors = await window.api.invokeOnMain('getTaggerColors')
       _colors = mapFromColors(newColors)
-      console.log('colorsMap ->', _colors)
       setColors(_colors)
     }
 

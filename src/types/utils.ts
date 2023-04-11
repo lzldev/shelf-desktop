@@ -13,3 +13,11 @@ export type Prettify<T> = {
   [K in keyof T]: T[K]
   // eslint-disable-next-line @typescript-eslint/ban-types
 } & {}
+
+export type RequiredKeys<T> = {
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  [K in keyof T]: {} extends {[P in K]: T[K]} ? never : K
+}[keyof T]
+
+//Removes optinal Fields from a Type
+export type NonOptional<T> = Pick<T, RequiredKeys<T>>

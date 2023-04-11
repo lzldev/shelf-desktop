@@ -28,4 +28,4 @@ const Progress = (): JSX.Element => {
   )
 }
 
-export default Progress
+export {Progress}

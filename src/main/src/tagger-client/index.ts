@@ -111,11 +111,6 @@ class TaggerClient {
           throw "Client isn't ready yet"
         }
         const originalReturn = original.call(this, ...args)
-        console.log(
-          'OriginalReturn[Decorator] ->',
-          JSON.stringify(originalReturn),
-        )
-        console.log('sending Event [Decorator] ->', event)
         sendEventToAllWindows(event)
         return originalReturn
       }
@@ -272,6 +267,47 @@ class TaggerClient {
     } catch (err) {
       return false
     }
+  }
+
+  @TaggerClient.isReadyCheck
+  @TaggerClient.SendEventAfter('updateColors')
+  @TaggerClient.SendEventAfter('updateTags')
+  async editColors(operations: IpcMainEvents['editColors']['args'][0]) {
+    const editColorsTransaction = await this._TaggerDB.sequelize.transaction()
+
+    for (const op of operations) {
+      switch (op.operation) {
+        case 'CREATE': {
+          //TODO: Check if operation is being Spread here
+          await TagColor.build({...op}).save({
+            transaction: editColorsTransaction,
+          })
+          continue
+        }
+        case 'UPDATE': {
+          const {id: toBeUpdatedId, operation, ...values} = op
+          await TagColor.update(
+            {...values},
+            {where: {id: toBeUpdatedId}, transaction: editColorsTransaction},
+          )
+          continue
+        }
+        case 'DELETE': {
+          await TagColor.destroy({
+            where: {
+              id: op.id,
+            },
+            transaction: editColorsTransaction,
+          })
+          continue
+        }
+        default:
+          throw 'UNEXPECTED OPERATION'
+      }
+    }
+
+    await editColorsTransaction.commit()
+    return true
   }
 }
 

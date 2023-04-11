@@ -52,4 +52,4 @@ function Start(): JSX.Element {
   )
 }
 
-export default Start
+export {Start}

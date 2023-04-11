@@ -305,4 +305,4 @@ export const AddTagDropdown = ({
   )
 }
 
-export default ContentDetails
+export {ContentDetails}

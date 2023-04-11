@@ -1,4 +1,4 @@
-import {InferAttributes, Optional} from 'sequelize'
+import {InferAttributes, InferCreationAttributes, Optional} from 'sequelize'
 import {
   BelongsToMany,
   Column,
@@ -11,9 +11,9 @@ import {Content} from './Content'
 import {ContentTag} from './ContentTag'
 import {TagParents} from './TagParents'
 import {TagColor} from './TagColor'
-import {Prettify} from '../../../../types/utils'
 
-export type TagFields = Prettify<InferAttributes<Tag>>
+export type TagFields = InferAttributes<Tag>
+export type TagCreationFields = InferCreationAttributes<Tag>
 
 interface _Tag {
   id: number

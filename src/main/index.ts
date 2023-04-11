@@ -266,13 +266,18 @@ ipcMain.handle('startTaggerClient', async (Event, path) => {
   return
 })
 
-ipcMain.handle('getTaggerTags', async () => {
-  const res = await Client.getTags()
+ipcMain.handle('getTaggerColors', async () => {
+  const res = await Client.getColors()
   return JSON.parse(JSON.stringify(res))
 })
 
-ipcMain.handle('getTaggerColors', async () => {
-  const res = await Client.getColors()
+ipcMain.handle('editColors', async (_, operations) => {
+  const res = await Client.editColors(operations)
+  return JSON.parse(JSON.stringify(res))
+})
+
+ipcMain.handle('getTaggerTags', async () => {
+  const res = await Client.getTags()
   return JSON.parse(JSON.stringify(res))
 })
 

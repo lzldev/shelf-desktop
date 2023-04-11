@@ -39,4 +39,4 @@ function Options(): JSX.Element {
   )
 }
 
-export default Options
+export {Options}

@@ -5,16 +5,7 @@ import {TaggerConfigType} from '../main'
 import {TagFields} from '../main/src/db/models/Tag'
 import {TagColorFields} from '../main/src/db/models/TagColor'
 import {Prettify, SomeRequired, TypeLevelRecord} from '../types/utils'
-
-type b = Prettify<SomeRequired<TagFields, 'colorId'>>
-
-type Pick_<T, K extends keyof T> = {
-  [P in K]: T[P]
-}
-
-type Required_<T> = {
-  [P in keyof T]-?: T[P]
-}
+import {ColorOperation} from '../types/Operations'
 
 type IpcMainEventShape = {
   args: unknown | unknown[]
@@ -58,9 +49,12 @@ export type IpcMainEvents = TypeLevelRecord<
       return: {content: Content[]; nextCursor?: {offset: number; limit: number}}
     }
     createTag: {
-      args:
-        | Prettify<SomeRequired<TagFields, 'colorId'>>
-        | Prettify<Omit<TagFields, 'colorId'> & {newColor: Pick<TagColorFields,'color'|'name'>}>
+      args: Prettify<
+        | SomeRequired<TagFields, 'colorId'>
+        | (Omit<TagFields, 'colorId'> & {
+            newColor: Pick<TagColorFields, 'color' | 'name'>
+          })
+      >
       return: boolean
     }
     addTagToContent: {
@@ -82,6 +76,10 @@ export type IpcMainEvents = TypeLevelRecord<
     getTaggerColors: {
       args: []
       return: TagColor[]
+    }
+    editColors: {
+      args: [ColorOperation[]]
+      return: boolean
     }
   }
 >

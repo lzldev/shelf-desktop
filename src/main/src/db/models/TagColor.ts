@@ -1,9 +1,12 @@
-import {InferAttributes, Optional} from 'sequelize'
+import {InferAttributes, InferCreationAttributes, Optional} from 'sequelize'
 import {Column, DataType, HasMany, Model, Table} from 'sequelize-typescript'
 import {Tag} from './Tag'
-import {Prettify} from '../../../../types/utils'
+import {NonOptional} from '../../../../types/utils'
 
-export type TagColorFields = Prettify<InferAttributes<TagColor>>
+export type TagColorFields = InferAttributes<TagColor>
+export type TagColorCreationFields = NonOptional<
+  InferCreationAttributes<TagColor>
+>
 
 interface _TagColor {
   id: number

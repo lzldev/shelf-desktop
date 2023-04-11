@@ -1,10 +1,8 @@
-import {useNavigate} from 'react-router-dom'
 import {HTMLAttributes, useRef, useState} from 'react'
 import clsx from 'clsx'
 import {InlineButton} from './components/InlineButton'
 import {useColors} from './hooks/useColors'
 import {ModalBackDrop} from './components/ModalBackdrop'
-import {TagColorFields} from 'src/main/src/db/models/TagColor'
 
 function CreateTagModal({
   onClose,
@@ -14,7 +12,6 @@ function CreateTagModal({
 } & HTMLAttributes<HTMLDivElement>): JSX.Element {
   const containerClass = clsx(props.className)
   const {colors} = useColors()
-  const navigate = useNavigate()
   const modalRef = useRef<HTMLDivElement>(null)
   const [tagName, setTagName] = useState('')
   const [parentOnly, setParentOnly] = useState(false)
@@ -32,7 +29,7 @@ function CreateTagModal({
       tabIndex={-1}
     >
       <ModalBackDrop onClick={onClose} />
-      <div className='mx-auto h-2/3 w-1/2 self-center bg-slate-300 p-5'>
+      <div className='mx-auto flex h-2/3 w-1/2 flex-col self-center bg-slate-300 p-5'>
         <h1 className='text-6xl'>CREATE TAG</h1>
         <div className='flex flex-col'>
           <div className='flex flex-row py-2'>
@@ -105,10 +102,11 @@ function CreateTagModal({
             )}
           </div>
         </div>
-        <div className='flex flex-row justify-between place-self-end py-2'>
+        <div className='flex flex-row justify-between justify-self-end py-2'>
           <InlineButton
             className='w-20'
             onClick={async () => {
+              //FIXME: Refactor
               if (color !== -1) {
                 await window.api.invokeOnMain('createTag', {
                   name: tagName,
@@ -138,4 +136,4 @@ function CreateTagModal({
   )
 }
 
-export default CreateTagModal
+export {CreateTagModal}
