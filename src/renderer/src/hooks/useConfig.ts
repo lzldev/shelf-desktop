@@ -1,11 +1,12 @@
-import {useEffect, useState} from 'react'
+import {useEffect, useMemo} from 'react'
 //@ts-ignore - different tsconfig scope
 import {TaggerConfigType} from 'src/main'
+import {useImmer} from 'use-immer'
 
 let _config = await window.api.invokeOnMain('getConfig')
 
 const useConfig = () => {
-  const [config, setConfig] = useState(_config)
+  const [config, setConfig] = useImmer(_config)
 
   useEffect(() => {
     const listener = async () => {
@@ -20,12 +21,11 @@ const useConfig = () => {
     }
   }, [])
 
-  const saveConfig = (newConfig: TaggerConfigType) => {
-    window.api.invokeOnMain('saveConfig', newConfig)
-    setConfig(newConfig)
+  const saveConfig = () => {
+    window.api.invokeOnMain('saveConfig', config)
   }
 
-  return {config, saveConfig}
+  return {config, setConfig, saveConfig}
 }
 
 export {useConfig}

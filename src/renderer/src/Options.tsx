@@ -1,11 +1,9 @@
-import {useState} from 'react'
 import {InlineButton} from './components/InlineButton'
 import Versions from './components/Versions'
 import {useConfig} from './hooks/useConfig'
 
 function Options(): JSX.Element {
-  const {config, saveConfig} = useConfig()
-  const [pageSize, setPageSize] = useState(config.pageSize.toString())
+  const {config, setConfig, saveConfig} = useConfig()
 
   return (
     <div className='flex  min-h-screen max-w-full flex-col'>
@@ -17,21 +15,17 @@ function Options(): JSX.Element {
         <label htmlFor=''>PageSize:</label>
         <input
           type='text'
-          value={pageSize}
+          value={config.pageSize}
           onChange={(evt) => {
-            setPageSize(evt.target.value)
+            setConfig((draft) => {
+              draft.pageSize = parseInt(evt.target.value || '0')
+            })
           }}
           name='pageSize'
           id=''
         />
         <div className='flex flex-row-reverse'>
-          <InlineButton
-            onClick={() => {
-              saveConfig({...config, pageSize: parseInt(pageSize)})
-            }}
-          >
-            Save
-          </InlineButton>
+          <InlineButton onClick={saveConfig}>Save</InlineButton>
         </div>
       </div>
       <Versions />
