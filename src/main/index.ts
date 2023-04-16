@@ -26,11 +26,13 @@ export const TAGGER_CONFIG_SCHEMA = {
   recentFiles: z.array(z.string()),
   ignorePaths: z.array(z.string()),
   pageSize: z.number().min(0),
+  defaultColor: z.string().min(0),
 } as const
 export type TaggerConfigType = zJsonSchemaInfer<typeof TAGGER_CONFIG_SCHEMA>
 
 const TaggerConfig = new zJson(TAGGER_CONFIG_PATH, TAGGER_CONFIG_SCHEMA, {
   recentFiles: [],
+  defaultColor: '#ef4444',
   ignorePaths: [],
   pageSize: 25,
 })
@@ -126,7 +128,7 @@ function createWindow(route: keyof typeof _WindowRoutes): void {
   })
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     newWindow.loadURL(
-      process.env['ELECTRON_RENDERER_URL'] + `#/${_WindowRoutes[route].route}`,
+      process.env['ELECTRON_RENDERER_URL'] + `?#/${_WindowRoutes[route].route}`,
     )
   } else {
     newWindow.loadFile(path.join(__dirname, '../renderer/index.html'), {
@@ -273,6 +275,10 @@ ipcMain.handle('getTaggerColors', async () => {
 
 ipcMain.handle('editColors', async (_, operations) => {
   const res = await Client.editColors(operations)
+  return JSON.parse(JSON.stringify(res))
+})
+ipcMain.handle('editTags', async (_, operations) => {
+  const res = await Client.editTags(operations)
   return JSON.parse(JSON.stringify(res))
 })
 

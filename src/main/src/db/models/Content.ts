@@ -10,10 +10,13 @@ import {
 import {Tag} from './Tag'
 import {Path} from './Path'
 import {ContentTag} from './ContentTag'
-import {InferAttributes, Optional} from 'sequelize'
-import {Prettify} from '../../../../types/utils'
+import {InferAttributes, InferCreationAttributes, Optional} from 'sequelize'
+import {NonOptional} from '../../../../types/utils'
 
-export type ContentFields = Prettify<InferAttributes<Content>>
+export type ContentFields = InferAttributes<Content>
+export type ContentCreationFields = NonOptional<
+  InferCreationAttributes<Content>
+>
 
 interface _Content {
   id: number

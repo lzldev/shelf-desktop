@@ -1,5 +1,4 @@
 import {useEffect, useState} from 'react'
-//@ts-ignore - tsconfig scope
 import {Tag} from 'src/main/src/db/models'
 
 let _tags: Tag[]

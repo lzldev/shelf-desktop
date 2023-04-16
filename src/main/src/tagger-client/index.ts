@@ -309,6 +309,47 @@ class TaggerClient {
     await editColorsTransaction.commit()
     return true
   }
+
+  @TaggerClient.isReadyCheck
+  @TaggerClient.SendEventAfter('updateColors')
+  @TaggerClient.SendEventAfter('updateTags')
+  async editTags(operations: IpcMainEvents['editTags']['args'][0]) {
+    const editTagsTransaction = await this._TaggerDB.sequelize.transaction()
+
+    for (const op of operations) {
+      switch (op.operation) {
+        case 'CREATE': {
+          //TODO: Check if operation is being Spread here
+          await Tag.build({...op}).save({
+            transaction: editTagsTransaction,
+          })
+          continue
+        }
+        case 'UPDATE': {
+          const {id: toBeUpdatedId, operation, ...values} = op
+          await Tag.update(
+            {...values},
+            {where: {id: toBeUpdatedId}, transaction: editTagsTransaction},
+          )
+          continue
+        }
+        case 'DELETE': {
+          await Tag.destroy({
+            where: {
+              id: op.id,
+            },
+            transaction: editTagsTransaction,
+          })
+          continue
+        }
+        default:
+          throw 'UNEXPECTED OPERATION'
+      }
+    }
+
+    await editTagsTransaction.commit()
+    return true
+  }
 }
 
 export {TaggerClient}

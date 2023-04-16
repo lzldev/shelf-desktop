@@ -20,9 +20,10 @@ import {Dropdown} from './components/Dropdown'
 import {useConfig} from './hooks/useConfig'
 import {TagColorThing} from './components/TagColorThing'
 import {CreateTagModal} from './CreateTagModal'
-import {EditColorsModal} from './EditColorsModal'
+import {EditColors} from './EditColors'
 import {pathQuery, SearchBar} from './components/SearchBar'
 import {Cog, PlusSign} from './components/Icons'
+import {EditTags} from './EditTags'
 
 function Main(): JSX.Element {
   const {config} = useConfig()
@@ -48,6 +49,12 @@ function Main(): JSX.Element {
     value: showCreateTagModal,
     turnOn: openCreateTagModal,
     turnOff: closeCreateTagModal,
+  } = useToggle(false)
+
+  const {
+    value: showEditTagsModal,
+    turnOn: openEditTagsModal,
+    turnOff: closeEditTagsModal,
   } = useToggle(false)
 
   const {
@@ -138,9 +145,6 @@ function Main(): JSX.Element {
           <ContentDetails
             className={'text-6 fixed inset-0 z-50 max-h-screen w-full'}
             content={selectedContent}
-            contentProps={{
-              className: clsx('bg-opacity-50 bg-black backdrop-blur-xl'),
-            }}
             onNext={() => {}}
             onPrevious={() => {}}
             onClose={() => closeContentModal()}
@@ -154,7 +158,15 @@ function Main(): JSX.Element {
         )}
       {showEditColorsModal &&
         createPortal(
-          <EditColorsModal onClose={() => closeEditColorsModal()} />,
+          <EditColors
+            onClose={() => closeEditColorsModal()}
+            className={clsx(showEditColorsModal && 'peer:translate-x-0')}
+          />,
+          document.body,
+        )}
+      {showEditTagsModal &&
+        createPortal(
+          <EditTags onClose={() => closeEditTagsModal()} />,
           document.body,
         )}
       <SearchBar
@@ -212,15 +224,13 @@ function Main(): JSX.Element {
           </div>
           <div
             className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
-            onClick={() => {}}
+            onClick={openEditTagsModal}
           >
             <span>EDIT TAGS</span>
           </div>
           <div
             className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
-            onClick={() => {
-              openEditColorsModal()
-            }}
+            onClick={openEditColorsModal}
           >
             <span>EDIT COLORS</span>
           </div>
@@ -233,10 +243,6 @@ function Main(): JSX.Element {
         >
           ORDER:
           {`${orderField}-${orderDirection}`}
-        </a>
-        <a className='text-end font-mono text-gray-400'>
-          PAGES:
-          {content?.pages?.length}
         </a>
         <a className='text-end font-mono text-gray-400'>
           TAGS:
@@ -276,14 +282,14 @@ function Main(): JSX.Element {
                   className='absolute inset-x-0 top-0 flex h-1 w-full flex-row overflow-hidden'
                   tags={content.tags}
                 />
-                <span
+                {/* <span
                   dir='rtl'
                   className={
                     'absolute inset-x-0 bottom-0 max-h-fit w-full max-w-full overflow-hidden text-ellipsis whitespace-nowrap bg-black bg-opacity-50 px-1 text-center font-mono text-xs text-white'
                   }
                 >
                   {content.paths[0].path}
-                </span>
+                </span> */}
               </TaggerContent>
             </div>
           ))

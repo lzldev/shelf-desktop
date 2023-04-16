@@ -5,7 +5,7 @@ import {TaggerConfigType} from '../main'
 import {TagFields} from '../main/src/db/models/Tag'
 import {TagColorFields} from '../main/src/db/models/TagColor'
 import {Prettify, SomeRequired, TypeLevelRecord} from '../types/utils'
-import {ColorOperation} from '../types/Operations'
+import {ColorOperation, TagOperation} from '../types/Operations'
 
 type IpcMainEventShape = {
   args: unknown | unknown[]
@@ -79,6 +79,10 @@ export type IpcMainEvents = TypeLevelRecord<
     }
     editColors: {
       args: [ColorOperation[]]
+      return: boolean
+    }
+    editTags: {
+      args: [TagOperation[]]
       return: boolean
     }
   }

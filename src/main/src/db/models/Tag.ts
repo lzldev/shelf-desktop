@@ -11,9 +11,10 @@ import {Content} from './Content'
 import {ContentTag} from './ContentTag'
 import {TagParents} from './TagParents'
 import {TagColor} from './TagColor'
+import {NonOptional} from '../../../../types/utils'
 
 export type TagFields = InferAttributes<Tag>
-export type TagCreationFields = InferCreationAttributes<Tag>
+export type TagCreationFields = NonOptional<InferCreationAttributes<Tag>>
 
 interface _Tag {
   id: number

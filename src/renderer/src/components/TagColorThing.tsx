@@ -9,6 +9,10 @@ function TagColorThing({
 }: {tags: Tag[]} & HTMLAttributes<HTMLDivElement>) {
   const {colors} = useColors()
 
+  if (tags.length === 0) {
+    return <></>
+  }
+
   return (
     <div
       className={clsx(props.className, 'flex')}

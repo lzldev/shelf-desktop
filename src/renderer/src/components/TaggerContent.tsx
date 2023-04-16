@@ -78,7 +78,7 @@ const TaggerContent = ({
             }
           }}
         >
-          <span className='right-0 bottom-0 bg-red-500 font-mono'>
+          <span className='bottom-0 right-0 bg-red-500 font-mono'>
             T:{prog}
           </span>
         </video>

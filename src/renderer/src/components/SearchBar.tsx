@@ -1,8 +1,10 @@
 import clsx from 'clsx'
-import {HTMLAttributes, useState} from 'react'
+import {HTMLAttributes, useMemo, useState} from 'react'
 import {Tag} from 'src/main/src/db/models'
 import {InlineButton} from './InlineButton'
 import {InlineTag} from './InlineTag'
+import {useQueries} from '@tanstack/react-query'
+import {useColors} from '@renderer/hooks/useColors'
 
 export type pathQuery = {
   value: string
@@ -57,7 +59,7 @@ export const SearchBar = ({
       )}
     >
       <div className='relative'>
-        <form
+        <div
           className={
             'z-20 flex w-full place-content-stretch overflow-clip rounded-full bg-white pl-2 ring-2 ring-pink-500'
           }
@@ -84,16 +86,16 @@ export const SearchBar = ({
           />
           <button
             className={
-              'z-20 bg-pink-500 bg-clip-text px-10 font-bold text-gray-700 text-transparent ring-gray-300 transition-all hover:bg-clip-border hover:text-white hover:ring-0'
+              'z-20 bg-[--queryColor] bg-pink-500 bg-clip-text px-10 font-bold text-gray-700 text-transparent ring-gray-300 transition-all hover:bg-clip-border hover:text-white hover:ring-0'
             }
             onClick={onQuery}
           >
             Search
           </button>
-        </form>
+        </div>
         <div
           className={
-            'absolute -left-0.5 -right-0.5 top-10 z-10 -mt-5 h-auto origin-top border-x-2 border-b-2 border-pink-500 bg-white pt-5'
+            'absolute -left-0.5 -right-0.5 top-10 z-10 -mt-5 h-auto origin-top border-x-2 border-b-2 border-pink-500 bg-white pt-5 animate-in fill-mode-backwards'
           }
           hidden={hideDrop}
         >
@@ -117,21 +119,6 @@ export const SearchBar = ({
                 }}
               />
             )
-            // return (
-            //   <a
-            //     key={tag.id}
-            //     className='p2 mx-2 my-1 inline-block rounded-full  bg-gray-300
-            //   font-mono text-gray-700 underline
-            //   decoration-pink-500
-            //   hover:decoration-fuchsia-700 hover:decoration-2'
-            //     onClick={() => {
-            //       setQuery('')
-            //       addSelected(tag)
-            //     }}
-            //   >
-            //     {tag.name}
-            //   </a>
-            // )
           })}
         </div>
         <div

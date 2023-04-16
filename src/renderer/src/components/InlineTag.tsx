@@ -6,15 +6,15 @@ import type {TagFields} from 'src/main/src/db/models/Tag'
 export const InlineTag = (
   props: {tag: TagFields} & HTMLAttributes<HTMLDivElement>,
 ) => {
-  const {colors} = useColors()
+  const {colors, defaultColor} = useColors()
 
-  const color = colors?.get(props.tag.colorId!)?.color
+  const color = colors?.get(props.tag.colorId!)?.color || defaultColor.color
 
   return (
     <div
       {...props}
       className={clsx(
-        'm-1 inline-flex rounded-full p-1.5 px-3  text-center font-bold text-white text-opacity-90 outline backdrop-contrast-200 transition-all hover:bg-clip-text hover:text-transparent',
+        'm-1 inline-flex min-h-[1rem] min-w-[1rem] rounded-full p-1.5 px-3  text-center font-bold text-white text-opacity-90 outline backdrop-contrast-200 transition-all hover:bg-clip-text hover:text-transparent',
         props.className || '',
       )}
       style={{

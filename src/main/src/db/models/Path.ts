@@ -1,4 +1,4 @@
-import {InferCreationAttributes} from 'sequelize'
+import {InferAttributes, InferCreationAttributes} from 'sequelize'
 import {
   BelongsTo,
   Column,
@@ -9,6 +9,7 @@ import {
   Table,
 } from 'sequelize-typescript'
 import {Content} from './Content'
+import {NonOptional} from '../../../../types/utils'
 
 interface _Path {
   id: number
@@ -17,6 +18,9 @@ interface _Path {
   contentId: number
   content?: Content
 }
+
+export type PathFields = InferAttributes<Path>
+export type PathCreationFields = NonOptional<InferCreationAttributes<Path>>
 
 @Table
 class Path extends Model<_Path, InferCreationAttributes<Path, {omit: 'id'}>> {

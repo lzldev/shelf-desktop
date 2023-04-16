@@ -21,8 +21,16 @@ function Options(): JSX.Element {
               draft.pageSize = parseInt(evt.target.value || '0')
             })
           }}
-          name='pageSize'
-          id=''
+        />
+        <label>Default Color:</label>
+        <input
+          type='color'
+          value={config.defaultColor}
+          onChange={(evt) => {
+            setConfig((draft) => {
+              draft.defaultColor = evt.target.value
+            })
+          }}
         />
         <div className='flex flex-row-reverse'>
           <InlineButton onClick={saveConfig}>Save</InlineButton>

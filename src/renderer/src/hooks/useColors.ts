@@ -1,11 +1,12 @@
 import {useEffect, useState} from 'react'
-//@ts-ignore - tsconfig scope
 import {TagColor} from 'src/main/src/db/models'
+import {useConfig} from './useConfig'
+import {TagColorFields} from 'src/main/src/db/models/TagColor'
 
 function mapFromColors(colors: TagColor[]) {
   const colorsMap = new Map<number, TagColor>()
-  colors.forEach((value) => {
-    colorsMap.set(value.id, value)
+  colors.forEach((color) => {
+    colorsMap.set(color.id, color)
   })
 
   return colorsMap
@@ -21,6 +22,13 @@ try {
 
 const useColors = () => {
   const [colors, setColors] = useState<Map<number, TagColor>>(_colors)
+  const {defaultColor: _defaultColor} = useConfig().config
+
+  const defaultColor = {
+    id: -1,
+    name: 'Default',
+    color: _defaultColor,
+  } satisfies TagColorFields
 
   useEffect(() => {
     const listener = async () => {
@@ -35,7 +43,7 @@ const useColors = () => {
     }
   }, [])
 
-  return {colors}
+  return {colors, defaultColor}
 }
 
 export {useColors}

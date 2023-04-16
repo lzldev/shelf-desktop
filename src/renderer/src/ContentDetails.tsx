@@ -14,33 +14,31 @@ import clsx from 'clsx'
 import {useToggle} from './hooks/useToggle'
 import {InlineButton} from './components/InlineButton'
 import {useTagQuery} from './hooks/useTagQuery'
-import {PageHeader} from './components/PageHeader'
 import {Dropdown} from './components/Dropdown'
 import {
   DropdownMenuArrow,
   DropdownMenuItem,
   DropdownMenuProps,
 } from '@radix-ui/react-dropdown-menu'
+import {useHotkeys} from './hooks/useHotkeys'
+import {BackArrow} from './components/Icons'
 
 const prevTitle = window.document.title
 
 function ContentDetails({
   content: contentProp,
-  contentProps,
   onClose,
   onNext,
   onPrevious,
   ...props
 }: {
   content?: Content
-  contentProps: HTMLAttributes<HTMLDivElement>
   onClose: (...any: any[]) => any
   onNext: (...any: any[]) => any
   onPrevious: (...any: any[]) => any
 } & HTMLAttributes<HTMLDivElement>): JSX.Element {
-  const {value: hotkeys, toggle: toggleHotkeys} = useToggle(true)
   const {value: fullscreen, toggle: toggleFullscreen} = useToggle(false)
-  const containerClass = clsx(props.className)
+  const containerClass = clsx(props.className, 'backdrop-blur-xl')
   const navigate = useNavigate()
   const modalRef = useRef<HTMLDivElement>(null)
 
@@ -67,53 +65,32 @@ function ContentDetails({
     },
   )
 
-  useEffect(() => {
-    if (!hotkeys || !content) return
-    const hotkeysListener = (evt: KeyboardEvent) => {
-      switch (evt.key) {
-        case 'Escape': {
-          onClose()
-          break
+  const {toggle: toggleHotkeys} = useHotkeys(
+    {
+      Escape: onClose,
+      ArrowRight: onNext,
+      ArrowLeft: onPrevious,
+      f: toggleFullscreen,
+      o: () => {
+        if (content) {
+          window.open('file://' + content?.paths[0].path)
         }
-        case 'f': {
-          toggleFullscreen()
-          break
+      },
+      d: () => {
+        if (content) {
+          //TODO: MOVE THIS ELSEWHERE
+          window.open(
+            'file://' +
+              content?.paths[0].path.substring(
+                0,
+                content?.paths[0].path.lastIndexOf('\\'),
+              ),
+          )
         }
-        case 'o': {
-          if (content) {
-            window.open('file://' + content?.paths[0].path)
-          }
-          break
-        }
-        case 'd': {
-          if (content) {
-            //TODO: MOVE THIS ELSEWHERE
-            window.open(
-              'file://' +
-                content?.paths[0].path.substring(
-                  0,
-                  content?.paths[0].path.lastIndexOf('\\'),
-                ),
-            )
-          }
-          break
-        }
-        case 'ArrowRight': {
-          onNext()
-          break
-        }
-        case 'ArrowLeft': {
-          onPrevious()
-          break
-        }
-      }
-    }
-
-    addEventListener('keydown', hotkeysListener)
-    return () => {
-      removeEventListener('keydown', hotkeysListener)
-    }
-  }, [hotkeys, content])
+      },
+    },
+    !!content,
+  )
 
   useEffect(() => {
     if (!content) return
@@ -144,7 +121,7 @@ function ContentDetails({
     return (
       <div className={clsx(containerClass, 'bg-black bg-opacity-50')}>
         <TaggerContent
-          className={'h-full w-full'}
+          className={'h-full w-full bg-black bg-opacity-50 backdrop-blur-xl'}
           content={content}
           onClick={() => {
             toggleFullscreen()
@@ -159,13 +136,17 @@ function ContentDetails({
       ref={modalRef}
       {...props}
       id={'taggerModal'}
-      className={containerClass}
+      className={clsx(containerClass)}
     >
-      <PageHeader onClose={onClose} />
+      <div className={clsx('flex flex-row items-center bg-gray-200 p-5')}>
+        <BackArrow
+          className='h-16 w-16 align-middle transition-colors hover:stroke-white'
+          onClick={onClose}
+        />
+      </div>
       <div onClick={() => toggleFullscreen()}>
         <TaggerContent
-          {...contentProps}
-          className={clsx('h-[60vh]', contentProps.className)}
+          className={clsx('h-[60vh] bg-black bg-opacity-50')}
           content={content}
         />
       </div>
