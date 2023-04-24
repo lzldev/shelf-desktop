@@ -1,7 +1,7 @@
 import {Sequelize} from 'sequelize-typescript'
 import {Content, ContentTag, Path, Tag, TagParents, TagColor} from './models'
 
-const __DBFILENAME = 'taggerdb.tagger'
+const __DBFILENAME = '.taggerdb.tagger'
 
 /* 
     TODO:

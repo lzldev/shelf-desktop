@@ -1,91 +1,87 @@
 import clsx from 'clsx'
-import {HTMLAttributes, useState} from 'react'
+import {HTMLAttributes, memo, useState} from 'react'
 import {Content} from 'src/main/src/db/models'
 
-const TaggerContent = ({
-  content,
-  contentProps,
-  className,
-  ...props
-}: {
-  content: Content
-  contentProps?: HTMLAttributes<HTMLImageElement | HTMLVideoElement>
-} & HTMLAttributes<HTMLDivElement>) => {
-  const video = content.extension == '.mp4' || content.extension == '.avi'
-  const [hidden, setHidden] = useState(!video)
-  const [prog, setProg] = useState(0)
+const TaggerContent = memo(
+  function TaggerContent({
+    content,
+    contentProps,
+    showControls,
+    ...props
+  }: {
+    content: Content
+    showControls?: boolean
+    contentProps?: HTMLAttributes<HTMLDivElement> &
+      HTMLAttributes<HTMLVideoElement>
+  } & HTMLAttributes<HTMLDivElement>) {
+    const video = content.extension == '.mp4' || content.extension == '.avi'
+    const [hidden, setHidden] = useState(!video)
 
-  const uri = new URL('tagger://' + content?.paths[0]?.path || '').toString()
+    const uri = new URL('tagger://' + content?.paths[0]?.path || '').toString()
 
-  return (
-    <div
-      {...props}
-      className={clsx(
-        'relative -z-20 overflow-clip transition-all',
-        !hidden && video ? '' : '',
-        hidden && !video
-          ? 'animate-gradient_x bg-opacity-50 bg-gradient-to-r from-gray-600 to-gray-800 opacity-50'
-          : '',
-        className,
-      )}
-    >
-      {!video ? (
-        <>
-          <img
-            className={
-              'absolute inset-auto -z-10 h-full w-full scale-150 object-contain opacity-75 blur-2xl saturate-200'
-            }
-            src={uri}
-          />
-          <img
-            {...contentProps}
-            hidden={hidden}
-            className={clsx(
-              'mx-auto h-full object-contain transition-all',
-              contentProps?.className,
-            )}
-            onLoad={() => {
-              setHidden(false)
-            }}
-            src={uri}
-          />
-        </>
-      ) : (
-        <video
-          {...contentProps}
-          className={clsx(
-            'relative mx-auto h-full object-contain transition-all',
-            className,
-          )}
-          src={uri}
-          muted={true}
-          onProgress={(evt) => {
-            setProg(evt.timeStamp)
-          }}
-          onClick={(evt) => {
-            const videoPlayer = evt.currentTarget
-            videoPlayer.paused ? videoPlayer.play() : videoPlayer.pause()
-            videoPlayer.muted
-              ? (videoPlayer.muted = true)
-              : (videoPlayer.muted = false)
-          }}
-          onMouseOut={(evt) => {
-            evt.currentTarget.pause()
-          }}
-          onMouseEnter={(evt) => {
-            if (evt.currentTarget.paused) {
-              evt.currentTarget.play()
-            }
-          }}
-        >
-          <span className='bottom-0 right-0 bg-red-500 font-mono'>
-            T:{prog}
-          </span>
-        </video>
-      )}
-      {props.children}
-    </div>
-  )
-}
-
+    return (
+      <div
+        {...props}
+        className={clsx(
+          'relative overflow-clip transition-all',
+          !hidden && video ? '' : '',
+          hidden && !video
+            ? 'animate-gradient_x bg-opacity-50 bg-gradient-to-r from-gray-600 to-gray-800 opacity-50'
+            : '',
+          props.className,
+        )}
+      >
+        {!video ? (
+          <>
+            <img
+              className={
+                'absolute inset-auto -z-10 h-full w-full scale-150 object-contain opacity-75 blur-2xl saturate-200'
+              }
+              src={uri}
+            />
+            <img
+              {...contentProps}
+              hidden={hidden}
+              className={clsx(
+                'mx-auto h-full object-contain ',
+                contentProps?.className,
+              )}
+              onLoad={() => {
+                setHidden(false)
+              }}
+              src={uri}
+            />
+          </>
+        ) : (
+          <div className='relative flex h-full w-full'>
+            <video
+              className={
+                'absolute inset-auto -z-10 h-full w-full scale-150 object-contain opacity-75 blur-2xl saturate-200'
+              }
+              autoPlay={false}
+              src={uri}
+            />
+            <video
+              {...contentProps}
+              className={clsx(
+                'h-full w-full object-contain',
+                contentProps?.className,
+              )}
+              preload='metadata'
+              controls={showControls && !hidden}
+              onProgress={() => {
+                setHidden(false)
+              }}
+              muted
+            >
+              <source src={`${uri}`} />
+            </video>
+          </div>
+        )}
+        {props.children}
+      </div>
+    )
+  },
+  (prev, next) => prev.content.id === next.content.id,
+)
 export {TaggerContent}

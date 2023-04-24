@@ -1,8 +1,9 @@
 import {useEffect} from 'react'
 import {useToggle} from './useToggle'
+import {Key} from 'src/types/Keys'
 
 type useHotkeysStart = {
-  [key: string]: (...any: any[]) => any
+  [key in Key]?: (...any: any[]) => any
 }
 
 function useHotkeys(hotkeys: useHotkeysStart, isEnabled = true) {
@@ -11,10 +12,10 @@ function useHotkeys(hotkeys: useHotkeysStart, isEnabled = true) {
   useEffect(() => {
     if (!enabled) return
     const hotkeysListener = (evt: KeyboardEvent) => {
-      const isRegistered = !!hotkeys[evt.key]
+      const isRegistered = !!hotkeys[evt.key as Key]
 
       if (isRegistered) {
-        hotkeys[evt.key]()
+        hotkeys[evt.key as Key]!()
       }
     }
     addEventListener('keydown', hotkeysListener)

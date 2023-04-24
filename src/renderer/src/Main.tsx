@@ -28,7 +28,6 @@ import {EditTags} from './EditTags'
 function Main(): JSX.Element {
   const {config} = useConfig()
   const {tags} = useTags()
-  const body = useRef<HTMLDivElement>(null)
   const [selectedTags, setSelectedTags] = useState<Set<Tag>>(new Set())
   const [pathQueries, setPathQueries] = useState<Set<pathQuery>>(new Set())
   const [selectedContent, setSelectedContent] = useState<Content | undefined>()
@@ -63,7 +62,8 @@ function Main(): JSX.Element {
     turnOff: closeEditColorsModal,
   } = useToggle(false)
 
-  const bodyRef = useRef<HTMLDivElement>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const contentList = useRef<HTMLDivElement>(null)
   const {orderDirection, orderField, toggleDirection} = useOrderStore()
 
   const {
@@ -107,13 +107,14 @@ function Main(): JSX.Element {
   }, [])
 
   useEffect(() => {
-    if (!body.current) return
+    if (!contentList.current) return
     const onScroll = () => {
-      const threshold = 10
-      if (!body.current) return
+      if (!contentList.current) return
+      const threshold = 100
+
       if (
         window.scrollY + window.innerHeight >=
-          body.current.scrollHeight - threshold &&
+          contentList.current.scrollHeight - threshold &&
         hasNextPage &&
         !isRefetching
       ) {
@@ -125,7 +126,7 @@ function Main(): JSX.Element {
     return () => {
       window.removeEventListener('scroll', onScroll)
     }
-  }, [hasNextPage, body])
+  }, [hasNextPage, contentList])
 
   const containerClass = clsx('min-h-screen max-h-fit w-full p-10')
   if (error || !content?.pages) {
@@ -138,7 +139,7 @@ function Main(): JSX.Element {
   return (
     <div
       className={containerClass}
-      ref={bodyRef}
+      ref={rootRef}
     >
       {showContentModal &&
         createPortal(
@@ -258,40 +259,31 @@ function Main(): JSX.Element {
         </a>
       </div>
       <Body
-        ref={body}
+        ref={contentList}
         isLoading={isLoading}
         error={error}
         className={
-          'grid w-full auto-rows-[35vh] gap-x-3 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6'
+          'grid w-full auto-rows-[35vh] gap-x-3 gap-y-3 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6'
         }
       >
         {content?.pages?.map((page) => {
           return page.content!.map((content) => (
-            <div
+            <TaggerContent
               key={content.id}
-              className={'relative flex flex-col overflow-clip py-2'}
               onClick={() => {
                 openContentModal(content)
               }}
+              content={content}
+              contentProps={{
+                className: 'cursor-pointer',
+              }}
+              className={'relative h-full w-full'}
             >
-              <TaggerContent
-                content={content}
-                className={'relative h-full w-full'}
-              >
-                <TagColorThing
-                  className='absolute inset-x-0 top-0 flex h-1 w-full flex-row overflow-hidden'
-                  tags={content.tags}
-                />
-                {/* <span
-                  dir='rtl'
-                  className={
-                    'absolute inset-x-0 bottom-0 max-h-fit w-full max-w-full overflow-hidden text-ellipsis whitespace-nowrap bg-black bg-opacity-50 px-1 text-center font-mono text-xs text-white'
-                  }
-                >
-                  {content.paths[0].path}
-                </span> */}
-              </TaggerContent>
-            </div>
+              <TagColorThing
+                className='absolute inset-x-0 top-0 flex h-1.5 w-full flex-row overflow-hidden'
+                tags={content.tags}
+              />
+            </TaggerContent>
           ))
         })}
       </Body>
