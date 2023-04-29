@@ -1,17 +1,15 @@
 import clsx from 'clsx'
-import {HTMLAttributes, useMemo, useState} from 'react'
+import {HTMLAttributes, useState} from 'react'
 import {Tag} from 'src/main/src/db/models'
 import {InlineButton} from './InlineButton'
 import {InlineTag} from './InlineTag'
-import {useQueries} from '@tanstack/react-query'
-import {useColors} from '@renderer/hooks/useColors'
+import {useTagQuery} from '@renderer/hooks/useTagQuery'
 
 export type pathQuery = {
   value: string
 }
 
 export const SearchBar = ({
-  tags,
   selected,
   pathQueries,
   onQuery,
@@ -19,9 +17,7 @@ export const SearchBar = ({
   removePathQuery,
   addSelected,
   removeSelected,
-  hidden,
 }: {
-  tags: Tag[]
   selected: Set<Tag>
   pathQueries: Set<pathQuery>
   onQuery: () => any
@@ -29,28 +25,19 @@ export const SearchBar = ({
   removePathQuery: (query: pathQuery) => any
   addSelected: (tag: Tag) => any
   removeSelected: (tag: Tag) => any
-  hidden?: boolean
 } & HTMLAttributes<HTMLDivElement>) => {
-  const [query, setQuery] = useState<string>('')
-  const TransformedQuery = query?.split(' ')
+  const {
+    query,
+    setQuery,
+    foundTags: DropDownTags,
+    SplitQuery: TransformedQuery,
+  } = useTagQuery()
+
   const hideDrop =
     !TransformedQuery[TransformedQuery.length - 1] &&
     TransformedQuery.length === 1
-  const DropDownTags = !hideDrop
-    ? tags.filter((tag) =>
-        tag.name
-          .toLowerCase()
-          .includes(
-            TransformedQuery[TransformedQuery.length - 1].toLowerCase(),
-          ),
-      )
-    : []
 
   const hideSelected = selected.size === 0 && pathQueries.size === 0
-
-  if (hidden === true) {
-    return <></>
-  }
 
   return (
     <div
