@@ -1,4 +1,4 @@
-import {HTMLAttributes, useRef, useState} from 'react'
+import {HTMLAttributes, useState} from 'react'
 import clsx from 'clsx'
 import {InlineButton} from './components/InlineButton'
 import {useColors} from './hooks/useColors'
@@ -12,7 +12,6 @@ function CreateTagModal({
 } & HTMLAttributes<HTMLDivElement>): JSX.Element {
   const containerClass = clsx(props.className)
   const {colors} = useColors()
-  const modalRef = useRef<HTMLDivElement>(null)
   const [tagName, setTagName] = useState('')
   const [parentOnly, setParentOnly] = useState(false)
   const [color, setColor] = useState<number>(-1)
@@ -22,7 +21,6 @@ function CreateTagModal({
 
   return (
     <div
-      ref={modalRef}
       {...props}
       id={'taggerModal'}
       className={clsx(containerClass, 'text-6 fixed inset-0 z-50 flex w-full')}

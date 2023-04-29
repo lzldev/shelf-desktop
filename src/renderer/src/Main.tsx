@@ -31,6 +31,7 @@ function Main(): JSX.Element {
   const [selectedTags, setSelectedTags] = useState<Set<Tag>>(new Set())
   const [pathQueries, setPathQueries] = useState<Set<pathQuery>>(new Set())
   const [selectedContent, setSelectedContent] = useState<Content | undefined>()
+
   const {
     value: showContentModal,
     turnOn: openContentModal,
@@ -62,7 +63,6 @@ function Main(): JSX.Element {
     turnOff: closeEditColorsModal,
   } = useToggle(false)
 
-  const rootRef = useRef<HTMLDivElement>(null)
   const contentList = useRef<HTMLDivElement>(null)
   const {orderDirection, orderField, toggleDirection} = useOrderStore()
 
@@ -137,10 +137,7 @@ function Main(): JSX.Element {
   }
 
   return (
-    <div
-      className={containerClass}
-      ref={rootRef}
-    >
+    <div className={containerClass}>
       {showContentModal &&
         createPortal(
           <ContentDetails
@@ -171,7 +168,6 @@ function Main(): JSX.Element {
           document.body,
         )}
       <SearchBar
-        tags={tags}
         selected={selectedTags}
         onQuery={() => {
           refetch()
@@ -205,37 +201,15 @@ function Main(): JSX.Element {
         }}
       />
       <div
-        className={clsx(
-          'mt-12 flex h-full w-full flex-row-reverse space-x-2 text-end',
-        )}
+        className={
+          'mt-12 flex h-full w-full flex-row-reverse space-x-2 text-end'
+        }
       >
-        <Dropdown
-          triggerRender={() => (
-            <Cog className='ml-1  fill-gray-100 transition-all hover:fill-gray-300 hover:stroke-white' />
-          )}
-        >
-          <div
-            className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
-            onClick={() => {
-              openCreateTagModal()
-            }}
-          >
-            <PlusSign />
-            <span>ADD TAG</span>
-          </div>
-          <div
-            className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
-            onClick={openEditTagsModal}
-          >
-            <span>EDIT TAGS</span>
-          </div>
-          <div
-            className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
-            onClick={openEditColorsModal}
-          >
-            <span>EDIT COLORS</span>
-          </div>
-        </Dropdown>
+        <OptionsDropdown
+          openCreateTagModal={openCreateTagModal}
+          openEditTagsModal={openEditTagsModal}
+          openEditColorsModal={openEditColorsModal}
+        />
         <a
           className='text-end font-mono text-gray-400'
           onClick={() => {
@@ -298,7 +272,7 @@ function Main(): JSX.Element {
 
 export {Main}
 
-const _Body = (
+const Body = forwardRef(function Body(
   {
     isLoading,
     error,
@@ -306,7 +280,7 @@ const _Body = (
   }: {isLoading: boolean; error: unknown} & PropsWithChildren &
     HTMLAttributes<HTMLDivElement>,
   ref: Ref<HTMLDivElement>,
-) => {
+) {
   if (error) {
     return (
       <div
@@ -325,6 +299,40 @@ const _Body = (
       {isLoading ? <></> : props.children}
     </div>
   )
-}
+})
 
-const Body = forwardRef(_Body)
+function OptionsDropdown(props: {
+  openCreateTagModal: (...any: any[]) => any
+  openEditTagsModal: (...any: any[]) => any
+  openEditColorsModal: (...any: any[]) => any
+}) {
+  return (
+    <Dropdown
+      triggerRender={() => (
+        <Cog className='mb-1 ml-1  fill-gray-100 transition-colors hover:fill-gray-300 hover:stroke-white' />
+      )}
+    >
+      <div
+        className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
+        onClick={() => {
+          props.openCreateTagModal()
+        }}
+      >
+        <PlusSign />
+        <span>ADD TAG</span>
+      </div>
+      <div
+        className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
+        onClick={props.openEditTagsModal}
+      >
+        <span>EDIT TAGS</span>
+      </div>
+      <div
+        className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
+        onClick={props.openEditColorsModal}
+      >
+        <span>EDIT COLORS</span>
+      </div>
+    </Dropdown>
+  )
+}

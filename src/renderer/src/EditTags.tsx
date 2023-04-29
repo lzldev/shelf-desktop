@@ -1,6 +1,5 @@
 import {type HTMLAttributes, useRef, useMemo} from 'react'
 import clsx from 'clsx'
-import {ModalBackDrop} from './components/ModalBackdrop'
 import {InlineButton} from './components/InlineButton'
 import {Pencil, PlusSign} from './components/Icons'
 import {Updater, useImmer} from 'use-immer'
@@ -9,6 +8,7 @@ import {Tag} from 'src/main/src/db/models'
 import {useColors} from './hooks/useColors'
 import {useTagQuery} from './hooks/useTagQuery'
 import {useHotkeys} from './hooks/useHotkeys'
+import {SidePanelModal} from './components/SidebarPanelModal'
 
 const TagColorBody = clsx(
   'relative text-white z-10 m-1 flex group flex-row items-center justify-between rounded-full bg-[--bgColor] py-3 px-6 outline ring-2 ring-inset ring-white ring-opacity-50',
@@ -52,91 +52,77 @@ function EditTags({
   })
 
   return (
-    <div
+    <SidePanelModal
+      onClose={onClose}
       ref={modalRef}
-      {...props}
-      id={'taggerModal'}
-      className={clsx('fixed inset-0 z-50 flex h-full w-full flex-col')}
-      tabIndex={-1}
     >
-      <ModalBackDrop
-        onClick={onClose}
-        className='opacity-0'
-      />
-      <div
-        className={clsx(
-          'flex h-full w-[30vw] flex-col self-end bg-slate-100 p-5 animate-in slide-in-from-right-full',
-          props.className,
-        )}
-      >
-        <div className='mb-2 flex flex-row'>
-          <input
-            className='grow p-2'
-            type='text'
-            placeholder='Search'
-            value={query}
-            onChange={(evt) => {
-              setQuery(evt.target.value)
-            }}
-          />
-          <div className='flex items-center justify-between'>
-            {(operations.size > 0 || newTagOperations.length > 0) && (
-              <InlineButton
-                onClick={() => {
-                  window.api
-                    .invokeOnMain('editTags', [
-                      ...operations.values(),
-                      ...newTagOperations,
-                    ])
-                    .then(onClose)
-                }}
-              >
-                Apply
-              </InlineButton>
-            )}
-          </div>
-        </div>
-
-        <div className='flex w-full grow flex-col overflow-x-hidden'>
-          <div
-            className='group/newButton z-10 m-1 flex flex-row items-center rounded-full bg-slate-400 p-3 text-center font-bold text-white outline ring-inset ring-gray-400 backdrop-contrast-200 hover:bg-clip-text hover:text-transparent hover:ring-2'
-            onClick={() => {
-              setNewTagOperations((nc) => {
-                nc.push({
-                  operation: 'CREATE',
-                  name: 'name',
-                  parentOnly: false,
-                  colorId: -1,
-                })
-              })
-            }}
-          >
-            <PlusSign className='h-10 w-10 group-hover/newButton:stroke-gray-400' />
-            <span className='ml-5 line-clamp-1 flex w-full flex-row overflow-hidden text-ellipsis'>
-              Create Tag
-            </span>
-          </div>
-          {newTagOperations.map((newTag, idx) => (
-            <NewTagItem
-              key={idx}
-              idx={idx}
-              newTag={newTag}
-              setNewTagOperations={setNewTagOperations}
-              ColorOptions={ColorOptions}
-            />
-          ))}
-          {tags.map((tag, idx) => (
-            <EditTagItem
-              key={idx}
-              tag={tag}
-              options={ColorOptions}
-              operation={operations.get(tag.id)}
-              setOperations={setOperations}
-            />
-          ))}
+      <div className='mb-2 flex flex-row'>
+        <input
+          className='grow p-2'
+          type='text'
+          placeholder='Search'
+          value={query}
+          onChange={(evt) => {
+            setQuery(evt.target.value)
+          }}
+        />
+        <div className='flex items-center justify-between'>
+          {(operations.size > 0 || newTagOperations.length > 0) && (
+            <InlineButton
+              onClick={() => {
+                window.api
+                  .invokeOnMain('editTags', [
+                    ...operations.values(),
+                    ...newTagOperations,
+                  ])
+                  .then(onClose)
+              }}
+            >
+              Apply
+            </InlineButton>
+          )}
         </div>
       </div>
-    </div>
+
+      <div className='flex w-full grow flex-col overflow-x-hidden'>
+        <div
+          className='group/newButton z-10 m-1 flex flex-row items-center rounded-full bg-slate-400 p-3 text-center font-bold text-white outline ring-inset ring-gray-400 backdrop-contrast-200 hover:bg-clip-text hover:text-transparent hover:ring-2'
+          onClick={() => {
+            setNewTagOperations((nc) => {
+              nc.push({
+                operation: 'CREATE',
+                name: 'name',
+                parentOnly: false,
+                colorId: -1,
+              })
+            })
+          }}
+        >
+          <PlusSign className='h-10 w-10 group-hover/newButton:stroke-gray-400' />
+          <span className='ml-5 line-clamp-1 flex w-full flex-row overflow-hidden text-ellipsis'>
+            Create Tag
+          </span>
+        </div>
+        {newTagOperations.map((newTag, idx) => (
+          <NewTagItem
+            key={idx}
+            idx={idx}
+            newTag={newTag}
+            setNewTagOperations={setNewTagOperations}
+            ColorOptions={ColorOptions}
+          />
+        ))}
+        {tags.map((tag, idx) => (
+          <EditTagItem
+            key={idx}
+            tag={tag}
+            options={ColorOptions}
+            operation={operations.get(tag.id)}
+            setOperations={setOperations}
+          />
+        ))}
+      </div>
+    </SidePanelModal>
   )
 }
 

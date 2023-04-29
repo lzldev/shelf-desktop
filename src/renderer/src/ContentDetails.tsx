@@ -121,7 +121,7 @@ function ContentDetails({
     return (
       <div className={clsx(containerClass, 'bg-black bg-opacity-50')}>
         <TaggerContent
-          showControls
+          controls
           className={'h-full w-full bg-black bg-opacity-50 backdrop-blur-xl'}
           content={content}
           onClick={() => {
@@ -147,7 +147,7 @@ function ContentDetails({
       </div>
       <div onClick={() => toggleFullscreen()}>
         <TaggerContent
-          showControls
+          controls
           className={clsx('h-[60vh] bg-black bg-opacity-50')}
           content={content}
         />

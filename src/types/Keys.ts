@@ -117,6 +117,7 @@ export type Key =
   | 'PageDown'
   | 'PageUp'
   | 'Backspace'
+  | 'space'
   | 'Clear'
   | 'Copy'
   | 'CrSel'

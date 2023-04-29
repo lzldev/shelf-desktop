@@ -1,16 +1,17 @@
 import clsx from 'clsx'
 import {HTMLAttributes, memo, useState} from 'react'
 import {Content} from 'src/main/src/db/models'
+import {VideoPlayer} from './VideoPlayer'
 
 const TaggerContent = memo(
   function TaggerContent({
     content,
     contentProps,
-    showControls,
+    controls,
     ...props
   }: {
     content: Content
-    showControls?: boolean
+    controls?: boolean
     contentProps?: HTMLAttributes<HTMLDivElement> &
       HTMLAttributes<HTMLVideoElement>
   } & HTMLAttributes<HTMLDivElement>) {
@@ -58,24 +59,22 @@ const TaggerContent = memo(
               className={
                 'absolute inset-auto -z-10 h-full w-full scale-150 object-contain opacity-75 blur-2xl saturate-200'
               }
-              autoPlay={false}
               src={uri}
+              autoPlay={false}
             />
             <video
               {...contentProps}
+              src={uri}
               className={clsx(
                 'h-full w-full object-contain',
                 contentProps?.className,
               )}
-              preload='metadata'
-              controls={showControls && !hidden}
+              controls={controls && !hidden}
               onProgress={() => {
                 setHidden(false)
               }}
-              muted
-            >
-              <source src={`${uri}`} />
-            </video>
+              muted={!controls}
+            />
           </div>
         )}
         {props.children}
