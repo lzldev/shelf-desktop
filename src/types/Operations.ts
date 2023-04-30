@@ -1,4 +1,4 @@
-import {TagCreationFields, TagFields} from '../main/src/db/models/Tag'
+import {TagCreationFields} from '../main/src/db/models/Tag'
 import {TagColorCreationFields} from '../main/src/db/models/TagColor'
 import {Prettify} from './utils'
 
@@ -37,3 +37,9 @@ export type TagOperation =
 export type CREATETagOP = Prettify<Extract<TagOperation, {operation: 'CREATE'}>>
 export type UpdateTagOP = Prettify<Extract<TagOperation, {operation: 'UPDATE'}>>
 export type DeleteTagOP = Prettify<Extract<TagOperation, {operation: 'DELETE'}>>
+
+export type batchTagging = {
+  operation: 'ADD' | 'REMOVE'
+  tagIds: number[]
+  contentIds: number[]
+}

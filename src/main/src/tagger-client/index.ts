@@ -10,6 +10,7 @@ import {join} from 'path'
 import {Op} from 'sequelize'
 import {IpcRendererEvents} from '../../../preload/ipcRendererTypes'
 import {sendEventToAllWindows} from '../..'
+import {ContentTagFields} from '../db/models/ContentTag'
 
 const CONFIG_FILE_NAME = '/.taggercfg' //TODO: Move this elsewhere
 
@@ -349,6 +350,62 @@ class TaggerClient {
 
     await editTagsTransaction.commit()
     return true
+  }
+  async batchTagging(operations: IpcMainEvents['batchTagging']['args'][0]) {
+    const ids: ContentTagFields[] = []
+
+    if (operations.operation === 'ADD') {
+      for (let x = 0; x < operations.tagIds.length; x++) {
+        for (let y = 0; y < operations.contentIds.length; y++) {
+          ids.push({
+            tagId: operations.tagIds[x],
+            contentId: operations.contentIds[y],
+          })
+        }
+
+        console.log('ids ->', ids)
+        await ContentTag.bulkCreate(ids, {
+          ignoreDuplicates: true,
+        })
+        return true
+      }
+    }
+
+    if (operations.operation === 'REMOVE') {
+      const relations = await ContentTag.findAll({
+        where: [
+          {
+            tagId: {
+              [Op.or]: operations.tagIds,
+            },
+            contentId: {
+              [Op.or]: operations.contentIds,
+            },
+          },
+        ],
+      })
+
+      console.log('relations ->', relations)
+
+      if (relations.length === 0) {
+        return false
+      }
+
+      const removeTagsFromContentTransaction =
+        await this._TaggerDB.sequelize.transaction()
+
+      for (let i = 0; i < relations.length; i++) {
+        await relations[i].destroy({
+          transaction: removeTagsFromContentTransaction,
+        })
+      }
+
+      await removeTagsFromContentTransaction.commit()
+
+      return
+    }
+
+    return false
   }
 }
 

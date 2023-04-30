@@ -182,6 +182,41 @@ function Main(): JSX.Element {
       <SearchBar
         selected={selectedTags}
         markedContent={markedContent}
+        onBatchAdd={() => {
+          const tagIds: number[] = []
+          selectedTags.forEach((v) => {
+            tagIds.push(v.id)
+          })
+          
+          console.log('selected ->',selectedTags)
+          console.log('tagIds ->',tagIds)
+
+          const contentIds: number[] = Array.from(markedContent.values())
+          const newLocal = {
+            operation: 'ADD',
+            contentIds,
+            tagIds,
+          } as const
+
+          console.log('newLocal ->', newLocal)
+          window.api.invokeOnMain('batchTagging', newLocal)
+        }}
+        onBatchRemove={() => {
+          const tagIds: number[] = []
+          selectedTags.forEach((v) => {
+            tagIds.push(v.id)
+          })
+          const contentIds: number[] = Array.from(markedContent.values())
+
+          const newLocal = {
+            operation: 'REMOVE',
+            contentIds,
+            tagIds,
+          } as const
+
+          console.log('newLocal ->', newLocal)
+          window.api.invokeOnMain('batchTagging', newLocal)
+        }}
         onQuery={() => {
           refetch()
         }}

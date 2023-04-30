@@ -281,6 +281,10 @@ ipcMain.handle('editTags', async (_, operations) => {
   const res = await Client.editTags(operations)
   return JSON.parse(JSON.stringify(res))
 })
+ipcMain.handle('batchTagging', async (_, operations) => {
+  const res = await Client.batchTagging(operations)
+  return JSON.parse(JSON.stringify(res))
+})
 
 ipcMain.handle('getTaggerTags', async () => {
   const res = await Client.getTags()

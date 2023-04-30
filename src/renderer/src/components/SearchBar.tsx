@@ -18,6 +18,8 @@ export const SearchBar = ({
   removePathQuery,
   addSelected,
   removeSelected,
+  onBatchAdd,
+  onBatchRemove,
   onClear,
 }: {
   selected: Set<Tag>
@@ -28,6 +30,8 @@ export const SearchBar = ({
   removePathQuery: (query: pathQuery) => any
   addSelected: (tag: Tag) => any
   removeSelected: (tag: Tag) => any
+  onBatchAdd: (...any: any[]) => any
+  onBatchRemove: (...any: any[]) => any
   onClear: (...any: any[]) => any
 } & HTMLAttributes<HTMLDivElement>) => {
   const {
@@ -145,12 +149,12 @@ export const SearchBar = ({
         </div>
         <div
           className={clsx(
-            'flex items-center justify-center pt-5 text-center align-middle',
+            '-mb-5 flex items-center justify-center pt-2.5 text-center align-middle',
             markedContent.size === 0 ? 'hidden' : '',
           )}
         >
-          <InlineButton>ADD</InlineButton>
-          <InlineButton>REMOVE</InlineButton>
+          <InlineButton onClick={onBatchAdd}>ADD</InlineButton>
+          <InlineButton onClick={onBatchRemove}>REMOVE</InlineButton>
           <InlineButton onClick={onClear}>CLEAR</InlineButton>
         </div>
       </div>

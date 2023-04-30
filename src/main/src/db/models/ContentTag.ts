@@ -8,7 +8,13 @@ import {
 } from 'sequelize-typescript'
 import {Tag} from './Tag'
 import {Content} from './Content'
-import {Optional} from 'sequelize'
+import {InferAttributes, InferCreationAttributes, Optional} from 'sequelize'
+import {NonOptional} from 'src/types/utils'
+
+export type ContentTagFields = InferAttributes<ContentTag>
+export type ContentTagCreationFields = NonOptional<
+  InferCreationAttributes<ContentTag>
+>
 
 interface _ContentTag {
   id: number
