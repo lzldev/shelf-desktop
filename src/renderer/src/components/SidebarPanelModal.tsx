@@ -22,7 +22,7 @@ export const SidePanelModal = forwardRef(function SidebarPanelModal(
       />
       <div
         className={clsx(
-          'flex h-full w-1/3 flex-col self-end bg-slate-100 p-5 transition-all animate-in slide-in-from-right-full',
+          'flex h-full max-w-[50vw] flex-col self-end bg-slate-100 p-5 animate-in slide-in-from-right-full',
           props.className,
         )}
       >

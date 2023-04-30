@@ -24,13 +24,28 @@ import {EditColors} from './EditColors'
 import {pathQuery, SearchBar} from './components/SearchBar'
 import {Cog, PlusSign} from './components/Icons'
 import {EditTags} from './EditTags'
+import {useImmer} from 'use-immer'
+import {useHotkeysRef} from './hooks/useHotkeys'
 
 function Main(): JSX.Element {
   const {config} = useConfig()
   const {tags} = useTags()
-  const [selectedTags, setSelectedTags] = useState<Set<Tag>>(new Set())
-  const [pathQueries, setPathQueries] = useState<Set<pathQuery>>(new Set())
-  const [selectedContent, setSelectedContent] = useState<Content | undefined>()
+  const [modalContent, setModalContent] = useState<Content | undefined>()
+  const [selectedTags, setSelectedTags] = useImmer<Set<Tag>>(new Set())
+  const [pathQueries, setPathQueries] = useImmer<Set<pathQuery>>(new Set())
+  const [markedContent, setMarkedContent] = useImmer<Set<number>>(new Set())
+  const {orderDirection, orderField, toggleDirection} = useOrderStore()
+  const contentList = useRef<HTMLDivElement>(null)
+
+  const {keys} = useHotkeysRef({
+    Shift: {
+      down: () => {},
+      up: () => {
+        markerIdx.current = undefined
+      },
+    },
+  })
+  const markerIdx = useRef<[pageNumber: number, contentNumber: number]>()
 
   const {
     value: showContentModal,
@@ -39,10 +54,10 @@ function Main(): JSX.Element {
   } = useToggle(
     false,
     (content: Content) => {
-      setSelectedContent(content)
+      setModalContent(content)
     },
     () => {
-      setSelectedContent(undefined)
+      setModalContent(undefined)
     },
   )
   const {
@@ -63,11 +78,8 @@ function Main(): JSX.Element {
     turnOff: closeEditColorsModal,
   } = useToggle(false)
 
-  const contentList = useRef<HTMLDivElement>(null)
-  const {orderDirection, orderField, toggleDirection} = useOrderStore()
-
   const {
-    data: content,
+    data: contentQuery,
     error,
     isLoading,
     isFetching,
@@ -129,7 +141,7 @@ function Main(): JSX.Element {
   }, [hasNextPage, contentList])
 
   const containerClass = clsx('min-h-screen max-h-fit w-full p-10')
-  if (error || !content?.pages) {
+  if (error || !contentQuery?.pages) {
     return <>{error}</>
   }
   if (isLoading) {
@@ -142,7 +154,7 @@ function Main(): JSX.Element {
         createPortal(
           <ContentDetails
             className={'text-6 fixed inset-0 z-50 max-h-screen w-full'}
-            content={selectedContent}
+            content={modalContent}
             onNext={() => {}}
             onPrevious={() => {}}
             onClose={() => closeContentModal()}
@@ -169,35 +181,33 @@ function Main(): JSX.Element {
         )}
       <SearchBar
         selected={selectedTags}
+        markedContent={markedContent}
         onQuery={() => {
           refetch()
         }}
         addPathQuery={(query) => {
           setPathQueries((_pathQueries) => {
             _pathQueries.add(query)
-            return _pathQueries
           })
         }}
         removePathQuery={(query) => {
-          setPathQueries((oldSet) => {
-            const pathQueries = new Set(oldSet)
-            pathQueries.delete(query)
-            return pathQueries
+          setPathQueries((queries) => {
+            queries.delete(query)
           })
         }}
         pathQueries={pathQueries}
         addSelected={(tag) => {
-          setSelectedTags((_selected) => {
-            _selected.add(tag)
-            return _selected
+          setSelectedTags((selectedTags) => {
+            selectedTags.add(tag)
           })
         }}
         removeSelected={(tag: Tag) => {
-          setSelectedTags((oldSet) => {
-            const selected = new Set(oldSet)
-            selected.delete(tag)
-            return selected
+          setSelectedTags((selectedTags) => {
+            selectedTags.delete(tag)
           })
+        }}
+        onClear={() => {
+          setMarkedContent(new Set())
         }}
       />
       <div
@@ -225,25 +235,32 @@ function Main(): JSX.Element {
         </a>
         <a className='text-end font-mono text-gray-400'>
           SHOWING:
-          {content
+          {contentQuery
             .pages!.map((page) => {
               return page.content.length
             })
             .reduce((total, n) => (total += n))}
         </a>
+        {markedContent.size !== 0 && (
+          <a className='text-end font-mono text-gray-400'>
+            SELECTED:
+            {markedContent.size}
+          </a>
+        )}
       </div>
       <Body
         ref={contentList}
         isLoading={isLoading}
         error={error}
         className={
-          'grid w-full auto-rows-[35vh] gap-x-3 gap-y-3 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6'
+          'grid w-full auto-rows-[25vh] gap-x-3 gap-y-3 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6'
         }
       >
-        {content?.pages?.map((page) => {
-          return page.content!.map((content) => (
+        {contentQuery?.pages?.map((page, pageIdx) => {
+          return page.content!.map((content, contentIdx) => (
             <TaggerContent
               key={content.id}
+              className={'group/content relative h-full w-full'}
               onClick={() => {
                 openContentModal(content)
               }}
@@ -251,11 +268,66 @@ function Main(): JSX.Element {
               contentProps={{
                 className: 'cursor-pointer',
               }}
-              className={'relative h-full w-full'}
             >
               <TagColorThing
                 className='absolute inset-x-0 top-0 flex h-1.5 w-full flex-row overflow-hidden'
                 tags={content.tags}
+              />
+              <input
+                type='checkbox'
+                checked={markedContent.has(content.id)}
+                className={clsx(
+                  'invisible absolute right-[1rem] top-[1.33rem] text-3xl checked:visible group-hover/content:visible',
+                )}
+                onClick={(evt) => {
+                  evt.stopPropagation()
+                  if (!keys.current.Shift || !markerIdx.current) {
+                    return
+                  }
+                  const toBeMarked: number[] = []
+
+                  const [fromPage, fromContent] = markerIdx.current
+
+                  //True = Forwards | False = Backwards
+                  const direction =
+                    fromPage < pageIdx ||
+                    (fromPage === pageIdx && fromContent < contentIdx)
+
+                  const startPage = direction ? fromPage : pageIdx
+                  const endPage = direction ? pageIdx : fromPage
+                  const startContent = direction ? fromContent : contentIdx
+                  const endContent = direction ? contentIdx : fromContent
+
+                  for (let pIdx = startPage; pIdx <= endPage; pIdx++) {
+                    const startOfPage = pIdx === startPage ? startContent : 0
+                    const endOfPage =
+                      pIdx === endPage
+                        ? endContent
+                        : contentQuery!.pages[pIdx]!.content.length
+
+                    for (let cIdx = startOfPage; cIdx < endOfPage; cIdx++) {
+                      toBeMarked.push(contentQuery.pages[pIdx].content[cIdx].id)
+                    }
+                  }
+
+                  setMarkedContent((marked) => {
+                    toBeMarked.forEach((v) => {
+                      marked.add(v)
+                    })
+                  })
+                }}
+                onChange={(evt) => {
+                  markerIdx.current = [pageIdx, contentIdx]
+                  const checked = evt.currentTarget.checked
+                  setMarkedContent((markedContent) => {
+                    if (checked) {
+                      markedContent.add(content.id)
+                    } else {
+                      markedContent.delete(content.id)
+                    }
+                  })
+                  evt.stopPropagation()
+                }}
               />
             </TaggerContent>
           ))

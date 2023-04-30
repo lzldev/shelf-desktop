@@ -14,7 +14,7 @@ export const InlineTag = (
     <div
       {...props}
       className={clsx(
-        'm-1 inline-flex min-h-[1rem] min-w-[1rem] rounded-full p-1.5 px-3  text-center font-bold text-white text-opacity-90 outline backdrop-contrast-200 transition-all hover:bg-clip-text hover:text-transparent',
+        'm-1 inline-flex min-h-[1rem] min-w-[1rem] rounded-full p-1.5 px-3  text-center font-bold text-white text-opacity-90 outline backdrop-contrast-200 transition-all hover:bg-clip-text hover:text-transparent focus:bg-clip-text focus:text-transparent',
         props.className || '',
       )}
       style={{

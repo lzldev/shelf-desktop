@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import {HTMLAttributes, useState} from 'react'
+import {HTMLAttributes} from 'react'
 import {Tag} from 'src/main/src/db/models'
 import {InlineButton} from './InlineButton'
 import {InlineTag} from './InlineTag'
@@ -11,20 +11,24 @@ export type pathQuery = {
 
 export const SearchBar = ({
   selected,
+  markedContent,
   pathQueries,
   onQuery,
   addPathQuery,
   removePathQuery,
   addSelected,
   removeSelected,
+  onClear,
 }: {
   selected: Set<Tag>
   pathQueries: Set<pathQuery>
+  markedContent: Set<number>
   onQuery: () => any
   addPathQuery: (query: pathQuery) => any
   removePathQuery: (query: pathQuery) => any
   addSelected: (tag: Tag) => any
   removeSelected: (tag: Tag) => any
+  onClear: (...any: any[]) => any
 } & HTMLAttributes<HTMLDivElement>) => {
   const {
     query,
@@ -55,6 +59,7 @@ export const SearchBar = ({
             className={
               'z-20 w-full bg-transparent p-2 text-pink-500 outline-none selection:bg-pink-200 hover:border-none active:border-none'
             }
+            tabIndex={0}
             type={'text'}
             value={query}
             list='tag-list'
@@ -73,7 +78,7 @@ export const SearchBar = ({
           />
           <button
             className={
-              'z-20 bg-[--queryColor] bg-pink-500 bg-clip-text px-10 font-bold text-gray-700 text-transparent ring-gray-300 transition-all hover:bg-clip-border hover:text-white hover:ring-0'
+              'z-20 border-pink-500 bg-pink-500 bg-clip-text px-10 font-bold text-gray-700 text-transparent ring-gray-300 transition-all hover:bg-clip-border hover:text-white hover:ring-0'
             }
             onClick={onQuery}
           >
@@ -87,7 +92,8 @@ export const SearchBar = ({
           hidden={hideDrop}
         >
           <div
-            className='selectable w-full overflow-hidden text-ellipsis bg-gray-400 p-2 text-white transition-colors hover:bg-gray-50 hover:text-black'
+            tabIndex={1}
+            className='selectable w-full overflow-hidden text-ellipsis bg-gray-400 p-2 text-white transition-colors hover:bg-gray-50 hover:text-black focus:bg-gray-50 focus:text-black'
             onClick={() => {
               addPathQuery({value: query})
               setQuery('')
@@ -95,12 +101,17 @@ export const SearchBar = ({
           >
             Search By Path {query}
           </div>
-          {DropDownTags.map((tag) => {
+          {DropDownTags.map((tag, idx) => {
             return (
               <InlineTag
                 key={tag.id}
+                tabIndex={idx + 2}
                 tag={tag}
                 onClick={() => {
+                  setQuery('')
+                  addSelected(tag)
+                }}
+                onSubmit={() => {
                   setQuery('')
                   addSelected(tag)
                 }}
@@ -131,6 +142,16 @@ export const SearchBar = ({
               onClick={() => removeSelected(tag)}
             />
           ))}
+        </div>
+        <div
+          className={clsx(
+            'flex items-center justify-center pt-5 text-center align-middle',
+            markedContent.size === 0 ? 'hidden' : '',
+          )}
+        >
+          <InlineButton>ADD</InlineButton>
+          <InlineButton>REMOVE</InlineButton>
+          <InlineButton onClick={onClear}>CLEAR</InlineButton>
         </div>
       </div>
     </div>
