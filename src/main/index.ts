@@ -10,25 +10,27 @@ import {
   nativeImage,
   Menu,
 } from 'electron'
-
 import '../preload/ipcTypes'
+
 import * as fs from 'fs'
 import * as path from 'path'
 import {electronApp, optimizer, is} from '@electron-toolkit/utils'
-import {TaggerClient} from './src/tagger-client'
-import {zJson, zJsonSchemaInfer} from './src/zJson'
-import {join} from 'path'
-import {z} from 'zod'
+import {TaggerClient} from './src/tagger-client/TaggerClient'
+import {zJson} from './src/zJson'
 import {TaggerWebContentsSend} from '../preload/ipcRendererTypes'
+import {TAGGER_CONFIG_PATH, TAGGER_CONFIG_SCHEMA} from './src/TaggerConfig'
 
-const TAGGER_CONFIG_PATH = join(app.getPath('userData'), 'config.json')
-export const TAGGER_CONFIG_SCHEMA = {
-  recentFiles: z.array(z.string()),
-  ignorePaths: z.array(z.string()),
-  pageSize: z.number().min(0),
-  defaultColor: z.string().min(0),
-} as const
-export type TaggerConfigType = zJsonSchemaInfer<typeof TAGGER_CONFIG_SCHEMA>
+//Imports event Handlers.
+import './src/tagger-client/' //FIXME: This import is doing too much work
+
+//TODO: Change name and location
+export function requestClient(): TaggerClient | false {
+  if (!Client || !Client.ready) {
+    //TODO:SEND LOGS
+  }
+
+  return Client
+}
 
 const TaggerConfig = new zJson(TAGGER_CONFIG_PATH, TAGGER_CONFIG_SCHEMA, {
   recentFiles: [],
@@ -37,15 +39,14 @@ const TaggerConfig = new zJson(TAGGER_CONFIG_PATH, TAGGER_CONFIG_SCHEMA, {
   pageSize: 25,
 })
 
-//TODO: Find a better name for this.
-type _WINDOWROUTESMAPSETTINGSTHINGTYPE = {
+type WindowOptionsRecord = {
   [key: string]: {
     route: string
     startOptions: Electron.BrowserWindowConstructorOptions
   }
 }
-//TODO: Find a better name for this.
-const _WindowRoutes: _WINDOWROUTESMAPSETTINGSTHINGTYPE = {
+
+const WindowOptions: WindowOptionsRecord = {
   main: {
     route: '',
     startOptions: {
@@ -78,12 +79,13 @@ const _WindowRoutes: _WINDOWROUTESMAPSETTINGSTHINGTYPE = {
 } as const
 
 let Client: TaggerClient
-const Windows = new Map<keyof typeof _WindowRoutes, BrowserWindow>()
 
-function createWindow(route: keyof typeof _WindowRoutes): void {
+const Windows = new Map<keyof typeof WindowOptions, BrowserWindow>()
+
+function createWindow(route: keyof typeof WindowOptions): void {
   if (Windows.has(route)) return
 
-  const windowOptions = _WindowRoutes[route]!
+  const windowOptions = WindowOptions[route]!
 
   const screenArea = screen.getPrimaryDisplay().bounds
   const positionX = Math.max(
@@ -101,7 +103,7 @@ function createWindow(route: keyof typeof _WindowRoutes): void {
     BrowserWindow.getFocusedWindow()?.getPosition() || [positionX, positionY]
 
   const newWindow = new BrowserWindow({
-    ..._WindowRoutes[route].startOptions,
+    ...WindowOptions[route].startOptions,
     show: false,
     x: currentWindowX,
     y: currentWindowY,
@@ -128,11 +130,11 @@ function createWindow(route: keyof typeof _WindowRoutes): void {
   })
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     newWindow.loadURL(
-      process.env['ELECTRON_RENDERER_URL'] + `?#/${_WindowRoutes[route].route}`,
+      process.env['ELECTRON_RENDERER_URL'] + `?#/${WindowOptions[route].route}`,
     )
   } else {
     newWindow.loadFile(path.join(__dirname, '../renderer/index.html'), {
-      hash: `/${_WindowRoutes[route].route}`,
+      hash: `/${WindowOptions[route].route}`,
     })
   }
 
@@ -188,7 +190,6 @@ app.whenReady().then(() => {
     if (!BrowserWindow.getAllWindows().length) createWindow('start')
   })
 })
-
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin' && !Client) {
     app.quit()
@@ -200,14 +201,9 @@ export const sendEventToAllWindows: TaggerWebContentsSend = (evt, ...args) => {
     window.webContents.send(evt, ...args)
   })
 }
-
-//TODO: sendEventToWindow
-
-//TODO: Refactor using sendEventToWindows
 export const updateProgress = (args: {key: string; value: any}) => {
   Windows.get('progress')?.webContents.send('updateProgress', args)
 }
-
 async function startNewClient(path: string) {
   if (!Windows.has('progress')) {
     createWindow('progress')
@@ -222,13 +218,8 @@ async function startNewClient(path: string) {
   })
 }
 
-export type OpenDialogReturn = {
-  canceled: boolean
-  filePaths: string[]
-}
-
 ipcMain.handle('openDialog', async (_, options) => {
-  const diagResponse = (await dialog.showOpenDialog({
+  const diagResponse = await dialog.showOpenDialog({
     properties: [options.dialogType],
     title: 'Select A Tagger Dir or File',
     filters: [
@@ -237,11 +228,10 @@ ipcMain.handle('openDialog', async (_, options) => {
         extensions: ['tagger'],
       },
     ],
-  })) as OpenDialogReturn
+  })
 
   return diagResponse
 })
-
 ipcMain.handle('startTaggerClient', async (Event, path) => {
   const recentFiles = TaggerConfig.get('recentFiles')
   if (!fs.existsSync(path)) {
@@ -267,63 +257,12 @@ ipcMain.handle('startTaggerClient', async (Event, path) => {
   startNewClient(path)
   return
 })
-
-ipcMain.handle('getTaggerColors', async () => {
-  const res = await Client.getColors()
-  return JSON.parse(JSON.stringify(res))
-})
-
-ipcMain.handle('editColors', async (_, operations) => {
-  const res = await Client.editColors(operations)
-  return JSON.parse(JSON.stringify(res))
-})
-ipcMain.handle('editTags', async (_, operations) => {
-  const res = await Client.editTags(operations)
-  return JSON.parse(JSON.stringify(res))
-})
-ipcMain.handle('batchTagging', async (_, operations) => {
-  const res = await Client.batchTagging(operations)
-  return JSON.parse(JSON.stringify(res))
-})
-
-ipcMain.handle('getTaggerTags', async () => {
-  const res = await Client.getTags()
-  return JSON.parse(JSON.stringify(res))
-})
-
-ipcMain.handle('createTag', async (_, options) => {
-  const created = await Client.createTag(options)
-  await sendEventToAllWindows('updateTags')
-  return created
-})
-
-ipcMain.handle('addTagToContent', async (_, options) => {
-  const added = await Client.addTagToContent(options)
-  return added
-})
-
-ipcMain.handle('removeTagfromContent', async (_, options) => {
-  const removed = await Client.removeTagFromContent(options)
-  return removed
-})
-
-ipcMain.handle('getTaggerImages', async (_, options) => {
-  const {content, nextCursor} = await Client.getContent(options)
-
-  return {content: JSON.parse(JSON.stringify(content)), nextCursor}
-})
-
-ipcMain.handle('getDetailedImage', async (_, id) => {
-  const res = await Client.getDetailedContent({id: id})
-  return JSON.parse(JSON.stringify(res))
-})
 ipcMain.handle('toggleFullscreen', async (evt, newStatus) => {
   const window = BrowserWindow.fromId(evt.sender.id)!
 
   if (window.fullScreen === newStatus) return
   window.setFullScreen(newStatus ? newStatus : !window.fullScreen)
 })
-
 ipcMain.handle('getConfig', async () => TaggerConfig.getAll())
 ipcMain.handle('saveConfig', async (_, config) => {
   TaggerConfig.setAll(config)

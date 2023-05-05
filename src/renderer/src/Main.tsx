@@ -19,10 +19,9 @@ import {useOrderStore} from './hooks/useOrderStore'
 import {Dropdown} from './components/Dropdown'
 import {useConfig} from './hooks/useConfig'
 import {TagColorThing} from './components/TagColorThing'
-import {CreateTagModal} from './CreateTagModal'
 import {EditColors} from './EditColors'
 import {pathQuery, SearchBar} from './components/SearchBar'
-import {Cog, PlusSign} from './components/Icons'
+import {Cog} from './components/Icons'
 import {EditTags} from './EditTags'
 import {useImmer} from 'use-immer'
 import {useHotkeysRef} from './hooks/useHotkeys'
@@ -60,11 +59,6 @@ function Main(): JSX.Element {
       setModalContent(undefined)
     },
   )
-  const {
-    value: showCreateTagModal,
-    turnOn: openCreateTagModal,
-    turnOff: closeCreateTagModal,
-  } = useToggle(false)
 
   const {
     value: showEditTagsModal,
@@ -161,11 +155,6 @@ function Main(): JSX.Element {
           />,
           document.body,
         )}
-      {showCreateTagModal &&
-        createPortal(
-          <CreateTagModal onClose={() => closeCreateTagModal()} />,
-          document.body,
-        )}
       {showEditColorsModal &&
         createPortal(
           <EditColors
@@ -187,9 +176,9 @@ function Main(): JSX.Element {
           selectedTags.forEach((v) => {
             tagIds.push(v.id)
           })
-          
-          console.log('selected ->',selectedTags)
-          console.log('tagIds ->',tagIds)
+
+          console.log('selected ->', selectedTags)
+          console.log('tagIds ->', tagIds)
 
           const contentIds: number[] = Array.from(markedContent.values())
           const newLocal = {
@@ -221,8 +210,8 @@ function Main(): JSX.Element {
           refetch()
         }}
         addPathQuery={(query) => {
-          setPathQueries((_pathQueries) => {
-            _pathQueries.add(query)
+          setPathQueries((queries) => {
+            queries.add(query)
           })
         }}
         removePathQuery={(query) => {
@@ -232,13 +221,13 @@ function Main(): JSX.Element {
         }}
         pathQueries={pathQueries}
         addSelected={(tag) => {
-          setSelectedTags((selectedTags) => {
-            selectedTags.add(tag)
+          setSelectedTags((tags) => {
+            tags.add(tag)
           })
         }}
         removeSelected={(tag: Tag) => {
-          setSelectedTags((selectedTags) => {
-            selectedTags.delete(tag)
+          setSelectedTags((tags) => {
+            tags.delete(tag)
           })
         }}
         onClear={() => {
@@ -251,7 +240,6 @@ function Main(): JSX.Element {
         }
       >
         <OptionsDropdown
-          openCreateTagModal={openCreateTagModal}
           openEditTagsModal={openEditTagsModal}
           openEditColorsModal={openEditColorsModal}
         />
@@ -409,25 +397,15 @@ const Body = forwardRef(function Body(
 })
 
 function OptionsDropdown(props: {
-  openCreateTagModal: (...any: any[]) => any
   openEditTagsModal: (...any: any[]) => any
   openEditColorsModal: (...any: any[]) => any
 }) {
   return (
     <Dropdown
       triggerRender={() => (
-        <Cog className='mb-1 ml-1  fill-gray-100 transition-colors hover:fill-gray-300 hover:stroke-white' />
+        <Cog className='mb-1 ml-1  fill-gray-100 stroke-gray-600 transition-colors hover:fill-gray-300 hover:stroke-white' />
       )}
     >
-      <div
-        className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
-        onClick={() => {
-          props.openCreateTagModal()
-        }}
-      >
-        <PlusSign />
-        <span>ADD TAG</span>
-      </div>
       <div
         className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
         onClick={props.openEditTagsModal}
@@ -439,6 +417,12 @@ function OptionsDropdown(props: {
         onClick={props.openEditColorsModal}
       >
         <span>EDIT COLORS</span>
+      </div>
+      <div
+        className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
+        onClick={props.openEditColorsModal}
+      >
+        <span>OPTIONS</span>
       </div>
     </Dropdown>
   )

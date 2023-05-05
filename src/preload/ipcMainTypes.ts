@@ -1,7 +1,4 @@
-/* eslint-disable @typescript-eslint/no-namespace */
-import type {OpenDialogReturn} from '../main'
 import {Content, Tag, TagColor} from '../main/src/db/models'
-import {TaggerConfigType} from '../main'
 import {TagFields} from '../main/src/db/models/Tag'
 import {TagColorFields} from '../main/src/db/models/TagColor'
 import {Prettify, SomeRequired, TypeLevelRecord} from '../types/utils'
@@ -10,6 +7,7 @@ import {
   TagOperation,
   batchTagging as BatchTagging,
 } from '../types/Operations'
+import {TaggerConfigType} from '../main/src/TaggerConfig'
 
 type IpcMainEventShape = {
   args: unknown | unknown[]
@@ -29,7 +27,7 @@ export type IpcMainEvents = TypeLevelRecord<
     }
     openDialog: {
       args: [options: {dialogType: 'openFile' | 'openDirectory'}]
-      return: OpenDialogReturn
+      return: any //TODO: Agora
     }
     getRecent: {
       args: null

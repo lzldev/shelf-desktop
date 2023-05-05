@@ -1,9 +1,9 @@
 import {createReadStream, statSync} from 'fs'
-import * as fsPath from 'path'
+import {parse} from 'path'
 import {createHash} from 'crypto'
 import {flattenDirectoryTree} from '../utils/chokiUtils'
 import {updateProgress} from '../..'
-import {TaggerClient} from '.'
+import {TaggerClient} from './TaggerClient'
 import {mockTags} from '../utils/mockTags'
 import {Content, Path, Tag, TagColor} from '../db/models'
 import {toFileTuple} from '../utils/chokiUtils'
@@ -17,7 +17,77 @@ export const addChokiEvents = (
   const {sequelize} = taggerClient.models
   const choki = taggerClient.choki
 
-  const taggerOnReady = async (): Promise<void> => {
+  choki.addListener('unlink', taggerOnUnlink)
+  choki.addListener('add', taggerOnAdd)
+  choki.addListener('change', taggerOnChange)
+  choki.addListener('ready', taggerOnReady)
+
+  async function taggerOnChange(_filePath: string) {
+    const filePath = normalize(_filePath)
+    const newHash = await hashFileAsync(filePath)
+
+    const content = await Content.findOne({
+      include: [
+        {
+          model: Path,
+          where: {
+            path: filePath,
+          },
+        },
+      ],
+    })
+
+    await content?.update({
+      hash: newHash,
+    })
+  }
+
+  async function taggerOnAdd(pathString: string) {
+    const filePath = normalize(pathString)
+    const fileHash = await hashFileAsync(filePath)
+    const {mtimeMs} = statSync(filePath)
+
+    const [content] = await Content.findOrCreate({
+      where: {
+        hash: fileHash,
+      },
+      defaults: {
+        hash: fileHash,
+        extension: parse(filePath).ext,
+      },
+    })
+
+    const [newPath, created] = await Path.findOrCreate({
+      where: {
+        path: filePath,
+      },
+      defaults: {
+        path: filePath,
+        mTimeMs: mtimeMs,
+        contentId: content.id,
+      },
+    })
+
+    if (created) {
+      return
+    }
+
+    await newPath.update({
+      contentId: content.id,
+    })
+  }
+
+  async function taggerOnUnlink(_filePath: string) {
+    const filePath = normalize(_filePath)
+    const path = await Path.findOne({
+      where: {
+        path: filePath,
+      },
+    })
+
+    await path?.destroy()
+  }
+  async function taggerOnReady() {
     const flatDirTree = flattenDirectoryTree(choki.getWatched()).filter(
       (p) => !statSync(p).isDirectory(),
     )
@@ -165,7 +235,7 @@ export const addChokiEvents = (
         const content = await Content.create(
           {
             hash: fileHash,
-            extension: fsPath.parse(filePath).ext,
+            extension: parse(filePath).ext,
           },
           {
             include: [Path, Tag],
@@ -228,77 +298,6 @@ export const addChokiEvents = (
     taggerClient.ready = true
     onReadyCallback()
   }
-
-  const taggerOnChange = async (path: string): Promise<void> => {
-    const filePath = normalize(path)
-    const newHash = await hashFileAsync(filePath)
-
-    const content = await Content.findOne({
-      include: [
-        {
-          model: Path,
-          where: {
-            path: filePath,
-          },
-        },
-      ],
-    })
-
-    await content?.update({
-      hash: newHash,
-    })
-  }
-
-  const taggerOnAdd = async (pathString: string): Promise<void> => {
-    const filePath = normalize(pathString)
-    const fileHash = await hashFileAsync(filePath)
-    const {mtimeMs} = statSync(filePath)
-
-    const [content] = await Content.findOrCreate({
-      where: {
-        hash: fileHash,
-      },
-      defaults: {
-        hash: fileHash,
-        extension: fsPath.parse(filePath).ext,
-      },
-    })
-
-    const [newPath, created] = await Path.findOrCreate({
-      where: {
-        path: filePath,
-      },
-      defaults: {
-        path: filePath,
-        mTimeMs: mtimeMs,
-        contentId: content.id,
-      },
-    })
-
-    if (created) {
-      return
-    }
-
-    await newPath.update({
-      contentId: content.id,
-    })
-  }
-
-  const taggerOnUnlink = async (fp: string) => {
-    const filePath = normalize(fp)
-    const path = await Path.findOne({
-      where: {
-        path: filePath,
-      },
-    })
-
-    await path?.destroy()
-  }
-
-  choki.addListener('unlink', taggerOnUnlink)
-  choki.addListener('add', taggerOnAdd)
-  choki.addListener('change', taggerOnChange)
-  choki.addListener('ready', taggerOnReady)
 }
 
 const HASHMAXBYTES = 10485760 - 1 //10mb in bytes -1 bc inclusive
