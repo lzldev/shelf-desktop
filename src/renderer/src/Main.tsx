@@ -149,8 +149,6 @@ function Main(): JSX.Element {
           <ContentDetails
             className={'text-6 fixed inset-0 z-50 max-h-screen w-full'}
             content={modalContent}
-            onNext={() => {}}
-            onPrevious={() => {}}
             onClose={() => closeContentModal()}
           />,
           document.body,
@@ -276,7 +274,7 @@ function Main(): JSX.Element {
         isLoading={isLoading}
         error={error}
         className={
-          'grid w-full auto-rows-[25vh] gap-x-3 gap-y-3 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-6'
+          'grid w-full gap-x-3 gap-y-3 sm:auto-rows-[20rem] md:auto-rows-[25vh] md:grid-cols-4 xl:grid-cols-6'
         }
       >
         {contentQuery?.pages?.map((page, pageIdx) => {

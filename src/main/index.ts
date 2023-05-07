@@ -52,6 +52,8 @@ const WindowOptions: WindowOptionsRecord = {
     startOptions: {
       x: 1024,
       y: 850,
+      minWidth: 600,
+      minHeight: 400,
     },
   },
   options: {

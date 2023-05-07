@@ -41,7 +41,7 @@ export const SearchBar = ({
     SplitQuery: TransformedQuery,
   } = useTagQuery()
 
-  const hideDrop =
+  const hideDropdown =
     !TransformedQuery[TransformedQuery.length - 1] &&
     TransformedQuery.length === 1
 
@@ -91,9 +91,9 @@ export const SearchBar = ({
         </div>
         <div
           className={
-            'absolute -left-0.5 -right-0.5 top-10 z-10 -mt-5 h-auto origin-top border-x-2 border-b-2 border-pink-500 bg-white pt-5 animate-in fill-mode-backwards'
+            'absolute -left-0.5 -right-0.5 top-10 z-10 -mt-5 h-auto origin-top  border-x-2 border-b-2 border-pink-500 bg-white pt-5 animate-in fill-mode-backwards'
           }
-          hidden={hideDrop}
+          hidden={hideDropdown}
         >
           <div
             tabIndex={1}
@@ -105,23 +105,25 @@ export const SearchBar = ({
           >
             Search By Path {query}
           </div>
-          {DropDownTags.map((tag, idx) => {
-            return (
-              <InlineTag
-                key={tag.id}
-                tabIndex={idx + 2}
-                tag={tag}
-                onClick={() => {
-                  setQuery('')
-                  addSelected(tag)
-                }}
-                onSubmit={() => {
-                  setQuery('')
-                  addSelected(tag)
-                }}
-              />
-            )
-          })}
+          <div className='max-h-[40vh] overflow-y-auto'>
+            {DropDownTags.map((tag, idx) => {
+              return (
+                <InlineTag
+                  key={tag.id}
+                  tabIndex={idx + 2}
+                  tag={tag}
+                  onClick={() => {
+                    setQuery('')
+                    addSelected(tag)
+                  }}
+                  onSubmit={() => {
+                    setQuery('')
+                    addSelected(tag)
+                  }}
+                />
+              )
+            })}
+          </div>
         </div>
         <div
           className={clsx(

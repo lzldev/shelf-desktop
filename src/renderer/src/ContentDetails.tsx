@@ -28,14 +28,10 @@ const prevTitle = window.document.title
 function ContentDetails({
   content: contentProp,
   onClose,
-  onNext,
-  onPrevious,
   ...props
 }: {
   content?: Content
   onClose: (...any: any[]) => any
-  onNext: (...any: any[]) => any
-  onPrevious: (...any: any[]) => any
 } & HTMLAttributes<HTMLDivElement>): JSX.Element {
   const {value: fullscreen, toggle: toggleFullscreen} = useToggle(false)
   const containerClass = clsx(props.className, 'backdrop-blur-xl')
@@ -45,7 +41,6 @@ function ContentDetails({
   const {
     data: content,
     error,
-    isLoading,
     refetch,
   } = useQuery(
     ['DetailedContent'],
@@ -68,25 +63,12 @@ function ContentDetails({
   const {toggle: toggleHotkeys} = useHotkeys(
     {
       Escape: onClose,
-      ArrowRight: onNext,
-      ArrowLeft: onPrevious,
       f: toggleFullscreen,
       o: () => {
-        if (content) {
-          window.open('file://' + content?.paths[0].path)
-        }
+        openInAnotherProgram(content!)
       },
       d: () => {
-        if (content) {
-          //TODO: MOVE THIS ELSEWHERE
-          window.open(
-            'file://' +
-              content?.paths[0].path.substring(
-                0,
-                content?.paths[0].path.lastIndexOf('\\'),
-              ),
-          )
-        }
+        openContentDirectory(content!)
       },
     },
     !!content,
@@ -99,15 +81,6 @@ function ContentDetails({
       window.document.title = prevTitle
     }
   }, [content])
-
-  if (isLoading) {
-    return (
-      <div className={containerClass}>
-        <h1 onClick={() => navigate({pathname: '/'})}>LOADING</h1>
-        <h1 onClick={() => navigate('/')}>{window.location.toString()}</h1>
-      </div>
-    )
-  }
 
   if (!content || error) {
     return (
@@ -289,3 +262,23 @@ export const AddTagDropdown = ({
 }
 
 export {ContentDetails}
+function openInAnotherProgram(content?: Content) {
+  if (!content) {
+    return
+  }
+  window.open('file://' + content?.paths[0].path)
+}
+
+function openContentDirectory(content?: Content) {
+  if (!content) {
+    return
+  }
+
+  window.open(
+    'file://' +
+      content?.paths[0].path.substring(
+        0,
+        content?.paths[0].path.lastIndexOf('\\'),
+      ),
+  )
+}

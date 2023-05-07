@@ -22,7 +22,7 @@ function TaggerContent({
     <div
       {...props}
       className={clsx(
-        'relative overflow-clip transition-all',
+        'relative overflow-clip',
         !hidden && video ? '' : '',
         hidden && !video
           ? 'animate-gradient_x bg-opacity-50 bg-gradient-to-r from-gray-600 to-gray-800 opacity-50'

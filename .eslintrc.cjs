@@ -28,13 +28,11 @@ module.exports = {
       'error',
       {'ts-ignore': 'allow-with-description'},
     ],
-    // '@typescript-eslint/explicit-function-return-type': 'error',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-empty-function': [
       'error',
       {allow: ['arrowFunctions']},
     ],
-    //TODO:Reenable
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off',
     '@typescript-eslint/no-var-requires': 'off',
