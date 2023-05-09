@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="101.49396mm"
+   height="26.458267mm"
+   viewBox="0 0 101.49396 26.458267"
+   version="1.1"
+   id="svg5"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs2">
+    <linearGradient
+       id="linearGradient754">
+      <stop
+         style="stop-color:#000000;stop-opacity:1"
+         offset="0"
+         id="stop750" />
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0.39639869"
+         id="stop5262" />
+      <stop
+         style="stop-color:#06b6d4;stop-opacity:1;"
+         offset="0.39639869"
+         id="stop5268" />
+      <stop
+         style="stop-color:#06b6d4;stop-opacity:1;"
+         offset="0.60641921"
+         id="stop824" />
+      <stop
+         style="stop-color:#22c55e;stop-opacity:1;"
+         offset="0.60641921"
+         id="stop826" />
+      <stop
+         style="stop-color:#22c55e;stop-opacity:1;"
+         offset="0.80054075"
+         id="stop822" />
+      <stop
+         style="stop-color:#ef4444;stop-opacity:1;"
+         offset="0.80054075"
+         id="stop828" />
+      <stop
+         style="stop-color:#ef4444;stop-opacity:1;"
+         offset="1"
+         id="stop830" />
+      <stop
+         style="stop-color:#ef4444;stop-opacity:1;"
+         offset="1"
+         id="stop752" />
+    </linearGradient>
+    <rect
+       x="139.51498"
+       y="151.03458"
+       width="569.57953"
+       height="286.70972"
+       id="rect63" />
+    <linearGradient
+       xlink:href="#linearGradient754"
+       id="linearGradient756"
+       x1="376.07162"
+       y1="238.97714"
+       x2="376.07162"
+       y2="175.26953"
+       gradientUnits="userSpaceOnUse"
+       spreadMethod="pad" />
+  </defs>
+  <g
+     id="layer1"
+     transform="translate(-37.512864,-19.838691)">
+    <text
+       xml:space="preserve"
+       transform="matrix(0.26458333,0,0,0.26458333,-1.4114758,-26.202109)"
+       id="text61"
+       style="font-size:133.333px;white-space:pre;shape-inside:url(#rect63);display:inline;fill:url(#linearGradient756);fill-opacity:1;stroke-width:1.00157;stroke-dasharray:none"><tspan
+         x="139.51562"
+         y="272.67889"
+         id="tspan424"><tspan
+           style="font-weight:bold;font-family:'JetBrains Mono NL';-inkscape-font-specification:'JetBrains Mono NL Bold'"
+           id="tspan422">SHELF</tspan></tspan></text>
+  </g>
+</svg>
