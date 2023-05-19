@@ -42,6 +42,9 @@ function TaggerContent({
           />
           <img
             {...contentProps}
+            onLoad={() => {
+              setHidden(false)
+            }}
             hidden={hidden}
             className={clsx(
               'mx-auto h-full object-contain ',
