@@ -9,7 +9,6 @@ import './assets/index.css'
 import {Main} from './Main'
 import {Start} from './Start'
 import {Progress} from './Progress'
-import {Options} from './Options'
 
 const WindowRouter = createHashRouter([
   {
@@ -23,10 +22,6 @@ const WindowRouter = createHashRouter([
   {
     path: '/progress',
     element: <Progress />,
-  },
-  {
-    path: '/options',
-    element: <Options />,
   },
 ])
 

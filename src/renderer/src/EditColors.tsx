@@ -1,4 +1,4 @@
-import {type HTMLAttributes, useRef, useMemo} from 'react'
+import {type HTMLAttributes, useRef} from 'react'
 import clsx from 'clsx'
 import {useColors} from './hooks/useColors'
 import {InlineButton} from './components/InlineButton'
@@ -19,7 +19,6 @@ const TagColorBody = clsx(
 
 function EditColors({
   onClose,
-  ...props
 }: {
   onClose: (...any: any[]) => any
 } & HTMLAttributes<HTMLDivElement>): JSX.Element {

@@ -8,7 +8,7 @@ export type zJsonValues<T extends zJsonSchema> = {
 }
 
 export type zJsonSchemaInfer<T extends zJsonSchema> = {
-  [key in keyof T]: z.infer<T[key]>
+  +readonly [key in keyof T]: z.infer<T[key]>
 }
 
 export class zJson<

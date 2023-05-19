@@ -139,6 +139,7 @@ export const addChokiEvents = (
         })
 
         if (foundPath === -1) {
+          //TODO: REMOVE LOG
           console.log('CLEANING >', path.path)
           await dbPath.destroy({transaction: pathTransaction})
           continue
@@ -293,6 +294,7 @@ export const addChokiEvents = (
     await ContentsTransaction.commit()
     console.timeEnd('DB ->')
 
+    //TODO: REMOVE LOGS
     console.log('Content Errors -> ', contentError)
     console.log('Duplicate Path -> ', duplicatePath)
     taggerClient.ready = true

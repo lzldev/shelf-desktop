@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import {HTMLAttributes, useState} from 'react'
+import {HTMLAttributes, useRef, useState} from 'react'
 import {Content} from 'src/main/src/db/models'
 
 function TaggerContent({
@@ -13,6 +13,7 @@ function TaggerContent({
   contentProps?: HTMLAttributes<HTMLDivElement> &
     HTMLAttributes<HTMLVideoElement>
 } & HTMLAttributes<HTMLDivElement>) {
+  const containerRef = useRef<HTMLDivElement>(null)
   const video = content.extension == '.mp4' || content.extension == '.avi'
   const [hidden, setHidden] = useState(!video)
 
@@ -21,6 +22,7 @@ function TaggerContent({
   return (
     <div
       {...props}
+      ref={containerRef}
       className={clsx(
         'relative overflow-clip',
         !hidden && video ? '' : '',
@@ -34,7 +36,7 @@ function TaggerContent({
         <>
           <img
             className={
-              'absolute inset-auto -z-10 h-full w-full scale-150 object-contain opacity-75 blur-2xl saturate-200'
+              'absolute inset-auto -z-10 scale-150 object-contain opacity-75 blur-2xl saturate-200'
             }
             src={uri}
           />
@@ -45,9 +47,6 @@ function TaggerContent({
               'mx-auto h-full object-contain ',
               contentProps?.className,
             )}
-            onLoad={() => {
-              setHidden(false)
-            }}
             src={uri}
           />
         </>

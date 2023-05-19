@@ -28,7 +28,6 @@ export function requestClient(): TaggerClient | false {
   if (!Client || !Client.ready) {
     //TODO:SEND LOGS
   }
-
   return Client
 }
 
@@ -37,6 +36,7 @@ const TaggerConfig = new zJson(TAGGER_CONFIG_PATH, TAGGER_CONFIG_SCHEMA, {
   defaultColor: '#ef4444',
   ignorePaths: [],
   pageSize: 25,
+  nativeBorder: false,
 })
 
 type WindowOptionsRecord = {
@@ -54,13 +54,6 @@ const WindowOptions: WindowOptionsRecord = {
       y: 850,
       minWidth: 600,
       minHeight: 400,
-    },
-  },
-  options: {
-    route: 'options',
-    startOptions: {
-      height: 600,
-      width: 800,
     },
   },
   start: {

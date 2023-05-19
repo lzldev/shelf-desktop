@@ -16,7 +16,6 @@ const TagColorBody = clsx(
 
 function EditTags({
   onClose,
-  ...props
 }: {
   onClose: (...any: any[]) => any
 } & HTMLAttributes<HTMLDivElement>): JSX.Element {
@@ -227,22 +226,6 @@ function NewTagItem({
           </InlineButton>
         </div>
         <div className='flex flex-row justify-between space-x-5 pr-5'>
-          <div className='flex flex-row'>
-            <label className='self-center text-center align-middle'>
-              Parent Only:
-            </label>
-            <input
-              className='ml-1 self-center text-center align-middle'
-              type='checkbox'
-              spellCheck={false}
-              checked={newTag.parentOnly}
-              onChange={(evt) => {
-                setNewTagOperations((nc) => {
-                  nc[idx].parentOnly = evt.target.checked
-                })
-              }}
-            />
-          </div>
           <select
             value={newTag.colorId}
             className='grow text-black'
@@ -321,24 +304,6 @@ function UpdateOperation(
           </div>
         </div>
         <div className='flex flex-row justify-between space-x-5 pr-5'>
-          <div className='flex flex-row'>
-            <label className='self-center text-center align-middle'>
-              Parent Only:
-            </label>
-            <input
-              className='ml-1 self-center text-center align-middle'
-              type='checkbox'
-              spellCheck={false}
-              value={operation.name}
-              onChange={(evt) => {
-                evt.target.dataset.value = evt.target.value
-                setOperations((ops) => {
-                  ;(ops.get(tag.id) as UpdateTagOP).parentOnly =
-                    evt.target.checked
-                })
-              }}
-            />
-          </div>
           <select
             value={operation.colorId}
             className='grow text-black'

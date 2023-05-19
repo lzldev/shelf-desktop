@@ -33,7 +33,6 @@ describe('Tagger - DB', async () => {
       include: [Path],
     })
 
-    console.log('Content ->', content.toJSON())
     expect(content?.paths?.length).eq(1)
 
     contentid = content.id
@@ -45,8 +44,6 @@ describe('Tagger - DB', async () => {
     })
 
     tag = await tag.save()
-
-    console.log('Tag ->', tag.toJSON())
 
     assert(tag)
 
@@ -101,8 +98,6 @@ describe('Tagger - DB', async () => {
         },
       ],
     })
-
-    console.log('DONT FIND ->', content?.toJSON())
     assert(!content)
   })
 })
@@ -146,8 +141,6 @@ describe('zJson', async () => {
       .instanceOf(Array)
       .containSubset([4, 5, 6])
       .not.containSubset([1, 2, 3])
-
-    console.log('final CFG ->', config.getAll())
   })
 
   afterAll(async () => {

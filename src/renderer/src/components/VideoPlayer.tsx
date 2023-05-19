@@ -79,11 +79,6 @@ export function VideoPlayer({
             const clickPercent =
               ((evt.clientX - divRect.left) / divRect.width) * 100
 
-            console.log(
-              'p ->',
-              (prog / (videoRef.current?.duration || 0)) * 100,
-            )
-
             setHeadPos(clickPercent)
           }}
           onMouseLeave={() => {

@@ -9,8 +9,8 @@ export function sendEventAfter(
   events: (keyof IpcRendererEvents)[],
   func: (...any: any[]) => any,
 ) {
-  return () => {
-    const result = func()
+  return (...args: any[]) => {
+    const result = func.call(undefined, ...args)
 
     events.forEach((event) => {
       sendEventToAllWindows(event)

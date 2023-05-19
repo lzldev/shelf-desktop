@@ -17,6 +17,7 @@ let _colors: Map<number, TagColor>
 try {
   _colors = mapFromColors(await window.api.invokeOnMain('getTaggerColors'))
 } catch (er) {
+  //TODO: REMOVE LOG
   console.log('not ready yet')
 }
 

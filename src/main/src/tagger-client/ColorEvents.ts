@@ -15,8 +15,6 @@ async function getColors() {
   return result
 }
 
-// @TaggerClient.SendEventAfter('updateColors')
-// @TaggerClient.SendEventAfter('updateTags')
 async function editColors(operations: IpcMainEvents['editColors']['args'][0]) {
   const client = (await requestClient()) as TaggerClient
   const editColorsTransaction = await client.models.sequelize.transaction()

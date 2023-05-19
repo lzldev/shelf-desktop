@@ -6,6 +6,7 @@ let _tags: Tag[]
 try {
   _tags = await window.api.invokeOnMain('getTaggerTags')
 } catch (err) {
+  //TODO: REMOVE LOG
   console.log('no tags')
 }
 const useTags = () => {

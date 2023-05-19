@@ -29,6 +29,8 @@ interface _Tag {
 class Tag extends Model<_Tag, Optional<_Tag, 'id'>> {
   @Column({type: DataType.TEXT})
   name!: string
+
+  //REMOVEME: NOT USED
   @Column({type: DataType.BOOLEAN})
   parentOnly!: boolean
 

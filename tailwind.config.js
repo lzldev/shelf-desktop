@@ -2,7 +2,7 @@
 module.exports = {
   content: [
     './src/renderer/index.html',
-    './src/renderer/src/**/*.{js,ts,jsx,tsx}',
+    './src/renderer/src/**/*.{js,ts,jsx,tsx,html}',
   ],
   theme: {
     extend: {

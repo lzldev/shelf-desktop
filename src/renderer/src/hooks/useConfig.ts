@@ -1,5 +1,4 @@
 import {useEffect} from 'react'
-//@ts-ignore - different tsconfig scope
 import {useImmer} from 'use-immer'
 
 let _config = await window.api.invokeOnMain('getConfig')

@@ -175,9 +175,6 @@ function Main(): JSX.Element {
             tagIds.push(v.id)
           })
 
-          console.log('selected ->', selectedTags)
-          console.log('tagIds ->', tagIds)
-
           const contentIds: number[] = Array.from(markedContent.values())
           const newLocal = {
             operation: 'ADD',
@@ -185,7 +182,6 @@ function Main(): JSX.Element {
             tagIds,
           } as const
 
-          console.log('newLocal ->', newLocal)
           window.api.invokeOnMain('batchTagging', newLocal)
         }}
         onBatchRemove={() => {
@@ -201,7 +197,6 @@ function Main(): JSX.Element {
             tagIds,
           } as const
 
-          console.log('newLocal ->', newLocal)
           window.api.invokeOnMain('batchTagging', newLocal)
         }}
         onQuery={() => {
@@ -281,7 +276,6 @@ function Main(): JSX.Element {
           return page.content!.map((content, contentIdx) => (
             <TaggerContent
               key={content.id}
-              className={'group/content relative h-full w-full'}
               onClick={() => {
                 openContentModal(content)
               }}

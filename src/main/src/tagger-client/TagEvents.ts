@@ -2,18 +2,19 @@ import {ipcMain} from 'electron'
 import {Tag} from '../db/models/Tag'
 import {requestClient} from '../..'
 import {IpcMainEvents} from '../../../preload/ipcMainTypes'
-import {ContentTag, TagColor} from '../db/models'
+import {ContentTag} from '../db/models'
 import {TaggerClient} from './TaggerClient'
 import {Op} from 'sequelize'
 import {ContentTagFields} from '../db/models/ContentTag'
+import {sendEventAfter} from '.'
 
 export function defaultHandler(func: (...any: any[]) => any) {
   return async (_: Electron.IpcMainInvokeEvent, ...args: any[]) => {
     const client = requestClient()
 
     if (!client || !client.ready) {
-      //TODO: Handle this
-      throw 'unlucky'
+      //TODO: Handle this.
+      throw 'Client not Ready'
     }
     return await JSON.parse(JSON.stringify(await func(...args)))
   }
@@ -22,8 +23,10 @@ export function defaultHandler(func: (...any: any[]) => any) {
 ipcMain.handle('getTaggerTags', defaultHandler(getAllTags))
 ipcMain.handle('removeTagfromContent', defaultHandler(removeTagFromContent))
 ipcMain.handle('addTagToContent', defaultHandler(addTagToContent))
-ipcMain.handle('createTag', defaultHandler(createTag))
-ipcMain.handle('editTags', defaultHandler(editTags))
+ipcMain.handle(
+  'editTags',
+  sendEventAfter(['updateTags'], defaultHandler(editTags)),
+)
 ipcMain.handle('batchTagging', defaultHandler(batchTagging))
 
 async function getAllTags() {
@@ -33,40 +36,9 @@ async function getAllTags() {
   return result
 }
 
-//FIXME Implement this in the new event handlers
-// @TaggerClient.SendEventAfter('updateColors')
-// @TaggerClient.SendEventAfter('updateTags')
-async function createTag(options: IpcMainEvents['createTag']['args']) {
-  //TODO: REFACTOR Look into this
-  let colorId
-  if ('colorId' in options) {
-    colorId = options.colorId
-  } else {
-    const color = await TagColor.build({
-      name: options.newColor.name,
-      color: options.newColor.color,
-    }).save()
-
-    colorId = color.id
-  }
-
-  const tagBuild = Tag.build({
-    name: options.name,
-    parentOnly: options.parentOnly,
-    colorId,
-  })
-
-  try {
-    return !!(await tagBuild.save())
-  } catch (err) {
-    return false
-  }
-}
-
 async function removeTagFromContent(
   options: IpcMainEvents['removeTagfromContent']['args'],
 ) {
-  console.log('options ->', options)
   const newRelation = await ContentTag.findOne({
     where: {
       contentId: options.contentId,
