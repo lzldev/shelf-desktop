@@ -17,7 +17,7 @@ import {ContentDetails} from './ContentDetails'
 import {useToggle} from './hooks/useToggle'
 import {useOrderStore} from './hooks/useOrderStore'
 import {Dropdown} from './components/Dropdown'
-import {useConfig} from './hooks/useConfig'
+import {useConfig, useConfigStore} from './hooks/useConfig'
 import {TagColorThing} from './components/TagColorThing'
 import {EditColors} from './EditColors'
 import {pathQuery, SearchBar} from './components/SearchBar'
@@ -25,9 +25,12 @@ import {Cog} from './components/Icons'
 import {EditTags} from './EditTags'
 import {useImmer} from 'use-immer'
 import {useHotkeysRef} from './hooks/useHotkeys'
+import {MasonryInfiniteGrid} from '@egjs/react-infinitegrid'
+import {GridThing} from './components/GridThing'
+import {OptionsModal} from './OptionsModal'
 
 function Main(): JSX.Element {
-  const {config} = useConfig()
+  const {config} = useConfigStore()
   const {tags} = useTags()
   const [modalContent, setModalContent] = useState<Content | undefined>()
   const [selectedTags, setSelectedTags] = useImmer<Set<Tag>>(new Set())
@@ -35,6 +38,7 @@ function Main(): JSX.Element {
   const [markedContent, setMarkedContent] = useImmer<Set<number>>(new Set())
   const {orderDirection, orderField, toggleDirection} = useOrderStore()
   const contentList = useRef<HTMLDivElement>(null)
+  const masonry = useRef<MasonryInfiniteGrid>(null)
 
   const {keys} = useHotkeysRef({
     Shift: {
@@ -45,32 +49,6 @@ function Main(): JSX.Element {
     },
   })
   const markerIdx = useRef<[pageNumber: number, contentNumber: number]>()
-
-  const {
-    value: showContentModal,
-    turnOn: openContentModal,
-    turnOff: closeContentModal,
-  } = useToggle(
-    false,
-    (content: Content) => {
-      setModalContent(content)
-    },
-    () => {
-      setModalContent(undefined)
-    },
-  )
-
-  const {
-    value: showEditTagsModal,
-    turnOn: openEditTagsModal,
-    turnOff: closeEditTagsModal,
-  } = useToggle(false)
-
-  const {
-    value: showEditColorsModal,
-    turnOn: openEditColorsModal,
-    turnOff: closeEditColorsModal,
-  } = useToggle(false)
 
   const {
     data: contentQuery,
@@ -134,6 +112,38 @@ function Main(): JSX.Element {
     }
   }, [hasNextPage, contentList])
 
+  const {
+    value: showContentModal,
+    turnOn: openContentModal,
+    turnOff: closeContentModal,
+  } = useToggle(
+    false,
+    (content: Content) => {
+      setModalContent(content)
+    },
+    () => {
+      setModalContent(undefined)
+    },
+  )
+
+  const {
+    value: showEditTagsModal,
+    turnOn: openEditTagsModal,
+    turnOff: closeEditTagsModal,
+  } = useToggle(false)
+
+  const {
+    value: showEditColorsModal,
+    turnOn: openEditColorsModal,
+    turnOff: closeEditColorsModal,
+  } = useToggle(false)
+
+  const {
+    value: showOptionsModal,
+    turnOn: openOptionsModal,
+    turnOff: closeOptionsModal,
+  } = useToggle(false)
+
   const containerClass = clsx('min-h-screen max-h-fit w-full p-10')
   if (error || !contentQuery?.pages) {
     return <>{error}</>
@@ -164,6 +174,11 @@ function Main(): JSX.Element {
       {showEditTagsModal &&
         createPortal(
           <EditTags onClose={() => closeEditTagsModal()} />,
+          document.body,
+        )}
+      {showOptionsModal &&
+        createPortal(
+          <OptionsModal onClose={() => closeOptionsModal()} />,
           document.body,
         )}
       <SearchBar
@@ -235,6 +250,7 @@ function Main(): JSX.Element {
         <OptionsDropdown
           openEditTagsModal={openEditTagsModal}
           openEditColorsModal={openEditColorsModal}
+          openOptionsModal={openOptionsModal}
         />
         <a
           className='text-end font-mono text-gray-400'
@@ -264,90 +280,112 @@ function Main(): JSX.Element {
           </a>
         )}
       </div>
-      <Body
-        ref={contentList}
-        isLoading={isLoading}
-        error={error}
-        className={
-          'grid w-full gap-x-3 gap-y-3 sm:auto-rows-[20rem] md:auto-rows-[25vh] md:grid-cols-4 xl:grid-cols-6'
-        }
-      >
-        {contentQuery?.pages?.map((page, pageIdx) => {
-          return page.content!.map((content, contentIdx) => (
-            <TaggerContent
-              key={content.id}
-              onClick={() => {
-                openContentModal(content)
-              }}
-              content={content}
-              contentProps={{
-                className: 'cursor-pointer',
-              }}
-            >
-              <TagColorThing
-                className='absolute inset-x-0 top-0 flex h-1.5 w-full flex-row overflow-hidden'
-                tags={content.tags}
-              />
-              <input
-                type='checkbox'
-                checked={markedContent.has(content.id)}
-                className={clsx(
-                  'invisible absolute right-[1rem] top-[1.33rem] text-3xl checked:visible group-hover/content:visible',
-                )}
-                onClick={(evt) => {
-                  evt.stopPropagation()
-                  if (!keys.current.Shift || !markerIdx.current) {
-                    return
-                  }
-                  const toBeMarked: number[] = []
-
-                  const [fromPage, fromContent] = markerIdx.current
-
-                  //True = Forwards | False = Backwards
-                  const direction =
-                    fromPage < pageIdx ||
-                    (fromPage === pageIdx && fromContent < contentIdx)
-
-                  const startPage = direction ? fromPage : pageIdx
-                  const endPage = direction ? pageIdx : fromPage
-                  const startContent = direction ? fromContent : contentIdx
-                  const endContent = direction ? contentIdx : fromContent
-
-                  for (let pIdx = startPage; pIdx <= endPage; pIdx++) {
-                    const startOfPage = pIdx === startPage ? startContent : 0
-                    const endOfPage =
-                      pIdx === endPage
-                        ? endContent
-                        : contentQuery!.pages[pIdx]!.content.length
-
-                    for (let cIdx = startOfPage; cIdx < endOfPage; cIdx++) {
-                      toBeMarked.push(contentQuery.pages[pIdx].content[cIdx].id)
+      <div ref={contentList}>
+        <MasonryInfiniteGrid
+          ref={masonry}
+          resizeDebounce={6}
+          maxResizeDebounce={6}
+          // onRequestAppend={() => {
+          //   if (isFetching && !hasNextPage) {
+          //     return
+          //   }
+          //   fetchNextPage()
+          // }}
+          useFirstRender={false}
+          className={'w-full overflow-clip'}
+          column={6}
+        >
+          {contentQuery?.pages?.map((page, pageIdx) => {
+            if (Array.isArray(page)) {
+              return
+            }
+            return page.content!.map((content, contentIdx) => (
+              // <GridThing
+              //   key={content.id}
+              //   pageIdx={pageIdx}
+              //   src={new URL(
+              //     'tagger://' + content?.paths[0]?.path || '',
+              //   ).toString()}
+              // />
+              <TaggerContent
+                data-grid-groupkey={pageIdx}
+                key={content.id}
+                className='w-[16.6%]'
+                onClick={() => {
+                  openContentModal(content)
+                }}
+                content={content}
+                contentProps={{
+                  className: 'cursor-pointer',
+                }}
+              >
+                <TagColorThing
+                  className='absolute inset-x-0 top-0 flex h-1 w-full flex-row overflow-hidden'
+                  tags={content.tags}
+                />
+                <input
+                  type='checkbox'
+                  checked={markedContent.has(content.id)}
+                  className={clsx(
+                    'invisible absolute right-[1rem] top-[1.33rem] text-3xl checked:visible group-hover/content:visible',
+                  )}
+                  onClick={(evt) => {
+                    evt.stopPropagation()
+                    if (!keys.current.Shift || !markerIdx.current) {
+                      return
                     }
-                  }
+                    const toBeMarked: number[] = []
 
-                  setMarkedContent((marked) => {
-                    toBeMarked.forEach((v) => {
-                      marked.add(v)
+                    const [fromPage, fromContent] = markerIdx.current
+
+                    //True = Forwards | False = Backwards
+                    const direction =
+                      fromPage < pageIdx ||
+                      (fromPage === pageIdx && fromContent < contentIdx)
+
+                    const startPage = direction ? fromPage : pageIdx
+                    const endPage = direction ? pageIdx : fromPage
+                    const startContent = direction ? fromContent : contentIdx
+                    const endContent = direction ? contentIdx : fromContent
+
+                    for (let pIdx = startPage; pIdx <= endPage; pIdx++) {
+                      const startOfPage = pIdx === startPage ? startContent : 0
+                      const endOfPage =
+                        pIdx === endPage
+                          ? endContent
+                          : contentQuery!.pages[pIdx]!.content.length
+
+                      for (let cIdx = startOfPage; cIdx < endOfPage; cIdx++) {
+                        toBeMarked.push(
+                          contentQuery.pages[pIdx].content[cIdx].id,
+                        )
+                      }
+                    }
+
+                    setMarkedContent((marked) => {
+                      toBeMarked.forEach((v) => {
+                        marked.add(v)
+                      })
                     })
-                  })
-                }}
-                onChange={(evt) => {
-                  markerIdx.current = [pageIdx, contentIdx]
-                  const checked = evt.currentTarget.checked
-                  setMarkedContent((markedContent) => {
-                    if (checked) {
-                      markedContent.add(content.id)
-                    } else {
-                      markedContent.delete(content.id)
-                    }
-                  })
-                  evt.stopPropagation()
-                }}
-              />
-            </TaggerContent>
-          ))
-        })}
-      </Body>
+                  }}
+                  onChange={(evt) => {
+                    markerIdx.current = [pageIdx, contentIdx]
+                    const checked = evt.currentTarget.checked
+                    setMarkedContent((markedContent) => {
+                      if (checked) {
+                        markedContent.add(content.id)
+                      } else {
+                        markedContent.delete(content.id)
+                      }
+                    })
+                    evt.stopPropagation()
+                  }}
+                />
+              </TaggerContent>
+            ))
+          })}
+        </MasonryInfiniteGrid>
+      </div>
       {isFetching ? (
         <div className='flex items-center justify-center py-10'>
           <Cog className='h-14 w-14 animate-spin' />
@@ -391,6 +429,7 @@ const Body = forwardRef(function Body(
 function OptionsDropdown(props: {
   openEditTagsModal: (...any: any[]) => any
   openEditColorsModal: (...any: any[]) => any
+  openOptionsModal: (...any: any[]) => any
 }) {
   return (
     <Dropdown
@@ -412,7 +451,7 @@ function OptionsDropdown(props: {
       </div>
       <div
         className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
-        onClick={props.openEditColorsModal}
+        onClick={props.openOptionsModal}
       >
         <span>OPTIONS</span>
       </div>

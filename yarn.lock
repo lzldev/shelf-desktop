@@ -261,6 +261,20 @@
     "@babel/helper-validator-identifier" "^7.19.1"
     to-fast-properties "^2.0.0"
 
+"@cfcs/core@^0.0.24":
+  version "0.0.24"
+  resolved "https://registry.yarnpkg.com/@cfcs/core/-/core-0.0.24.tgz#2ab40d1fe5cf64f50acc31983a5b589521268dde"
+  integrity sha512-feB38qu+eDk0Pggh/yR7gjaNmvUYA2uCxHP3Pz2MLE4LZ/9jPdtu8bzCSI47yTEhWyZCF5Pk698hdz8IN2mTjA==
+  dependencies:
+    "@egjs/component" "^3.0.4"
+
+"@cfcs/core@^0.0.5":
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/@cfcs/core/-/core-0.0.5.tgz#b3d3ce36630016e0c0bb10848e1205fc216493e3"
+  integrity sha512-TZ/RXKV7MUrqFpiX+16uaaptv5jgChWNsuE6w8Rn3eJbO1PFd4Wpn25zeJbii7ch46ck8/ZIIYCcW3pHiYtm4Q==
+  dependencies:
+    "@egjs/component" "^3.0.2"
+
 "@develar/schema-utils@~2.6.5":
   version "2.6.5"
   resolved "https://registry.yarnpkg.com/@develar/schema-utils/-/schema-utils-2.6.5.tgz#3ece22c5838402419a6e0425f85742b961d9b6c6"
@@ -268,6 +282,58 @@
   dependencies:
     ajv "^6.12.0"
     ajv-keywords "^3.4.1"
+
+"@egjs/children-differ@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@egjs/children-differ/-/children-differ-1.0.1.tgz#5465fa80671d5ca3564ebe912f48b05b3e8a14fd"
+  integrity sha512-DRvyqMf+CPCOzAopQKHtW+X8iN6Hy6SFol+/7zCUiE5y4P/OB8JP8FtU4NxtZwtafvSL4faD5KoQYPj3JHzPFQ==
+  dependencies:
+    "@egjs/list-differ" "^1.0.0"
+
+"@egjs/component@^3.0.0", "@egjs/component@^3.0.1", "@egjs/component@^3.0.2", "@egjs/component@^3.0.4":
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/@egjs/component/-/component-3.0.4.tgz#ad7b53794b2a612806179a188ad828acb9525f61"
+  integrity sha512-sXA7bGbIeLF2OAw/vpka66c6QBBUPcA4UUhR4WGJfnp2XWdiI8QrnJGJMr/UxpE/xnevX9tN3jvNPlW8WkHl3g==
+
+"@egjs/grid@^1.13.0":
+  version "1.13.0"
+  resolved "https://registry.yarnpkg.com/@egjs/grid/-/grid-1.13.0.tgz#8298a9464afbcd44a6738b190e00c22313340b37"
+  integrity sha512-wUljkpteE6THydxBvIPcXKQWx4PUo+BCOoRnq1R0cF/pauYQKMEEuzZfMzI6NpjNBtfC3SzdXANeJYtq01cSkg==
+  dependencies:
+    "@egjs/children-differ" "^1.0.1"
+    "@egjs/component" "^3.0.0"
+    "@egjs/imready" "^1.3.0"
+
+"@egjs/imready@^1.3.0":
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/@egjs/imready/-/imready-1.4.1.tgz#4d72f67b5e8212f0ef449dd2b5b79f975110352b"
+  integrity sha512-JIOBs4lB7FYdsKi5uvz2j3SObX8eShtZjtqlOH41tm185aJOQZwiKBK8+V4MxzG4X6DqVhpdN8UcuVwBbElfsg==
+  dependencies:
+    "@cfcs/core" "^0.0.24"
+    "@egjs/component" "^3.0.1"
+
+"@egjs/infinitegrid@~4.9.0":
+  version "4.9.0"
+  resolved "https://registry.yarnpkg.com/@egjs/infinitegrid/-/infinitegrid-4.9.0.tgz#49773e7cb8b35a1854076d15dd4ac398f6d37b36"
+  integrity sha512-X/fypBGxDZMnb274yKMwOp6F751EaJE1USs7AMwP5b++o1+Q5cXh4kKuopBHOiYhosIJ3dytuDdGY2N1FH27vA==
+  dependencies:
+    "@cfcs/core" "^0.0.5"
+    "@egjs/children-differ" "^1.0.1"
+    "@egjs/component" "^3.0.0"
+    "@egjs/grid" "^1.13.0"
+    "@egjs/list-differ" "^1.0.0"
+
+"@egjs/list-differ@^1.0.0":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@egjs/list-differ/-/list-differ-1.0.1.tgz#5772b0f8b87973bb67827f6c7d7df8d7f64a22eb"
+  integrity sha512-OTFTDQcWS+1ZREOdCWuk5hCBgYO4OsD30lXcOCyVOAjXMhgL5rBRDnt/otb6Nz8CzU0L/igdcaQBDLWc4t9gvg==
+
+"@egjs/react-infinitegrid@^4.9.0":
+  version "4.9.0"
+  resolved "https://registry.yarnpkg.com/@egjs/react-infinitegrid/-/react-infinitegrid-4.9.0.tgz#d902f12e8d790f1670ebda0b5bae471c359cfbf3"
+  integrity sha512-hYurlI36kV92doI71M/k33LkhcWcDGQFBS1C2mqz+YxVg8zy+kCc+DCFbzzjmqQ+68lLNiJ2TJyPbPcZiK+VtQ==
+  dependencies:
+    "@egjs/infinitegrid" "~4.9.0"
 
 "@electron-toolkit/preload@^1.0.2":
   version "1.0.3"

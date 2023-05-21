@@ -9,6 +9,7 @@ import './assets/index.css'
 import {Main} from './Main'
 import {Start} from './Start'
 import {Progress} from './Progress'
+import {useConfigStore} from './hooks/useConfig'
 
 const WindowRouter = createHashRouter([
   {
@@ -27,10 +28,21 @@ const WindowRouter = createHashRouter([
 
 const ReactQueryClient = new QueryClient()
 
+const App = () => {
+  const {isReady} = useConfigStore()
+
+  if (!isReady) {
+    return <></>
+  }
+  return (
+    <React.StrictMode>
+      <QueryClientProvider client={ReactQueryClient}>
+        <RouterProvider router={WindowRouter} />
+      </QueryClientProvider>
+    </React.StrictMode>
+  )
+}
+
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <QueryClientProvider client={ReactQueryClient}>
-      <RouterProvider router={WindowRouter} />
-    </QueryClientProvider>
-  </React.StrictMode>,
+  <App />,
 )

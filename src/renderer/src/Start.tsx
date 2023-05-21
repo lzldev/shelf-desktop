@@ -1,12 +1,8 @@
-import {useQuery} from '@tanstack/react-query'
 import Versions from './components/Versions'
+import {useConfigStore} from './hooks/useConfig'
 
 function Start(): JSX.Element {
-  const {data: paths} = useQuery(['recentPath'], async () => {
-    return await (
-      await window.api.invokeOnMain('getConfig')
-    ).recentFiles
-  })
+  const {config} = useConfigStore()
 
   const openDialog = async (dir: 'openFile' | 'openDirectory') => {
     const dialog = await window.api.invokeOnMain('openDialog', {
@@ -35,7 +31,7 @@ function Start(): JSX.Element {
       </div>
       <div className='h-1 bg-black bg-opacity-10 py-2' />
       <div className='flex h-1 grow flex-col overflow-y-auto'>
-        {(paths || []).map((recentPath, idx) => (
+        {config?.recentFiles.map((recentPath, idx) => (
           <h1
             key={idx}
             className='recentPath text-3xl font-bold hover:bg-sky-200'

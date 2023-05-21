@@ -21,6 +21,7 @@
     "build:linux": "electron-vite build && electron-builder --linux --config"
   },
   "dependencies": {
+    "@egjs/react-infinitegrid": "^4.9.0",
     "@electron-toolkit/preload": "^1.0.2",
     "@electron-toolkit/utils": "^1.0.2",
     "@radix-ui/react-dialog": "^1.0.3",
