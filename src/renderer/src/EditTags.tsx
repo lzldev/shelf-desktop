@@ -30,7 +30,7 @@ function EditTags({
   const ColorOptions = useMemo(() => {
     const options = new Array<JSX.Element>()
 
-    options.push(<option value={-1}>Default Color</option>)
+    // options.push(<option value={-1}>Default Color</option>)
 
     options.push(
       ...Array.from(colors.values()).map((color, idx) => (

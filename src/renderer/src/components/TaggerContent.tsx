@@ -42,7 +42,7 @@ function TaggerContent({
           />
           <img
             {...contentProps}
-            onLoad={() => {
+            onLoad={(evt) => {
               setHidden(false)
             }}
             hidden={hidden}

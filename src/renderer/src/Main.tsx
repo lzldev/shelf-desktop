@@ -63,8 +63,8 @@ function Main(): JSX.Element {
     ['content'],
     async (context) => {
       const {orderDirection, orderField} = useOrderStore.getState()
-      const {pageParam = {offset: 0, limit: config.pageSize}} = context
-      const pagination = pageParam || {offset: 0, limit: config.pageSize}
+      const {pageParam = {offset: 0, limit: config!.pageSize}} = context
+      const pagination = pageParam || {offset: 0, limit: config!.pageSize}
       const tags =
         selectedTags.size > 0 ? Array.from(selectedTags.values()) : undefined
 
@@ -83,12 +83,6 @@ function Main(): JSX.Element {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
     },
   )
-
-  useEffect(() => {
-    useOrderStore.subscribe(() => {
-      refetch()
-    })
-  }, [])
 
   useEffect(() => {
     if (!contentList.current) return
@@ -256,6 +250,7 @@ function Main(): JSX.Element {
           className='text-end font-mono text-gray-400'
           onClick={() => {
             toggleDirection()
+            refetch()
           }}
         >
           ORDER:
@@ -300,17 +295,10 @@ function Main(): JSX.Element {
               return
             }
             return page.content!.map((content, contentIdx) => (
-              // <GridThing
-              //   key={content.id}
-              //   pageIdx={pageIdx}
-              //   src={new URL(
-              //     'tagger://' + content?.paths[0]?.path || '',
-              //   ).toString()}
-              // />
               <TaggerContent
                 data-grid-groupkey={pageIdx}
                 key={content.id}
-                className='w-[16.6%]'
+                className='group/content w-[16.6%]'
                 onClick={() => {
                   openContentModal(content)
                 }}
@@ -338,7 +326,6 @@ function Main(): JSX.Element {
 
                     const [fromPage, fromContent] = markerIdx.current
 
-                    //True = Forwards | False = Backwards
                     const direction =
                       fromPage < pageIdx ||
                       (fromPage === pageIdx && fromContent < contentIdx)

@@ -4,9 +4,13 @@ import {defaultHandler} from './TagEvents'
 import {ipcMain} from 'electron'
 import {requestClient} from '../..'
 import {TaggerClient} from './TaggerClient'
+import {sendEventAfter} from '.'
 
 ipcMain.handle('getTaggerColors', defaultHandler(getColors))
-ipcMain.handle('editColors', defaultHandler(editColors))
+ipcMain.handle(
+  'editColors',
+  sendEventAfter(['updateColors'], defaultHandler(editColors)),
+)
 
 async function getColors() {
   const result = await TagColor.findAll({

@@ -25,7 +25,6 @@ function OptionsModal({
             type='text'
             value={config!.pageSize}
             onChange={(evt) => {
-              console.log('evt.target.value ->')
               setConfig({
                 pageSize: parseInt(evt.target.value || '0'),
               })
