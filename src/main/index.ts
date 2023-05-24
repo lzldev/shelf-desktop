@@ -59,8 +59,10 @@ const WindowOptions: WindowOptionsRecord = {
   start: {
     route: 'start',
     startOptions: {
-      width: 600,
-      height: 800,
+      width: 472,
+      height: 500,
+      minWidth: 472,
+      minHeight: 400,
     },
   },
   progress: {

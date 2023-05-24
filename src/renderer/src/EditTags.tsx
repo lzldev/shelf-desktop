@@ -9,6 +9,7 @@ import {useColors} from './hooks/useColors'
 import {useTagQuery} from './hooks/useTagQuery'
 import {useHotkeys} from './hooks/useHotkeys'
 import {SidePanelModal} from './components/SidebarPanelModal'
+import {TagCreationFields} from 'src/main/src/db/models/Tag'
 
 const TagColorBody = clsx(
   'relative text-white z-10 m-1 flex group flex-row items-center justify-between rounded-full bg-[--bgColor] py-3 px-6 outline ring-2 ring-inset ring-white ring-opacity-50',
@@ -267,7 +268,7 @@ function UpdateOperation(
     operation: 'UPDATE'
     id: number
     colorId: number
-  } & import('d:/projetos/tagger/tagger-desktop-app/src/main/src/db/models/Tag').TagCreationFields,
+  } & TagCreationFields,
   setOperations: Updater<Map<number, TagOperation>>,
   tag: Tag,
   options: JSX.Element[],

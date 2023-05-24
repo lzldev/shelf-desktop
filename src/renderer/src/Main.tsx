@@ -138,7 +138,6 @@ function Main(): JSX.Element {
     turnOff: closeOptionsModal,
   } = useToggle(false)
 
-  const containerClass = clsx('min-h-screen max-h-fit w-full p-10')
   if (error || !contentQuery?.pages) {
     return <>{error}</>
   }
@@ -147,7 +146,7 @@ function Main(): JSX.Element {
   }
 
   return (
-    <div className={containerClass}>
+    <div className={clsx('min-h-screen max-h-fit w-full p-10 bg-background')}>
       {showContentModal &&
         createPortal(
           <ContentDetails

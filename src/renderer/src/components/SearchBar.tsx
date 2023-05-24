@@ -50,7 +50,7 @@ export const SearchBar = ({
   return (
     <div
       className={clsx(
-        'min-w-screen : sticky top-0 z-20 -m-10 bg-gray-300 px-10 pb-7 pt-7',
+        'min-w-screen sticky top-0 z-20 -m-10 bg-surface px-10 pb-7 pt-7 shadow',
       )}
     >
       <div className='relative'>
