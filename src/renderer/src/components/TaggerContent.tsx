@@ -36,7 +36,7 @@ function TaggerContent({
         <>
           <img
             className={
-              'absolute inset-auto -z-10 scale-150 object-contain opacity-75 blur-2xl saturate-200'
+              'absolute inset-0 -z-10 h-full w-full scale-150 object-contain opacity-25 blur-2xl saturate-200'
             }
             src={uri}
           />

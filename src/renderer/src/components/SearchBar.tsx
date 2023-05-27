@@ -54,11 +54,15 @@ export const SearchBar = ({
       )}
     >
       <div className='relative'>
+        {/* <div className='customGradient absolute inset-0 z-10 h-full w-full rounded-full' /> */}
         <div
           className={
-            'z-20 flex w-full place-content-stretch overflow-clip rounded-full bg-white pl-2 ring-2 ring-pink-500'
+            'ringThingClip relative z-20 flex w-full place-content-stretch rounded-full bg-white pl-2'
           }
         >
+          <div className='absolute inset-0 h-full w-full rounded-full ring-2 ring-blue-tag' />
+          <div className='ringThingFirstLayer absolute inset-0 h-full w-full rounded-full ring-2 ring-green-tag' />
+          <div className='ringThingSecondLayer absolute inset-0 h-full w-full rounded-full ring-2 ring-red-tag' />
           <input
             className={
               'z-20 w-full bg-transparent p-2 text-pink-500 outline-none selection:bg-pink-200 hover:border-none active:border-none'
@@ -82,7 +86,7 @@ export const SearchBar = ({
           />
           <button
             className={
-              'z-20 border-pink-500 bg-pink-500 bg-clip-text px-10 font-bold text-gray-700 text-transparent ring-gray-300 transition-all hover:bg-clip-border hover:text-white hover:ring-0'
+              'z-20 bg-red-tag bg-clip-text px-11 font-bold text-gray-700 text-transparent ring-gray-300 transition-all hover:bg-clip-border hover:text-white hover:ring-0'
             }
             onClick={onQuery}
           >
@@ -91,7 +95,7 @@ export const SearchBar = ({
         </div>
         <div
           className={
-            'absolute -left-0.5 -right-0.5 top-10 z-10 -mt-5 h-auto origin-top  border-x-2 border-b-2 border-pink-500 bg-white pt-5 animate-in fill-mode-backwards'
+            'customGradientBorder absolute -left-0.5 -right-0.5 top-10 z-10 -mt-5 h-auto  origin-top border-x-2 border-b-2 bg-white pt-5 animate-in fill-mode-backwards'
           }
           hidden={hideDropdown}
         >

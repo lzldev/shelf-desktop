@@ -55,6 +55,7 @@ function EditTags({
     <SidePanelModal
       onClose={onClose}
       ref={modalRef}
+      className='min-w-fit max-w-[80vw]'
     >
       <div className='mb-2 flex flex-row'>
         <input
@@ -86,7 +87,7 @@ function EditTags({
 
       <div className='flex w-full grow flex-col overflow-x-hidden'>
         <div
-          className='group/newButton z-10 m-1 flex flex-row items-center rounded-full bg-slate-400 p-3 text-center font-bold text-white outline ring-inset ring-gray-400 backdrop-contrast-200 hover:bg-clip-text hover:text-transparent hover:ring-2'
+          className='group/newButton z-10 m-1 flex flex-row items-center rounded-full bg-slate-400 p-3 text-center font-bold text-white outline ring-inset ring-gray-400 backdrop-contrast-200 duration-75 hover:bg-clip-text hover:text-transparent hover:ring-2'
           onClick={() => {
             setNewTagOperations((nc) => {
               nc.push({

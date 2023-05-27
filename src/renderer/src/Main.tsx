@@ -28,6 +28,7 @@ import {useHotkeysRef} from './hooks/useHotkeys'
 import {MasonryInfiniteGrid} from '@egjs/react-infinitegrid'
 import {GridThing} from './components/GridThing'
 import {OptionsModal} from './OptionsModal'
+import {CornerThing} from './components/CornerThing'
 
 function Main(): JSX.Element {
   const {config} = useConfigStore()
@@ -146,7 +147,8 @@ function Main(): JSX.Element {
   }
 
   return (
-    <div className={clsx('min-h-screen max-h-fit w-full p-10 bg-background')}>
+    <div className={clsx('max-h-fit min-h-screen w-full bg-background p-10')}>
+      <CornerThing />
       {showContentModal &&
         createPortal(
           <ContentDetails
@@ -307,7 +309,7 @@ function Main(): JSX.Element {
                 }}
               >
                 <TagColorThing
-                  className='absolute inset-x-0 top-0 flex h-1 w-full flex-row overflow-hidden'
+                  className='absolute inset-x-0 top-0 flex h-1 w-full flex-row overflow-hidden transition-all duration-50 group-hover/content:h-1.5'
                   tags={content.tags}
                 />
                 <input

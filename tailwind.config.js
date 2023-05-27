@@ -9,6 +9,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      transitionDuration: {
+        50: '50ms',
+      },
       colors: {
         background: colors.gray['50'],
         accent: colors.pink['500'],

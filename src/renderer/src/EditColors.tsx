@@ -37,10 +37,17 @@ function EditColors({
 
   return (
     <SidePanelModal
+      className='w-fit min-w-[26rem] max-w-[80%]'
       onClose={onClose}
       ref={modalRef}
     >
-      <div className='flex flex-row items-center justify-between'>
+      <div className='flex flex-row-reverse items-center justify-between'>
+        <span
+          className='place-self-end self-end justify-self-end px-3 py-3 text-end text-xl transition-all duration-50 hover:contrast-200 hover:invert'
+          onClick={onClose}
+        >
+          X
+        </span>
         {(operations.size > 0 || newColorOperations.length > 0) && (
           <InlineButton
             onClick={() => {
@@ -59,12 +66,6 @@ function EditColors({
             Apply
           </InlineButton>
         )}
-        <span
-          className='text-md place-self-end self-end justify-self-end px-3 py-3 text-end transition-all hover:contrast-200 hover:invert'
-          onClick={onClose}
-        >
-          X
-        </span>
       </div>
       <div className='flex w-full grow flex-col overflow-x-hidden'>
         <div

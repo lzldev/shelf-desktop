@@ -9,6 +9,19 @@
     --scroll-bar-border: #555555;
     @apply bg-gray-100 text-slate-900;
   }
+  .ringThingFirstLayer {
+    clip-path: inset(-100% -100% -100% 70%);
+  }
+  .ringThingSecondLayer {
+    clip-path: inset(-100% -100% -100% 80%);
+  }
+  .customGradientRing {
+    box-shadow: var(--tw-ring-inset) 0 0 0
+      calc(2px + var(--tw-ring-offset-width)) rgba(239, 68, 68, 1);
+  }
+  .ringThingClip {
+    clip-path: inset(-2px -2px -2px -2px round 9999px);
+  }
   .unselectable,
   * {
     user-select: none;

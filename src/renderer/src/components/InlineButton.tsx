@@ -6,7 +6,7 @@ export const InlineButton = (props: HTMLAttributes<HTMLAnchorElement>) => {
     <span
       {...props}
       className={clsx(
-        ' group/button relative m-1 inline-flex animate-gradient_xy_fast items-center overflow-clip rounded-full bg-gray-500 p-1.5 px-3 text-center font-bold text-white text-opacity-90 ring-2 ring-inset ring-gray-400 ring-opacity-50 transition-all hover:ring-4 hover:ring-white',
+        ' group/button relative m-1 inline-flex animate-gradient_xy_fast items-center overflow-clip rounded-full bg-gray-500 p-1.5 px-3 text-center font-bold text-white text-opacity-90 ring-2 ring-inset ring-gray-400 ring-opacity-50 transition-all duration-75 hover:ring-4 hover:ring-white',
         props.className,
       )}
     >

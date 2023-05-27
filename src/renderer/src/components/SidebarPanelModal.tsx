@@ -12,7 +12,6 @@ export const SidePanelModal = forwardRef(function SidebarPanelModal(
   return (
     <div
       ref={fRef}
-      {...props}
       className={clsx('fixed inset-0 z-50 flex h-full w-full flex-col')}
       tabIndex={-1}
     >
@@ -21,8 +20,9 @@ export const SidePanelModal = forwardRef(function SidebarPanelModal(
         className={'opacity-0'}
       />
       <div
+        {...props}
         className={clsx(
-          'flex h-full min-w-[40vw] flex-col self-end bg-slate-100 p-5 animate-in slide-in-from-right-full sm:max-w-[40vw] md:max-w-[20vw]',
+          'flex h-full flex-col self-end bg-slate-100 p-5 animate-in slide-in-from-right-full',
           props.className,
         )}
       >

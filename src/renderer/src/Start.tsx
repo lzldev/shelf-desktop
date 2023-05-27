@@ -22,13 +22,13 @@ function Start(): JSX.Element {
         <Logo className='mx-auto my-10' />
         <div className='flex flex-row divide-x-4 divide-black border-b-4 border-black text-center font-mono'>
           <div
-            className='flex-1 cursor-pointer justify-center p-2 transition-all hover:bg-gray-100'
+            className='flex-1 cursor-pointer justify-center p-2 transition-all duration-50  hover:bg-gray-100'
             onClick={() => openDialog('openDirectory')}
           >
             <h1>NEW DIRECTORY</h1>
           </div>
           <div
-            className='flex-1 cursor-pointer items-center justify-center p-2 transition-all hover:bg-gray-100'
+            className='flex-1 cursor-pointer items-center justify-center p-2 transition-all duration-50 hover:bg-gray-100'
             onClick={() => openDialog('openFile')}
           >
             OPEN
