@@ -17,7 +17,7 @@ function TaggerContent({
   const video = content.extension == '.mp4' || content.extension == '.avi'
   const [hidden, setHidden] = useState(!video)
 
-  const uri = new URL('tagger://' + content?.paths[0]?.path || '').toString()
+  const uri = new URL('file://' + content?.paths[0]?.path || '').toString()
 
   return (
     <div
