@@ -2,6 +2,7 @@ import Versions from './components/Versions'
 import {useConfigStore} from './hooks/useConfig'
 import {ReactComponent as Logo} from './assets/logo.svg'
 import {CornerThing} from './components/CornerThing'
+import {OpenDirectory} from './components/Icons'
 
 function Start(): JSX.Element {
   const {config} = useConfigStore()
@@ -10,6 +11,7 @@ function Start(): JSX.Element {
     const dialog = await window.api.invokeOnMain('openDialog', {
       dialogType: dir,
     })
+
     if (dialog.canceled || dialog.filePaths.length === 0) return
 
     await window.api.invokeOnMain('startTaggerClient', dialog.filePaths[0])
@@ -20,27 +22,21 @@ function Start(): JSX.Element {
       <CornerThing />
       <div className='bg-surface'>
         <Logo className='mx-auto my-10' />
-        <div className='flex flex-row divide-x-4 divide-black border-b-4 border-black text-center font-mono'>
-          <div
-            className='flex-1 cursor-pointer justify-center p-2 transition-all duration-50  hover:bg-gray-100'
-            onClick={() => openDialog('openDirectory')}
-          >
-            <h1>NEW DIRECTORY</h1>
-          </div>
-          <div
-            className='flex-1 cursor-pointer items-center justify-center p-2 transition-all duration-50 hover:bg-gray-100'
-            onClick={() => openDialog('openFile')}
-          >
-            OPEN
-          </div>
+        <div
+          className='group/button flex cursor-pointer flex-row justify-center bg-surface p-2 font-mono font-bold transition-all duration-50 hover:bg-gray-100'
+          // onClick={() => openDialog('openDirectory')}
+          onClick={() => openDialog('openFile')}
+        >
+          <OpenDirectory className='mr-1 transition-all' />
+          OPEN
         </div>
       </div>
-      <div className='flex h-1 grow flex-col overflow-y-auto text-sm font-bold'>
+      <div className='flex grow flex-col overflow-y-auto font-mono text-sm font-bold'>
         {Array.from(new Set(config?.recentFiles).values()).map(
           (recentPath, idx) => (
             <h1
               key={idx}
-              className='recentPath  hover:bg-sky-200'
+              className='px-2 py-0.5 first:pt-1 hover:bg-sky-200'
               onClick={() => {
                 window.api.invokeOnMain('startTaggerClient', recentPath)
               }}

@@ -2,6 +2,7 @@ import {InlineButton} from './components/InlineButton'
 import {SidePanelModal} from './components/SidebarPanelModal'
 import Versions from './components/Versions'
 import {useConfigStore} from './hooks/useConfig'
+import {useHotkeys} from './hooks/useHotkeys'
 
 function OptionsModal({
   onClose,
@@ -9,6 +10,10 @@ function OptionsModal({
   onClose: (...any: any[]) => any
 }): JSX.Element {
   const {config, setConfig, saveConfig} = useConfigStore()
+
+  useHotkeys({
+    Escape: onClose,
+  })
 
   return (
     <SidePanelModal

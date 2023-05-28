@@ -17,18 +17,16 @@ import {ContentDetails} from './ContentDetails'
 import {useToggle} from './hooks/useToggle'
 import {useOrderStore} from './hooks/useOrderStore'
 import {Dropdown} from './components/Dropdown'
-import {useConfig, useConfigStore} from './hooks/useConfig'
+import {useConfigStore} from './hooks/useConfig'
 import {TagColorThing} from './components/TagColorThing'
 import {EditColors} from './EditColors'
 import {pathQuery, SearchBar} from './components/SearchBar'
-import {Cog} from './components/Icons'
+import {Cog, Update} from './components/Icons'
 import {EditTags} from './EditTags'
 import {useImmer} from 'use-immer'
 import {useHotkeysRef} from './hooks/useHotkeys'
 import {MasonryInfiniteGrid} from '@egjs/react-infinitegrid'
-import {GridThing} from './components/GridThing'
 import {OptionsModal} from './OptionsModal'
-import {CornerThing} from './components/CornerThing'
 
 function Main(): JSX.Element {
   const {config} = useConfigStore()
@@ -148,7 +146,6 @@ function Main(): JSX.Element {
 
   return (
     <div className={clsx('max-h-fit min-h-screen w-full bg-background p-10')}>
-      <CornerThing />
       {showContentModal &&
         createPortal(
           <ContentDetails
@@ -279,14 +276,8 @@ function Main(): JSX.Element {
       <div ref={contentList}>
         <MasonryInfiniteGrid
           ref={masonry}
-          resizeDebounce={6}
-          maxResizeDebounce={6}
-          // onRequestAppend={() => {
-          //   if (isFetching && !hasNextPage) {
-          //     return
-          //   }
-          //   fetchNextPage()
-          // }}
+          resizeDebounce={1}
+          maxResizeDebounce={1}
           useFirstRender={false}
           className={'w-full overflow-clip'}
           column={6}
@@ -374,11 +365,11 @@ function Main(): JSX.Element {
           })}
         </MasonryInfiniteGrid>
       </div>
-      {isFetching ? (
+      {isFetching && (
         <div className='flex items-center justify-center py-10'>
-          <Cog className='h-14 w-14 animate-spin' />
+          <Update className='h-14 w-14 animate-spin' />
         </div>
-      ) : null}
+      )}
     </div>
   )
 }

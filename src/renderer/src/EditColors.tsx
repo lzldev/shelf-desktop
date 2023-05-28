@@ -42,12 +42,12 @@ function EditColors({
       ref={modalRef}
     >
       <div className='flex flex-row-reverse items-center justify-between'>
-        <span
+        {/* <span
           className='place-self-end self-end justify-self-end px-3 py-3 text-end text-xl transition-all duration-50 hover:contrast-200 hover:invert'
           onClick={onClose}
         >
           X
-        </span>
+        </span> */}
         {(operations.size > 0 || newColorOperations.length > 0) && (
           <InlineButton
             onClick={() => {
