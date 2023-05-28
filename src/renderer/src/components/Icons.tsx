@@ -29,5 +29,6 @@ const Cog = (props: HTMLAttributes<SVGElement>) => icon('iconCog', props)
 const BackArrow = (props: HTMLAttributes<SVGElement>) =>
   icon('iconBackArrow', props)
 const Check = (props: HTMLAttributes<SVGElement>) => icon('iconCheck', props)
+const Update = (props: HTMLAttributes<SVGElement>) => icon('iconUpdate', props)
 
-export {PlusSign, Pencil, Cog, BackArrow, Check, OpenDirectory}
+export {PlusSign, Pencil, Cog, BackArrow, Check, OpenDirectory, Update}
