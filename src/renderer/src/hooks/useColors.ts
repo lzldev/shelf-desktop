@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react'
 import {TagColor} from 'src/main/src/db/models'
-import {useConfig} from './useConfig'
+import {useConfigStore} from './useConfig'
 import {TagColorFields} from 'src/main/src/db/models/TagColor'
 
 function mapFromColors(colors: TagColor[]) {
@@ -23,7 +23,7 @@ try {
 
 const useColors = () => {
   const [colors, setColors] = useState<Map<number, TagColor>>(_colors)
-  const {defaultColor: _defaultColor} = useConfig().config
+  const {defaultColor: _defaultColor} = useConfigStore().config!
 
   const defaultColor = {
     id: -1,
