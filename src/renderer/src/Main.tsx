@@ -36,8 +36,7 @@ function Main(): JSX.Element {
   const [pathQueries, setPathQueries] = useImmer<Set<pathQuery>>(new Set())
   const [markedContent, setMarkedContent] = useImmer<Set<number>>(new Set())
   const {orderDirection, orderField, toggleDirection} = useOrderStore()
-  const contentList = useRef<HTMLDivElement>(null)
-  const masonry = useRef<MasonryInfiniteGrid>(null)
+  const contentList = useRef<HTMLDivElement & MasonryInfiniteGrid>(null)
 
   const {keys} = useHotkeysRef({
     Shift: {
@@ -274,13 +273,9 @@ function Main(): JSX.Element {
         )}
       </div>
       <div ref={contentList}>
-        <MasonryInfiniteGrid
-          ref={masonry}
-          resizeDebounce={1}
-          maxResizeDebounce={1}
-          useFirstRender={false}
-          className={'w-full overflow-clip'}
-          column={6}
+        <Body
+          ref={contentList}
+          error={error}
         >
           {contentQuery?.pages?.map((page, pageIdx) => {
             if (Array.isArray(page)) {
@@ -290,7 +285,11 @@ function Main(): JSX.Element {
               <TaggerContent
                 data-grid-groupkey={pageIdx}
                 key={content.id}
-                className='group/content w-[16.6%]'
+                className={clsx(
+                  'group/content bg-black bg-opacity-10',
+                  config?.layoutMode === 'masonry' ? 'w-[16.6%]' : '',
+                  config?.layoutMode === 'grid' ? 'h-[10rem]' : '',
+                )}
                 onClick={() => {
                   openContentModal(content)
                 }}
@@ -363,7 +362,7 @@ function Main(): JSX.Element {
               </TaggerContent>
             ))
           })}
-        </MasonryInfiniteGrid>
+        </Body>
       </div>
       {isFetching && (
         <div className='flex items-center justify-center py-10'>
@@ -378,13 +377,16 @@ export {Main}
 
 const Body = forwardRef(function Body(
   {
-    isLoading,
     error,
+    children,
     ...props
-  }: {isLoading: boolean; error: unknown} & PropsWithChildren &
-    HTMLAttributes<HTMLDivElement>,
-  ref: Ref<HTMLDivElement>,
+  }: {error: unknown} & PropsWithChildren &
+    HTMLAttributes<HTMLDivElement> &
+    HTMLAttributes<MasonryInfiniteGrid>,
+  ref: Ref<MasonryInfiniteGrid> & Ref<HTMLDivElement>,
 ) {
+  const {config} = useConfigStore()
+
   if (error) {
     return (
       <div
@@ -395,14 +397,36 @@ const Body = forwardRef(function Body(
       </div>
     )
   }
-  return (
-    <div
-      {...props}
-      ref={ref}
-    >
-      {isLoading ? <></> : props.children}
-    </div>
-  )
+
+  switch (config?.layoutMode) {
+    case 'grid':
+      return (
+        <div
+          {...props}
+          ref={ref}
+          className='grid min-h-screen grid-flow-dense grid-cols-6 gap-2'
+        >
+          {children}
+        </div>
+      )
+      break
+    case 'masonry':
+      return (
+        <MasonryInfiniteGrid
+          ref={ref}
+          resizeDebounce={1}
+          maxResizeDebounce={1}
+          useFirstRender={false}
+          className={'w-full overflow-clip'}
+          column={6}
+        >
+          {children}
+        </MasonryInfiniteGrid>
+      )
+      break
+    default:
+      return <></>
+  }
 })
 
 function OptionsDropdown(props: {

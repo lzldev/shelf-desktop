@@ -9,6 +9,7 @@ export const TAGGER_CONFIG_SCHEMA = {
   ignorePaths: z.array(z.string()),
   pageSize: z.number().min(0),
   defaultColor: z.string().min(0),
+  layoutMode: z.enum(['grid', 'masonry']),
 } as const
 export type TaggerConfigType = zJsonSchemaInfer<typeof TAGGER_CONFIG_SCHEMA>
 

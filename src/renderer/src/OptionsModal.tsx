@@ -40,6 +40,7 @@ function OptionsModal({
           <input
             type='text'
             value={config!.pageSize}
+            className='p-1'
             onChange={(evt) => {
               setConfig({
                 pageSize: parseInt(evt.target.value || '0'),
@@ -56,6 +57,19 @@ function OptionsModal({
               })
             }}
           />
+          <label>Layout:</label>
+          <select
+            onChange={(evt) => {
+              setConfig({
+                layoutMode: evt.currentTarget.value as any,
+              })
+            }}
+            value={config?.layoutMode}
+            className='bg-white py-1'
+          >
+            <option value={'masonry'}>Masonry</option>
+            <option value={'grid'}>Grid</option>
+          </select>
           <div className='flex flex-row-reverse'>
             <InlineButton onClick={saveConfig}>Save</InlineButton>
           </div>

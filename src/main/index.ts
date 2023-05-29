@@ -36,7 +36,7 @@ const TaggerConfig = new zJson(TAGGER_CONFIG_PATH, TAGGER_CONFIG_SCHEMA, {
   defaultColor: '#ef4444',
   ignorePaths: [],
   pageSize: 25,
-  nativeBorder: false,
+  layoutMode: 'grid',
 })
 
 type WindowOptionsRecord = {
