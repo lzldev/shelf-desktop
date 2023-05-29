@@ -21,12 +21,12 @@ import {useConfigStore} from './hooks/useConfig'
 import {TagColorThing} from './components/TagColorThing'
 import {EditColors} from './EditColors'
 import {pathQuery, SearchBar} from './components/SearchBar'
-import {Cog, Update} from './components/Icons'
 import {EditTags} from './EditTags'
 import {useImmer} from 'use-immer'
 import {useHotkeysRef} from './hooks/useHotkeys'
 import {MasonryInfiniteGrid} from '@egjs/react-infinitegrid'
 import {OptionsModal} from './OptionsModal'
+import {ArrowPathIcon, Cog8ToothIcon} from '@heroicons/react/24/solid'
 
 function Main(): JSX.Element {
   const {config} = useConfigStore()
@@ -366,7 +366,7 @@ function Main(): JSX.Element {
       </div>
       {isFetching && (
         <div className='flex items-center justify-center py-10'>
-          <Update className='h-14 w-14 animate-spin' />
+          <ArrowPathIcon className='h-6 w-6 animate-spin' />
         </div>
       )}
     </div>
@@ -404,7 +404,7 @@ const Body = forwardRef(function Body(
         <div
           {...props}
           ref={ref}
-          className='grid min-h-screen grid-flow-dense grid-cols-6 gap-2'
+          className='grid grid-flow-dense grid-cols-6 gap-2'
         >
           {children}
         </div>
@@ -437,7 +437,7 @@ function OptionsDropdown(props: {
   return (
     <Dropdown
       triggerRender={() => (
-        <Cog className='mb-1 ml-1  fill-gray-100 stroke-gray-600 transition-colors hover:fill-gray-300 hover:stroke-white' />
+        <Cog8ToothIcon className='mb-1 ml-1 h-6 w-6  fill-gray-100 stroke-gray-600 transition-colors hover:fill-gray-300 hover:stroke-white' />
       )}
     >
       <div

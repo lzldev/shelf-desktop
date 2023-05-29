@@ -67,8 +67,8 @@ function OptionsModal({
             value={config?.layoutMode}
             className='bg-white py-1'
           >
-            <option value={'masonry'}>Masonry</option>
             <option value={'grid'}>Grid</option>
+            <option value={'masonry'}>Masonry</option>
           </select>
           <div className='flex flex-row-reverse'>
             <InlineButton onClick={saveConfig}>Save</InlineButton>
