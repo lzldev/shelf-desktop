@@ -21,7 +21,7 @@ import {
   DropdownMenuProps,
 } from '@radix-ui/react-dropdown-menu'
 import {useHotkeys} from './hooks/useHotkeys'
-import {BackArrow} from './components/Icons'
+import {ArrowLeftIcon} from '@heroicons/react/24/solid'
 
 const prevTitle = window.document.title
 
@@ -113,8 +113,8 @@ function ContentDetails({
       className={clsx(containerClass)}
     >
       <div className={clsx('flex flex-row items-center bg-gray-200 p-5')}>
-        <BackArrow
-          className='h-16 w-16 align-middle transition-colors hover:stroke-white'
+        <ArrowLeftIcon
+          className='h-6 w-6 align-middle transition-colors hover:stroke-white'
           onClick={onClose}
         />
       </div>

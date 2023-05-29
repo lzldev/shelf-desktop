@@ -12,7 +12,7 @@ export type ColorOperation =
     } & TagColorCreationFields)
   | {operation: 'DELETE'; id: number}
 
-export type CREATEColorOP = Prettify<
+export type CreateColorOP = Prettify<
   Extract<ColorOperation, {operation: 'CREATE'}>
 >
 export type UpdateColorOP = Prettify<

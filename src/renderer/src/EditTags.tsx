@@ -1,7 +1,6 @@
 import {type HTMLAttributes, useRef, useMemo} from 'react'
 import clsx from 'clsx'
 import {InlineButton} from './components/InlineButton'
-import {Pencil, PlusSign} from './components/Icons'
 import {Updater, useImmer} from 'use-immer'
 import {CREATETagOP, TagOperation, UpdateTagOP} from 'src/types/Operations'
 import {Tag} from 'src/main/src/db/models'
@@ -10,6 +9,7 @@ import {useTagQuery} from './hooks/useTagQuery'
 import {useHotkeys} from './hooks/useHotkeys'
 import {SidePanelModal} from './components/SidebarPanelModal'
 import {TagCreationFields} from 'src/main/src/db/models/Tag'
+import {PencilSquareIcon, PlusIcon} from '@heroicons/react/24/solid'
 
 const TagColorBody = clsx(
   'relative text-white z-10 m-1 flex group flex-row items-center justify-between rounded-full bg-[--bgColor] py-3 px-6 outline ring-2 ring-inset ring-white ring-opacity-50',
@@ -99,7 +99,7 @@ function EditTags({
             })
           }}
         >
-          <PlusSign className='h-10 w-10 group-hover/newButton:stroke-gray-400' />
+          <PlusIcon className='h-8 w-8 group-hover/newButton:stroke-gray-400' />
           <span className='ml-5 line-clamp-1 flex w-full flex-row overflow-hidden text-ellipsis'>
             Create Tag
           </span>
@@ -292,7 +292,7 @@ function UpdateOperation(
           />
 
           <div className='flex items-center justify-self-end'>
-            <Pencil className='mr-2 flex stroke-white' />
+            <PencilSquareIcon className='pointer-events-none z-10 mr-2 flex h-6 w-6 stroke-white' />
             <InlineButton
               className='justify-self-end'
               onClick={() => {

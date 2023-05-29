@@ -2,16 +2,16 @@ import {type HTMLAttributes, useRef} from 'react'
 import clsx from 'clsx'
 import {useColors} from './hooks/useColors'
 import {InlineButton} from './components/InlineButton'
-import {Pencil, PlusSign} from './components/Icons'
 import {Updater, useImmer} from 'use-immer'
 import type {TagColor} from 'src/main/src/db/models/TagColor'
 import {
-  CREATEColorOP,
+  CreateColorOP,
   ColorOperation,
   UpdateColorOP,
 } from 'src/types/Operations'
 import {useHotkeys} from './hooks/useHotkeys'
 import {SidePanelModal} from './components/SidebarPanelModal'
+import {PencilSquareIcon, PlusIcon} from '@heroicons/react/24/solid'
 
 const TagColorBody = clsx(
   'relative z-10 m-1 group flex flex-row items-center justify-between rounded-full bg-[--bgColor] py-1.5 pl-5  pr-3 text-white text-opacity-90 outline ring-2 ring-inset ring-white ring-opacity-40',
@@ -27,7 +27,7 @@ function EditColors({
   const [operations, setOperations] = useImmer<Map<number, ColorOperation>>(
     new Map(),
   )
-  const [newColorOperations, setNewColorOperations] = useImmer<CREATEColorOP[]>(
+  const [newColorOperations, setNewColorOperations] = useImmer<CreateColorOP[]>(
     [],
   )
 
@@ -69,7 +69,7 @@ function EditColors({
       </div>
       <div className='flex w-full grow flex-col overflow-x-hidden'>
         <div
-          className='z-10 m-1 flex flex-row items-center rounded-full bg-slate-400 p-3 text-center text-white text-opacity-90 outline backdrop-contrast-200 transition-all hover:bg-clip-text hover:text-transparent'
+          className='z-10 m-1 flex flex-row items-center rounded-full bg-slate-400 p-3 text-center text-white text-opacity-90 outline backdrop-contrast-200 transition-all hover:bg-clip-text  hover:text-transparent'
           onClick={() => {
             setNewColorOperations((nc) => {
               nc.push({
@@ -80,7 +80,7 @@ function EditColors({
             })
           }}
         >
-          <PlusSign className='h-16 w-16' />
+          <PlusIcon className='h-8 w-8' />
           <span className='ml-5 line-clamp-1 flex w-full flex-row overflow-hidden text-ellipsis'>
             NEW COLOR
           </span>
@@ -208,7 +208,7 @@ const EditableColorItem = ({
               }}
             />
             <div className='flex items-center justify-self-end'>
-              <Pencil className='pointer-events-none z-10 mr-2 flex stroke-white' />
+              <PencilSquareIcon className='pointer-events-none z-10 mr-2 flex h-6 w-6 stroke-white' />
               <InlineButton
                 className='justify-self-end'
                 onClick={() => {
