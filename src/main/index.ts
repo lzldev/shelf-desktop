@@ -21,7 +21,7 @@ import {TaggerWebContentsSend} from '../preload/ipcRendererTypes'
 import {TAGGER_CONFIG_PATH, TAGGER_CONFIG_SCHEMA} from './src/TaggerConfig'
 
 //Imports event Handlers.
-import './src/tagger-client/' //FIXME: This import is doing too much work
+import './src/tagger-client/'
 
 //TODO: Change name and location
 export function requestClient(): TaggerClient | false {
@@ -38,13 +38,6 @@ const TaggerConfig = new zJson(TAGGER_CONFIG_PATH, TAGGER_CONFIG_SCHEMA, {
   pageSize: 25,
   layoutMode: 'grid',
 })
-
-type WindowOptionsRecord = {
-  [key: string]: {
-    route: string
-    startOptions: Electron.BrowserWindowConstructorOptions
-  }
-}
 
 const WindowOptions: WindowOptionsRecord = {
   main: {
@@ -75,6 +68,14 @@ const WindowOptions: WindowOptionsRecord = {
   },
 } as const
 
+type WindowOptionsRecord = Record<
+  string,
+  {
+    route: string
+    startOptions: Electron.BrowserWindowConstructorOptions
+  }
+>
+
 let Client: TaggerClient
 
 const Windows = new Map<keyof typeof WindowOptions, BrowserWindow>()
@@ -84,14 +85,16 @@ function createWindow(route: keyof typeof WindowOptions): void {
 
   const windowOptions = WindowOptions[route]!
 
-  const screenArea = screen.getPrimaryDisplay().bounds
+  const primaryDisplay = screen.getPrimaryDisplay().bounds
   const positionX = Math.max(
-    screenArea.width / 2 + screenArea.x - windowOptions.startOptions.width! / 2,
+    primaryDisplay.width / 2 +
+      primaryDisplay.x -
+      windowOptions.startOptions.width! / 2,
     0,
   )
   const positionY = Math.max(
-    screenArea.height / 2 +
-      screenArea.y -
+    primaryDisplay.height / 2 +
+      primaryDisplay.y -
       windowOptions.startOptions.height! / 2,
     0,
   )
@@ -116,6 +119,7 @@ function createWindow(route: keyof typeof WindowOptions): void {
       sandbox: false,
     },
   })
+
   newWindow.removeMenu()
 
   newWindow.on('ready-to-show', () => {

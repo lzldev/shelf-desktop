@@ -1,3 +1,5 @@
+import {DocumentIcon} from '@heroicons/react/24/solid'
+import {checkFormat} from '@renderer/utils/formats'
 import clsx from 'clsx'
 import {HTMLAttributes, useRef, useState} from 'react'
 import {Content} from 'src/main/src/db/models'
@@ -14,8 +16,9 @@ function TaggerContent({
     HTMLAttributes<HTMLVideoElement>
 } & HTMLAttributes<HTMLDivElement>) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const video = content.extension == '.mp4' || content.extension == '.avi'
-  const [hidden, setHidden] = useState(!video)
+
+  const format = checkFormat(content.extension)
+  const [hidden, setHidden] = useState(!(format === 'image'))
 
   const uri = new URL('file://' + content?.paths[0]?.path || '').toString()
 
@@ -25,14 +28,14 @@ function TaggerContent({
       ref={containerRef}
       className={clsx(
         'relative overflow-clip',
-        !hidden && video ? '' : '',
-        hidden && !video
+        !hidden && format === 'video' ? '' : '',
+        hidden && format === 'image'
           ? 'animate-gradient_x bg-opacity-50 bg-gradient-to-r from-gray-600 to-gray-800 opacity-50'
           : '',
         props.className,
       )}
     >
-      {!video ? (
+      {format === 'image' ? (
         <>
           <img
             className={
@@ -53,7 +56,7 @@ function TaggerContent({
             src={uri}
           />
         </>
-      ) : (
+      ) : format === 'video' ? (
         <div className='relative flex h-full w-full'>
           <video
             className={
@@ -75,6 +78,16 @@ function TaggerContent({
             }}
             muted={!controls}
           />
+        </div>
+      ) : (
+        <div className='flex h-full flex-col items-center justify-center overflow-clip'>
+          <DocumentIcon className='h-8 w-8 fill-gray-300' />
+          <span
+            dir={!content.extension ? 'rtl' : undefined}
+            className='mt-1 w-2/3 truncate text-center font-mono text-gray-100'
+          >
+            {content.extension || uri}
+          </span>
         </div>
       )}
       {props.children}
