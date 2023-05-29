@@ -37,6 +37,7 @@ function Main(): JSX.Element {
   const [markedContent, setMarkedContent] = useImmer<Set<number>>(new Set())
   const {orderDirection, orderField, toggleDirection} = useOrderStore()
   const contentList = useRef<HTMLDivElement & MasonryInfiniteGrid>(null)
+  const markerIdx = useRef<[pageNumber: number, contentNumber: number]>()
 
   const {keys} = useHotkeysRef({
     Shift: {
@@ -46,7 +47,6 @@ function Main(): JSX.Element {
       },
     },
   })
-  const markerIdx = useRef<[pageNumber: number, contentNumber: number]>()
 
   const {
     data: contentQuery,

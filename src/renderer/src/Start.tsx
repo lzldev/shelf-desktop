@@ -2,7 +2,7 @@ import Versions from './components/Versions'
 import {useConfigStore} from './hooks/useConfig'
 import {ReactComponent as Logo} from './assets/logo.svg'
 import {CornerThing} from './components/CornerThing'
-import {OpenDirectory} from './components/Icons'
+import {FolderOpenIcon} from '@heroicons/react/20/solid'
 
 function Start(): JSX.Element {
   const {config} = useConfigStore()
@@ -23,12 +23,12 @@ function Start(): JSX.Element {
       <div className='bg-surface'>
         <Logo className='mx-auto my-10' />
         <div
-          className='group/button flex cursor-pointer flex-row justify-center bg-surface p-2 font-mono font-bold transition-all duration-50 hover:bg-gray-100'
+          className='group/button flex cursor-pointer flex-row justify-center bg-surface py-2 font-mono font-bold transition-all duration-50 hover:bg-gray-100'
           // onClick={() => openDialog('openDirectory')}
           onClick={() => openDialog('openFile')}
         >
-          <OpenDirectory className='mr-1 transition-all' />
-          OPEN
+          <FolderOpenIcon className='mr-1 h-6 w-6 self-center' />
+          <span className='text-md mt-1'>OPEN</span>
         </div>
       </div>
       <div className='flex grow flex-col overflow-y-auto font-mono text-sm font-bold'>
