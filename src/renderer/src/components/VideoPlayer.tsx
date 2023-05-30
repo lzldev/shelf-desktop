@@ -98,7 +98,7 @@ export function VideoPlayer({
             }}
           ></div>
         </div>
-        <span className='font-mono text-opacity-20'>TAGGER PLAYER V0.001</span>
+        <span className='font-mono text-opacity-20'>SHELF PLAYER V0.001</span>
         <span className='pointer-events-auto flex items-center px-2 align-middle font-mono text-opacity-20 transition-colors hover:bg-red-500'>
           ⬜
         </span>

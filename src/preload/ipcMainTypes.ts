@@ -7,7 +7,7 @@ import {
   TagOperation,
   batchTagging as BatchTagging,
 } from '../types/Operations'
-import {TaggerConfigType} from '../main/src/TaggerConfig'
+import {ShelfConfigType as ShelfConfigType} from '../main/src/ShelfConfig'
 
 type IpcMainEventShape = {
   args: unknown | unknown[]
@@ -21,7 +21,7 @@ export type IpcMainEvents = TypeLevelRecord<
       args: [newvalue: boolean]
       return: void
     }
-    startTaggerClient: {
+    startShelfClient: {
       args: [rootPath: string]
       return: void
     }
@@ -35,13 +35,13 @@ export type IpcMainEvents = TypeLevelRecord<
     }
     getConfig: {
       args: never
-      return: TaggerConfigType
+      return: ShelfConfigType
     }
     saveConfig: {
-      args: [config: TaggerConfigType]
+      args: [config: ShelfConfigType]
       return: boolean
     }
-    getTaggerImages: {
+    getShelfImages: {
       args: {
         pagination?: {offset: number; limit: number}
         order?: [string, 'ASC' | 'DESC']
@@ -71,11 +71,11 @@ export type IpcMainEvents = TypeLevelRecord<
       args: [contentId: number]
       return: Content | null
     }
-    getTaggerTags: {
+    getShelfTags: {
       args: []
       return: Tag[]
     }
-    getTaggerColors: {
+    getShelfColors: {
       args: []
       return: TagColor[]
     }
@@ -94,7 +94,7 @@ export type IpcMainEvents = TypeLevelRecord<
   }
 >
 
-export type TaggerIpcMainHandler = <
+export type ShelfIpcMainHandler = <
   TKey extends keyof IpcMainEvents,
   TArgs extends IpcMainEvents[TKey]['args'],
   TReturn extends IpcMainEvents[TKey]['return'],
@@ -106,7 +106,7 @@ export type TaggerIpcMainHandler = <
   ) => Promise<TReturn>,
 ) => void
 
-export type TaggerIpcRendererInvoke = <
+export type ShelfIpcRendererInvoke = <
   TKey extends keyof IpcMainEvents,
   TArgs extends IpcMainEvents[TKey]['args'],
   TReturn extends IpcMainEvents[TKey]['return'],

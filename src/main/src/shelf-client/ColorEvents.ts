@@ -3,10 +3,10 @@ import {IpcMainEvents} from '../../../preload/ipcMainTypes'
 import {defaultHandler} from './TagEvents'
 import {ipcMain} from 'electron'
 import {requestClient} from '../..'
-import {TaggerClient} from './TaggerClient'
+import {ShelfClient} from './ShelfClient'
 import {sendEventAfter} from '.'
 
-ipcMain.handle('getTaggerColors', defaultHandler(getColors))
+ipcMain.handle('getShelfColors', defaultHandler(getColors))
 ipcMain.handle(
   'editColors',
   sendEventAfter(['updateColors'], defaultHandler(editColors)),
@@ -20,7 +20,7 @@ async function getColors() {
 }
 
 async function editColors(operations: IpcMainEvents['editColors']['args'][0]) {
-  const client = (await requestClient()) as TaggerClient
+  const client = (await requestClient()) as ShelfClient
   const editColorsTransaction = await client.models.sequelize.transaction()
 
   for (const op of operations) {

@@ -3,7 +3,7 @@ import {parse} from 'path'
 import {createHash} from 'crypto'
 import {flattenDirectoryTree} from '../utils/chokiUtils'
 import {updateProgress} from '../..'
-import {TaggerClient} from './TaggerClient'
+import {ShelfClient} from './ShelfClient'
 import {mockTags} from '../utils/mockTags'
 import {Content, Path, Tag, TagColor} from '../db/models'
 import {toFileTuple} from '../utils/chokiUtils'
@@ -11,18 +11,18 @@ import {normalize} from 'path'
 import {defaultColors} from '../utils/defaultColors'
 
 export const addChokiEvents = (
-  taggerClient: TaggerClient,
+  shelfClient: ShelfClient,
   onReadyCallback: (...args: any[]) => void,
 ) => {
-  const {sequelize} = taggerClient.models
-  const choki = taggerClient.choki
+  const {sequelize} = shelfClient.models
+  const choki = shelfClient.choki
 
-  choki.addListener('unlink', taggerOnUnlink)
-  choki.addListener('add', taggerOnAdd)
-  choki.addListener('change', taggerOnChange)
-  choki.addListener('ready', taggerOnReady)
+  choki.addListener('unlink', shelfOnUnlink)
+  choki.addListener('add', shelfOnAdd)
+  choki.addListener('change', shelfOnChange)
+  choki.addListener('ready', shelfOnReady)
 
-  async function taggerOnChange(_filePath: string) {
+  async function shelfOnChange(_filePath: string) {
     const filePath = normalize(_filePath)
     const newHash = await hashFileAsync(filePath)
 
@@ -42,7 +42,7 @@ export const addChokiEvents = (
     })
   }
 
-  async function taggerOnAdd(pathString: string) {
+  async function shelfOnAdd(pathString: string) {
     const filePath = normalize(pathString)
     const fileHash = await hashFileAsync(filePath)
     const {mtimeMs} = statSync(filePath)
@@ -77,7 +77,7 @@ export const addChokiEvents = (
     })
   }
 
-  async function taggerOnUnlink(_filePath: string) {
+  async function shelfOnUnlink(_filePath: string) {
     const filePath = normalize(_filePath)
     const path = await Path.findOne({
       where: {
@@ -87,7 +87,7 @@ export const addChokiEvents = (
 
     await path?.destroy()
   }
-  async function taggerOnReady() {
+  async function shelfOnReady() {
     const flatDirTree = flattenDirectoryTree(choki.getWatched()).filter(
       (p) => !statSync(p).isDirectory(),
     )
@@ -120,7 +120,7 @@ export const addChokiEvents = (
       }
     }
 
-    if (!taggerClient.config.isNew) {
+    if (!shelfClient.config.isNew) {
       const pathTransaction = await sequelize.transaction()
       console.time('DB CLEANUP ->')
       const paths = await Path.findAll({
@@ -201,7 +201,6 @@ export const addChokiEvents = (
           },
           defaults: {
             name: tag.name,
-            parentOnly: false,
             colorId: randomColor.id,
           },
           transaction: tagTransaction,
@@ -297,7 +296,7 @@ export const addChokiEvents = (
     //TODO: REMOVE LOGS
     console.log('Content Errors -> ', contentError)
     console.log('Duplicate Path -> ', duplicatePath)
-    taggerClient.ready = true
+    shelfClient.ready = true
     onReadyCallback()
   }
 }

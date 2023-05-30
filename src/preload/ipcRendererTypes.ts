@@ -24,7 +24,7 @@ export type IpcRendererEvents = TypeLevelRecord<
   }
 >
 
-export type TaggerWebContentsSend = <
+export type ShelfWebContentsSend = <
   TKey extends keyof IpcRendererEvents,
   TArgs extends IpcRendererEvents[TKey]['args'],
 >(
@@ -32,7 +32,7 @@ export type TaggerWebContentsSend = <
   ...args: TArgs extends Array<any> ? TArgs : [TArgs]
 ) => void | undefined
 
-export type TaggerIpcRendererHandler = <
+export type ShelfIpcRendererHandler = <
   TKey extends keyof IpcRendererEvents,
   TArgs extends IpcRendererEvents[TKey]['args'],
 >(

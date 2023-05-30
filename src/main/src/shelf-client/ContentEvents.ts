@@ -4,10 +4,10 @@ import {IpcMainEvents} from '../../../preload/ipcMainTypes'
 import {defaultHandler} from './TagEvents'
 import {ipcMain} from 'electron'
 
-ipcMain.handle('getTaggerImages', defaultHandler(getContent))
+ipcMain.handle('getShelfImages', defaultHandler(getContent))
 ipcMain.handle('getDetailedImage', defaultHandler(getDetailedContent))
 
-async function getContent(options: IpcMainEvents['getTaggerImages']['args']) {
+async function getContent(options: IpcMainEvents['getShelfImages']['args']) {
   const order = options?.order ? [options?.order] : undefined
 
   const TagIdArray =

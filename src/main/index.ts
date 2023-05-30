@@ -15,23 +15,23 @@ import '../preload/ipcTypes'
 import * as fs from 'fs'
 import * as path from 'path'
 import {electronApp, optimizer, is} from '@electron-toolkit/utils'
-import {TaggerClient} from './src/tagger-client/TaggerClient'
+import {ShelfClient} from './src/shelf-client/ShelfClient'
 import {zJson} from './src/zJson'
-import {TaggerWebContentsSend} from '../preload/ipcRendererTypes'
-import {TAGGER_CONFIG_PATH, TAGGER_CONFIG_SCHEMA} from './src/TaggerConfig'
+import {ShelfWebContentsSend} from '../preload/ipcRendererTypes'
+import {SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA} from './src/ShelfConfig'
 
 //Imports event Handlers.
-import './src/tagger-client/'
+import './src/shelf-client'
 
 //TODO: Change name and location
-export function requestClient(): TaggerClient | false {
+export function requestClient(): ShelfClient | false {
   if (!Client || !Client.ready) {
     //TODO:SEND LOGS
   }
   return Client
 }
 
-const TaggerConfig = new zJson(TAGGER_CONFIG_PATH, TAGGER_CONFIG_SCHEMA, {
+const ShelfConfig = new zJson(SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA, {
   recentFiles: [],
   defaultColor: '#ef4444',
   ignorePaths: [],
@@ -76,7 +76,7 @@ type WindowOptionsRecord = Record<
   }
 >
 
-let Client: TaggerClient
+let Client: ShelfClient
 
 const Windows = new Map<keyof typeof WindowOptions, BrowserWindow>()
 
@@ -147,17 +147,14 @@ function createWindow(route: keyof typeof WindowOptions): void {
 }
 
 app.whenReady().then(() => {
-  protocol.registerFileProtocol('tagger', (request: any, callback: any) => {
-    const pathname = decodeURI(request.url.replace('tagger://', ''))
-    callback(pathname)
-  })
-  electronApp.setAppUserModelId('Tagger')
   app.on('browser-window-created', (_: any, window: BrowserWindow) => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  electronApp.setAppUserModelId('Shelf')
+
   const appTray = new Tray(nativeImage.createFromPath('build/icon.png'))
-  appTray.setTitle('Tagger')
+  appTray.setTitle('Shelf')
 
   const menu = Menu.buildFromTemplate([
     {
@@ -197,7 +194,7 @@ app.on('window-all-closed', () => {
   }
 })
 
-export const sendEventToAllWindows: TaggerWebContentsSend = (evt, ...args) => {
+export const sendEventToAllWindows: ShelfWebContentsSend = (evt, ...args) => {
   Windows.forEach((window) => {
     window.webContents.send(evt, ...args)
   })
@@ -210,7 +207,7 @@ async function startNewClient(path: string) {
     createWindow('progress')
   }
 
-  Client = await TaggerClient.create(path, () => {
+  Client = await ShelfClient.create(path, () => {
     const progressWindow = Windows.get('progress')
     if (progressWindow) {
       progressWindow.close()
@@ -222,24 +219,18 @@ async function startNewClient(path: string) {
 ipcMain.handle('openDialog', async (_, options) => {
   const diagResponse = await dialog.showOpenDialog({
     properties: [options.dialogType],
-    title: 'Select A Tagger Dir or File',
-    filters: [
-      {
-        name: 'TaggerFile',
-        extensions: ['tagger'],
-      },
-    ],
+    title: 'Select A Directory',
   })
 
   return diagResponse
 })
-ipcMain.handle('startTaggerClient', async (Event, path) => {
-  const recentFiles = TaggerConfig.get('recentFiles')
+ipcMain.handle('startShelfClient', async (Event, path) => {
+  const recentFiles = ShelfConfig.get('recentFiles')
   if (!fs.existsSync(path)) {
     const idx = recentFiles.findIndex((p) => p == path)
     if (idx !== -1) {
       recentFiles.splice(idx, 1)
-      TaggerConfig.set('recentFiles', recentFiles)
+      ShelfConfig.set('recentFiles', recentFiles)
     }
 
     return
@@ -252,7 +243,7 @@ ipcMain.handle('startTaggerClient', async (Event, path) => {
     recentFiles.shift()
   }
 
-  TaggerConfig.set('recentFiles', recentFiles)
+  ShelfConfig.set('recentFiles', recentFiles)
 
   BrowserWindow.fromId(Event.sender.id)?.close()
   startNewClient(path)
@@ -264,9 +255,9 @@ ipcMain.handle('toggleFullscreen', async (evt, newStatus) => {
   if (window.fullScreen === newStatus) return
   window.setFullScreen(newStatus ? newStatus : !window.fullScreen)
 })
-ipcMain.handle('getConfig', async () => TaggerConfig.getAll())
+ipcMain.handle('getConfig', async () => ShelfConfig.getAll())
 ipcMain.handle('saveConfig', async (_, config) => {
-  TaggerConfig.setAll(config)
+  ShelfConfig.setAll(config)
   sendEventToAllWindows('updateConfig')
   return true
 })

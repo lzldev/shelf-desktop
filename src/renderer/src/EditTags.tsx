@@ -93,7 +93,6 @@ function EditTags({
               nc.push({
                 operation: 'CREATE',
                 name: 'name',
-                parentOnly: false,
                 colorId: -1,
               })
             })
@@ -185,10 +184,9 @@ function NewTagItem({
     operation: 'CREATE'
     colorId: number
     name: string
-    parentOnly: boolean
   }
   setNewTagOperations: Updater<
-    {operation: 'CREATE'; colorId: number; name: string; parentOnly: boolean}[]
+    {operation: 'CREATE'; colorId: number; name: string}[]
   >
   ColorOptions: JSX.Element[]
 }): JSX.Element {

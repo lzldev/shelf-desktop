@@ -1,7 +1,8 @@
 import {Sequelize} from 'sequelize-typescript'
-import {Content, ContentTag, Path, Tag, TagParents, TagColor} from './models'
+import {Content, ContentTag, Path, Tag, TagColor} from './models'
 
-const __DBFILENAME = '.taggerdb.tagger'
+export const __DBEXTENSION = '.shelf'
+export const __DBFILENAME = `.shelfdb${__DBEXTENSION}`
 
 /* 
     TODO:
@@ -20,24 +21,24 @@ const createSQLiteDB = (dbPath: string) => {
   })
 }
 
-export const createTaggerDB = async (dbPath: string) => {
-  const TaggerDB = createSQLiteDB(dbPath)
+export const createShelfDB = async (dbPath: string) => {
+  const ShelfDB = createSQLiteDB(dbPath)
 
-  TaggerDB.addModels([Content, Path, Tag, TagColor, ContentTag, TagParents])
+  ShelfDB.addModels([Content, Path, Tag, TagColor, ContentTag])
 
-  await TaggerDB.sync()
+  await ShelfDB.sync()
 
   process.on('SIGINT', async () => {
-    await TaggerDB.close()
+    await ShelfDB.close()
   })
   process.on('exit', async () => {
-    await TaggerDB.close()
+    await ShelfDB.close()
   })
 
   return {
-    ...TaggerDB.models,
-    sequelize: TaggerDB,
+    ...ShelfDB.models,
+    sequelize: ShelfDB,
   }
 }
 
-export type TaggerDBModels = Awaited<ReturnType<typeof createTaggerDB>>
+export type ShelfDBModels = Awaited<ReturnType<typeof createShelfDB>>

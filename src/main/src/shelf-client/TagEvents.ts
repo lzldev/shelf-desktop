@@ -3,7 +3,7 @@ import {Tag} from '../db/models/Tag'
 import {requestClient} from '../..'
 import {IpcMainEvents} from '../../../preload/ipcMainTypes'
 import {ContentTag} from '../db/models'
-import {TaggerClient} from './TaggerClient'
+import {ShelfClient} from './ShelfClient'
 import {Op} from 'sequelize'
 import {ContentTagFields} from '../db/models/ContentTag'
 import {sendEventAfter} from '.'
@@ -20,7 +20,7 @@ export function defaultHandler(func: (...any: any[]) => any) {
   }
 }
 
-ipcMain.handle('getTaggerTags', defaultHandler(getAllTags))
+ipcMain.handle('getShelfTags', defaultHandler(getAllTags))
 ipcMain.handle('removeTagfromContent', defaultHandler(removeTagFromContent))
 ipcMain.handle('addTagToContent', defaultHandler(addTagToContent))
 ipcMain.handle(
@@ -68,10 +68,8 @@ async function addTagToContent(
   }
 }
 
-// @TaggerClient.SendEventAfter('updateColors')
-// @TaggerClient.SendEventAfter('updateTags')
 async function editTags(operations: IpcMainEvents['editTags']['args'][0]) {
-  const client = requestClient() as TaggerClient
+  const client = requestClient() as ShelfClient
   const editTagsTransaction = await client.models.sequelize.transaction()
 
   for (const op of operations) {
@@ -148,7 +146,7 @@ async function batchTagging(
       return false
     }
 
-    const client = requestClient() as TaggerClient
+    const client = requestClient() as ShelfClient
 
     const removeTagsFromContentTransaction =
       await client.models.sequelize.transaction()

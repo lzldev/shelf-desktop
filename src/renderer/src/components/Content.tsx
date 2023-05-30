@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import {HTMLAttributes, useRef, useState} from 'react'
 import {Content} from 'src/main/src/db/models'
 
-function TaggerContent({
+function ShelfContent({
   content,
   contentProps,
   controls,
@@ -94,4 +94,4 @@ function TaggerContent({
     </div>
   )
 }
-export {TaggerContent}
+export {ShelfContent}

@@ -1,5 +1,5 @@
 import * as chokidar from 'chokidar'
-import {createTaggerDB, TaggerDBModels} from '../db/TaggerDB'
+import {__DBEXTENSION, createShelfDB, ShelfDBModels} from '../db/ShelfDB'
 import {addChokiEvents} from './ChokiEvents'
 import {FSWatcher} from 'chokidar'
 import {zJson} from '../zJson'
@@ -8,11 +8,11 @@ import {
   CLIENT_CONFIG_FILE_NAME,
   ClientConfigSchema,
   ClientConfigValues,
-} from '../TaggerConfig'
+} from '../ShelfConfig'
 
-class TaggerClient {
+class ShelfClient {
   private _choki: FSWatcher
-  private _TaggerDB: TaggerDBModels
+  private _ShelfDB: ShelfDBModels
   private _ready = false
   private _config: zJson<ClientConfigSchema, ClientConfigValues>
 
@@ -20,7 +20,7 @@ class TaggerClient {
     return this._config
   }
   get models() {
-    return this._TaggerDB
+    return this._ShelfDB
   }
   get choki() {
     return this._choki
@@ -32,7 +32,7 @@ class TaggerClient {
     this._ready = value
   }
   static async create(basePath: string, callback: () => void) {
-    const TaggerDB = await createTaggerDB(
+    const ShelfDB = await createShelfDB(
       Array.isArray(basePath) ? basePath[0] : basePath,
     )
     const config = new zJson(
@@ -47,30 +47,30 @@ class TaggerClient {
       ignoreInitial: true,
       ignored: [
         (str) => {
-          return str.includes('.tagger')
+          return str.includes(__DBEXTENSION)
         },
       ],
       followSymlinks: false,
     })
 
-    return new TaggerClient({
+    return new ShelfClient({
       choki,
-      TaggerDB,
-      mainCallback: callback,
+      ShelfDB,
+      callback,
       config,
     })
   }
   protected constructor(newInstance: {
     choki: FSWatcher
-    TaggerDB: TaggerDBModels
+    ShelfDB: ShelfDBModels
     config: zJson<ClientConfigSchema, ClientConfigValues>
-    mainCallback: () => void
+    callback: () => void
   }) {
-    this._TaggerDB = newInstance.TaggerDB
+    this._ShelfDB = newInstance.ShelfDB
     this._choki = newInstance.choki
     this._config = newInstance.config
 
-    addChokiEvents(this, newInstance.mainCallback)
+    addChokiEvents(this, newInstance.callback)
 
     return this
   }
@@ -80,4 +80,4 @@ class TaggerClient {
   }
 }
 
-export {TaggerClient}
+export {ShelfClient}

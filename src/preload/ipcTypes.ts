@@ -1,23 +1,20 @@
 /* eslint-disable @typescript-eslint/no-namespace */
-import {TaggerIpcMainHandler, TaggerIpcRendererInvoke} from './ipcMainTypes'
-import {
-  TaggerIpcRendererHandler,
-  TaggerWebContentsSend,
-} from './ipcRendererTypes'
+import {ShelfIpcMainHandler, ShelfIpcRendererInvoke} from './ipcMainTypes'
+import {ShelfIpcRendererHandler, ShelfWebContentsSend} from './ipcRendererTypes'
 
 declare module 'electron' {
   export interface BrowserWindow {
     webContents: {
-      send: TaggerWebContentsSend
+      send: ShelfWebContentsSend
     } & OriginalWebContents
   }
   namespace Electron {
     export type IpcMain = {
-      handle: TaggerIpcMainHandler
+      handle: ShelfIpcMainHandler
     } & OriginalIpcMain
     export type IpcRenderer = {
-      invoke: TaggerIpcRendererInvoke
-      on: TaggerIpcRendererHandler
+      invoke: ShelfIpcRendererInvoke
+      on: ShelfIpcRendererHandler
     } & OriginalIpcRenderer
   }
 }

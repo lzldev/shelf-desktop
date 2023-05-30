@@ -4,7 +4,7 @@ import {Tag} from 'src/main/src/db/models'
 let _tags: Tag[]
 
 try {
-  _tags = await window.api.invokeOnMain('getTaggerTags')
+  _tags = await window.api.invokeOnMain('getShelfTags')
 } catch (err) {
   //TODO: REMOVE LOG
   console.log('no tags')
@@ -14,7 +14,7 @@ const useTags = () => {
 
   useEffect(() => {
     const listener = async () => {
-      const newTags = await window.api.invokeOnMain('getTaggerTags')
+      const newTags = await window.api.invokeOnMain('getShelfTags')
       _tags = newTags
       setTags(_tags)
     }
@@ -29,3 +29,27 @@ const useTags = () => {
 }
 
 export {useTags}
+
+// import {create} from 'zustand'
+
+// interface TagStore {
+//   tags: Tag[]
+// }
+
+// const useTagStore = create<TagStore>((set, get) => ({
+//   tags: [],
+// }))
+
+// const newTags = await window.api.invokeOnMain('getShelfTags')
+
+// useTagStore.setState(() => ({
+//   tags: newTags,
+// }))
+
+// window.api.ipcRendererHandle('updateTags', async () => {
+//   const newTags = await window.api.invokeOnMain('getShelfTags')
+
+//   useTagStore.setState(() => ({
+//     tags: newTags,
+//   }))
+// })

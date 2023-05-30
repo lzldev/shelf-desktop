@@ -15,7 +15,7 @@ function mapFromColors(colors: TagColor[]) {
 let _colors: Map<number, TagColor>
 
 try {
-  _colors = mapFromColors(await window.api.invokeOnMain('getTaggerColors'))
+  _colors = mapFromColors(await window.api.invokeOnMain('getShelfColors'))
 } catch (er) {
   //TODO: REMOVE LOG
   console.log('not ready yet')
@@ -33,7 +33,7 @@ const useColors = () => {
 
   useEffect(() => {
     const listener = async () => {
-      const newColors = await window.api.invokeOnMain('getTaggerColors')
+      const newColors = await window.api.invokeOnMain('getShelfColors')
       _colors = mapFromColors(newColors)
       setColors(_colors)
     }

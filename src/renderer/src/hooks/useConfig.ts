@@ -1,16 +1,16 @@
 //@ts-ignore Moodule Scope
-import {TaggerConfigType} from 'src/main/src/TaggerConfig'
+import {ShelfConfigType} from 'src/main/src/ShelfConfig'
 
 import {create} from 'zustand'
 
 type ConfigStore = {
   saveConfig: (...any: any[]) => any
   makeReady: (...any: any[]) => any
-  setConfig: (config: Partial<TaggerConfigType>) => any
+  setConfig: (config: Partial<ShelfConfigType>) => any
 } & (
   | {
       isReady: true
-      config: TaggerConfigType
+      config: ShelfConfigType
     }
   | {
       isReady: false
@@ -28,12 +28,12 @@ const useConfigStore = create<ConfigStore>((set, get) => {
       if (!cfg.isReady) {
         return
       }
-      window.api.invokeOnMain('saveConfig', get().config as TaggerConfigType)
+      window.api.invokeOnMain('saveConfig', get().config as ShelfConfigType)
     },
     makeReady: () => set({isReady: true}),
     setConfig: (newConfig) =>
       set((state) => ({
-        config: {...state.config, ...(newConfig as TaggerConfigType)},
+        config: {...state.config, ...(newConfig as ShelfConfigType)},
       })),
   }
 })

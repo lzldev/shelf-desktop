@@ -1,11 +1,11 @@
 import {contextBridge, ipcRenderer} from 'electron'
 import {electronAPI} from '@electron-toolkit/preload'
 import './ipcTypes'
-import type {TaggerIpcRendererHandler} from './ipcRendererTypes'
+import type {ShelfIpcRendererHandler} from './ipcRendererTypes'
 
 const api = {
   invokeOnMain: ipcRenderer.invoke,
-  ipcRendererHandle: electronAPI.ipcRenderer.on as TaggerIpcRendererHandler,
+  ipcRendererHandle: electronAPI.ipcRenderer.on as ShelfIpcRendererHandler,
 }
 
 export type api = typeof api

@@ -11,7 +11,7 @@ import {
 import {useTags} from './hooks/useTags'
 import {Content, Tag} from 'src/main/src/db/models'
 import {useInfiniteQuery} from '@tanstack/react-query'
-import {TaggerContent} from './components/TaggerContent'
+import {ShelfContent} from './components/Content'
 import {createPortal} from 'react-dom'
 import {ContentDetails} from './ContentDetails'
 import {useToggle} from './hooks/useToggle'
@@ -66,7 +66,7 @@ function Main(): JSX.Element {
       const tags =
         selectedTags.size > 0 ? Array.from(selectedTags.values()) : undefined
 
-      const files = await window.api.invokeOnMain('getTaggerImages', {
+      const files = await window.api.invokeOnMain('getShelfImages', {
         pagination: {
           offset: pagination.offset,
           limit: pagination.limit,
@@ -273,7 +273,7 @@ function Main(): JSX.Element {
         )}
       </div>
       <div ref={contentList}>
-        <Body
+        <ContentGrid
           ref={contentList}
           error={error}
         >
@@ -282,7 +282,7 @@ function Main(): JSX.Element {
               return
             }
             return page.content!.map((content, contentIdx) => (
-              <TaggerContent
+              <ShelfContent
                 data-grid-groupkey={pageIdx}
                 key={content.id}
                 className={clsx(
@@ -359,10 +359,10 @@ function Main(): JSX.Element {
                     evt.stopPropagation()
                   }}
                 />
-              </TaggerContent>
+              </ShelfContent>
             ))
           })}
-        </Body>
+        </ContentGrid>
       </div>
       {isFetching && (
         <div className='flex items-center justify-center py-10'>
@@ -375,7 +375,7 @@ function Main(): JSX.Element {
 
 export {Main}
 
-const Body = forwardRef(function Body(
+const ContentGrid = forwardRef(function Body(
   {
     error,
     children,

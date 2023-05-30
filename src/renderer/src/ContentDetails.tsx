@@ -8,7 +8,7 @@ import {
   useRef,
 } from 'react'
 import {InlineTag} from './components/InlineTag'
-import {TaggerContent} from './components/TaggerContent'
+import {ShelfContent} from './components/Content'
 import {Content, Tag} from 'src/main/src/db/models'
 import clsx from 'clsx'
 import {useToggle} from './hooks/useToggle'
@@ -93,7 +93,7 @@ function ContentDetails({
   if (fullscreen) {
     return (
       <div className={clsx(containerClass, 'bg-black bg-opacity-50')}>
-        <TaggerContent
+        <ShelfContent
           controls
           className={'h-full w-full bg-black bg-opacity-50 backdrop-blur-xl'}
           content={content}
@@ -119,7 +119,7 @@ function ContentDetails({
         />
       </div>
       <div onClick={() => toggleFullscreen()}>
-        <TaggerContent
+        <ShelfContent
           controls
           className={clsx('h-[60vh] bg-black bg-opacity-50')}
           content={content}

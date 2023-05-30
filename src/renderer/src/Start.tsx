@@ -14,7 +14,7 @@ function Start(): JSX.Element {
 
     if (dialog.canceled || dialog.filePaths.length === 0) return
 
-    await window.api.invokeOnMain('startTaggerClient', dialog.filePaths[0])
+    await window.api.invokeOnMain('startShelfClient', dialog.filePaths[0])
   }
 
   return (
@@ -24,8 +24,8 @@ function Start(): JSX.Element {
         <Logo className='mx-auto my-10' />
         <div
           className='group/button flex cursor-pointer flex-row justify-center bg-surface py-2 font-mono font-bold transition-all duration-50 hover:bg-gray-100'
-          // onClick={() => openDialog('openDirectory')}
-          onClick={() => openDialog('openFile')}
+          onClick={() => openDialog('openDirectory')}
+          // onClick={() => openDialog('openFile')}
         >
           <FolderOpenIcon className='mr-1 h-6 w-6 self-center' />
           <span className='text-md mt-1'>OPEN</span>
@@ -38,7 +38,7 @@ function Start(): JSX.Element {
               key={idx}
               className='px-2 py-0.5 first:pt-1 hover:bg-sky-200'
               onClick={() => {
-                window.api.invokeOnMain('startTaggerClient', recentPath)
+                window.api.invokeOnMain('startShelfClient', recentPath)
               }}
             >
               {recentPath}
