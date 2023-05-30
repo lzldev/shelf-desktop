@@ -1,7 +1,7 @@
 import {useMemo, useState} from 'react'
 import {useTags} from './useTags'
 export const useTagQuery = () => {
-  const {tags} = useTags()
+  const {tags} = useTags((state) => ({tags: state.tags}))
   const [query, setQuery] = useState('')
   const SplitQuery = query?.split(' ')
   const foundTags = useMemo(

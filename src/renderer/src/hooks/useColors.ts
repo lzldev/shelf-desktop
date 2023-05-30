@@ -1,7 +1,4 @@
-import {useEffect, useState} from 'react'
 import {TagColor} from 'src/main/src/db/models'
-import {useConfigStore} from './useConfig'
-import {TagColorFields} from 'src/main/src/db/models/TagColor'
 
 function mapFromColors(colors: TagColor[]) {
   const colorsMap = new Map<number, TagColor>()
@@ -12,39 +9,33 @@ function mapFromColors(colors: TagColor[]) {
   return colorsMap
 }
 
-let _colors: Map<number, TagColor>
+import {create} from 'zustand'
 
-try {
-  _colors = mapFromColors(await window.api.invokeOnMain('getShelfColors'))
-} catch (er) {
-  //TODO: REMOVE LOG
-  console.log('not ready yet')
+interface TagStore {
+  colors: Map<number, TagColor>
+  isReady: boolean
 }
 
-const useColors = () => {
-  const [colors, setColors] = useState<Map<number, TagColor>>(_colors)
-  const {defaultColor: _defaultColor} = useConfigStore().config!
+const useColors = create<TagStore>(() => ({
+  colors: new Map(),
+  isReady: false,
+}))
 
-  const defaultColor = {
-    id: -1,
-    name: 'Default',
-    color: _defaultColor,
-  } satisfies TagColorFields
-
-  useEffect(() => {
-    const listener = async () => {
-      const newColors = await window.api.invokeOnMain('getShelfColors')
-      _colors = mapFromColors(newColors)
-      setColors(_colors)
-    }
-
-    window.api.ipcRendererHandle('updateColors', listener)
-    return () => {
-      window.electron.ipcRenderer.removeListener('updateColors', listener)
-    }
-  }, [])
-
-  return {colors, defaultColor}
+const updateTags = async () => {
+  const colors = await window.api.invokeOnMain('getShelfColors')
+  useColors.setState((state) => ({
+    ...state,
+    colors: mapFromColors([...colors]),
+  }))
 }
+
+updateTags().finally(() => {
+  useColors.setState((state) => ({
+    ...state,
+    isReady: true,
+  }))
+})
+
+window.api.ipcRendererHandle('updateColors', updateTags)
 
 export {useColors}

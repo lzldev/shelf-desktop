@@ -1,5 +1,4 @@
 import {Tag} from 'src/main/src/db/models'
-
 import {create} from 'zustand'
 
 interface TagStore {
@@ -12,28 +11,19 @@ const useTags = create<TagStore>(() => ({
   isReady: false,
 }))
 
-window.api
-  .invokeOnMain('getShelfTags')
-  .then((tags) => {
-    useTags.setState((state) => ({
-      ...state,
-      tags: tags,
-    }))
-  })
-  .finally(() => {
-    useTags.setState((state) => ({
-      ...state,
-      isReady: true,
-    }))
-  })
-
-window.api.ipcRendererHandle('updateTags', async () => {
+const updateTags = async () => {
   const newTags = await window.api.invokeOnMain('getShelfTags')
+  useTags.setState({tags: newTags})
+}
 
+//Initial Fetch
+updateTags().finally(() => {
   useTags.setState((state) => ({
     ...state,
-    tags: newTags,
+    isReady: true,
   }))
 })
+
+window.api.ipcRendererHandle('updateTags', updateTags)
 
 export {useTags}
