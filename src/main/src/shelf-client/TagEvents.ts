@@ -7,6 +7,7 @@ import {ShelfClient} from './ShelfClient'
 import {Op} from 'sequelize'
 import {ContentTagFields} from '../db/models/ContentTag'
 import {sendEventAfter} from '.'
+import {dialog} from 'electron'
 
 export function defaultHandler(func: (...any: any[]) => any) {
   return async (_: Electron.IpcMainInvokeEvent, ...args: any[]) => {
@@ -72,35 +73,49 @@ async function editTags(operations: IpcMainEvents['editTags']['args'][0]) {
   const client = requestClient() as ShelfClient
   const editTagsTransaction = await client.models.sequelize.transaction()
 
-  for (const op of operations) {
-    switch (op.operation) {
-      case 'CREATE': {
-        //TODO: Check if operation is being Spread here
-        await Tag.build({...op}).save({
-          transaction: editTagsTransaction,
-        })
-        continue
+  try {
+    for (const op of operations) {
+      switch (op.operation) {
+        case 'CREATE': {
+          //TODO: Check if operation is being Spread here
+          await Tag.build({...op})
+            .save({
+              transaction: editTagsTransaction,
+            })
+            .catch((err) => {
+              throw err
+            })
+          continue
+        }
+        case 'UPDATE': {
+          const {id: toBeUpdatedId, operation, ...values} = op
+          await Tag.update(
+            {...values},
+            {where: {id: toBeUpdatedId}, transaction: editTagsTransaction},
+          ).catch((err) => {
+            throw err
+          })
+          continue
+        }
+        case 'DELETE': {
+          await Tag.destroy({
+            where: {
+              id: op.id,
+            },
+            transaction: editTagsTransaction,
+          }).catch((err) => {
+            throw err
+          })
+          continue
+        }
+        default:
+          throw 'UNEXPECTED OPERATION'
       }
-      case 'UPDATE': {
-        const {id: toBeUpdatedId, operation, ...values} = op
-        await Tag.update(
-          {...values},
-          {where: {id: toBeUpdatedId}, transaction: editTagsTransaction},
-        )
-        continue
-      }
-      case 'DELETE': {
-        await Tag.destroy({
-          where: {
-            id: op.id,
-          },
-          transaction: editTagsTransaction,
-        })
-        continue
-      }
-      default:
-        throw 'UNEXPECTED OPERATION'
     }
+  } catch (err) {
+    await editTagsTransaction.rollback()
+    dialog.showErrorBox('Error', JSON.stringify(err))
+    return false
   }
 
   await editTagsTransaction.commit()

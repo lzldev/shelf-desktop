@@ -35,7 +35,7 @@ const ShelfConfig = new zJson(SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA, {
   recentFiles: [],
   defaultColor: '#ef4444',
   ignorePaths: [],
-  pageSize: 25,
+  pageSize: 50,
   layoutMode: 'grid',
 })
 

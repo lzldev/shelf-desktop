@@ -54,15 +54,16 @@ export const SearchBar = ({
       )}
     >
       <div className='relative'>
-        {/* <div className='customGradient absolute inset-0 z-10 h-full w-full rounded-full' /> */}
         <div
           className={
             'ringThingClip relative z-20 flex w-full place-content-stretch rounded-full bg-white pl-2'
           }
         >
+          {/* -- Gradient Border -- */}
           <div className='absolute inset-0 h-full w-full rounded-full ring-2 ring-blue-tag' />
           <div className='ringThingFirstLayer absolute inset-0 h-full w-full rounded-full ring-2 ring-green-tag' />
           <div className='ringThingSecondLayer absolute inset-0 h-full w-full rounded-full ring-2 ring-red-tag' />
+          {/* -- Gradient Border -- */}
           <input
             className={
               'z-20 w-full bg-transparent p-2 text-pink-500 outline-none selection:bg-pink-200 hover:border-none active:border-none'
@@ -101,7 +102,7 @@ export const SearchBar = ({
         >
           <div
             tabIndex={1}
-            className='selectable w-full overflow-hidden text-ellipsis bg-gray-400 p-2 text-white transition-colors hover:bg-gray-50 hover:text-black focus:bg-gray-50 focus:text-black'
+            className='w-full select-all overflow-hidden text-ellipsis bg-gray-400 p-2 text-white transition-colors hover:bg-gray-50 hover:text-black focus:bg-gray-50 focus:text-black'
             onClick={() => {
               addPathQuery({value: query})
               setQuery('')

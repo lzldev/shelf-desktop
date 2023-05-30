@@ -76,7 +76,12 @@ function EditTags({
                     ...operations.values(),
                     ...newTagOperations,
                   ])
-                  .then(onClose)
+                  .then((r) => {
+                    if (r) {
+                      console.log('r ->', r)
+                      onClose()
+                    }
+                  })
               }}
             >
               Apply
@@ -93,7 +98,7 @@ function EditTags({
               nc.push({
                 operation: 'CREATE',
                 name: 'name',
-                colorId: -1,
+                colorId: 1,
               })
             })
           }}
@@ -140,7 +145,7 @@ const EditTagItem = ({
   options: JSX.Element[]
   setOperations: Updater<Map<number, TagOperation>>
 } & HTMLAttributes<HTMLDivElement>) => {
-  const {colors, defaultColor} = useColors()
+  const {colors} = useColors()
 
   const body = useMemo(
     () =>
@@ -157,7 +162,8 @@ const EditTagItem = ({
   )
 
   const bgColor =
-    colors.get(operation?.colorId || tag.colorId)?.color || defaultColor.color
+    //@ts-expect-error ayo
+    colors.get(operation?.colorId || tag.colorId)?.color || '#ffffff'
 
   return (
     <div
@@ -190,8 +196,8 @@ function NewTagItem({
   >
   ColorOptions: JSX.Element[]
 }): JSX.Element {
-  const {colors, defaultColor} = useColors()
-  const bgColor = colors.get(newTag.colorId)?.color || defaultColor.color
+  const {colors} = useColors()
+  const bgColor = colors.get(newTag.colorId)?.color || '#f0f0f0'
   return (
     <div
       key={idx}
