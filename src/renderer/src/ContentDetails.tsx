@@ -8,7 +8,7 @@ import {
   useRef,
 } from 'react'
 import {InlineTag} from './components/InlineTag'
-import {ShelfContent} from './components/Content'
+import {ShelfContent} from './components/ShelfContent'
 import {Content, Tag} from 'src/main/src/db/models'
 import clsx from 'clsx'
 import {useToggle} from './hooks/useToggle'

@@ -11,7 +11,7 @@ import {
 import {useTags} from './hooks/useTags'
 import {Content, Tag} from 'src/main/src/db/models'
 import {useInfiniteQuery} from '@tanstack/react-query'
-import {ShelfContent} from './components/Content'
+import {ShelfContent} from './components/ShelfContent'
 import {createPortal} from 'react-dom'
 import {ContentDetails} from './ContentDetails'
 import {useToggle} from './hooks/useToggle'

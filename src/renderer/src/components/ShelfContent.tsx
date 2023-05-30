@@ -18,7 +18,7 @@ function ShelfContent({
   const containerRef = useRef<HTMLDivElement>(null)
 
   const format = checkFormat(content.extension)
-  const [hidden, setHidden] = useState(!(format === 'image'))
+  const [hidden, setHidden] = useState(format === 'image')
 
   const uri = new URL('file://' + content?.paths[0]?.path || '').toString()
 
@@ -30,7 +30,7 @@ function ShelfContent({
         'relative overflow-clip',
         !hidden && format === 'video' ? '' : '',
         hidden && format === 'image'
-          ? 'animate-gradient_x bg-opacity-50 bg-gradient-to-r from-gray-600 to-gray-800 opacity-50'
+          ? 'animate-gradient_x_fast bg-gradient-to-r from-gray-400 to-gray-800 opacity-50 transition-all duration-2500'
           : '',
         props.className,
       )}

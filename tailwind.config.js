@@ -11,6 +11,8 @@ module.exports = {
     extend: {
       transitionDuration: {
         50: '50ms',
+        2500: '2500ms',
+        5000: '5000ms',
       },
       colors: {
         background: colors.gray['50'],
