@@ -9,6 +9,7 @@ import {
   ClientConfigSchema,
   ClientConfigValues,
 } from '../ShelfConfig'
+import {globSupportedFormats} from '../../../renderer/src/utils/formats'
 
 class ShelfClient {
   private _choki: FSWatcher
@@ -42,17 +43,19 @@ class ShelfClient {
         additionalPaths: [],
         ignoredPaths: [],
         ignoreHidden: true,
+        ignoreUnsupported: true,
       },
     )
 
+    const matchers = [
+      // ...config.get('ignoredPaths'),
+      // config.get('ignoreHidden') ? '**/.**' : '',
+      config.get('ignoreUnsupported') ? globSupportedFormats : '',
+    ]
+
+    console.log('matchers ->', matchers)
     const choki = chokidar.watch([basePath, ...config.get('additionalPaths')], {
-      ignored: [
-        ...config.get('ignoredPaths'),
-        (str) => {
-          return str.includes(__DBEXTENSION)
-        },
-        config.get('ignoreHidden') ? '**/.**' : '',
-      ],
+      ignored: matchers,
       followSymlinks: false,
     })
 

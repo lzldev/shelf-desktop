@@ -1,23 +1,4 @@
-const imgFormats = new Set([
-  '.jpg',
-  '.jpeg',
-  '.jfif',
-  '.pjpeg',
-  '.pjp',
-  '.apng',
-  '.avif',
-  '.gif',
-  '.png',
-  '.svg',
-  '.webp',
-  '.bmp',
-  '.ico',
-  '.cur',
-  '.tif',
-  '.tiff',
-])
-
-const videoFormats = new Set([
+const videoFormats = [
   '.3gp',
   '.3g2',
   '.asf',
@@ -36,14 +17,41 @@ const videoFormats = new Set([
   '.vob',
   '.webm',
   '.wmv',
-])
+]
+
+const imgFormats = [
+  '.jpg',
+  '.jpeg',
+  '.jfif',
+  '.pjpeg',
+  '.pjp',
+  '.apng',
+  '.avif',
+  '.gif',
+  '.png',
+  '.svg',
+  '.webp',
+  '.bmp',
+  '.ico',
+  '.cur',
+  '.tif',
+  '.tiff',
+]
+
+export const globSupportedFormats = `**/*.!(${[
+  ...videoFormats.map((v) => v.slice(1)),
+  ...imgFormats.map((v) => v.slice(1)),
+].join('|')})`
+
+const imgFormatsSet = new Set(imgFormats)
+const videoFormatsSet = new Set(videoFormats)
 
 export const checkFormat = (extension: string) => {
-  if (imgFormats.has(extension)) {
+  if (imgFormatsSet.has(extension)) {
     return 'image'
   }
 
-  if (videoFormats.has(extension)) {
+  if (videoFormatsSet.has(extension)) {
     return 'video'
   }
 

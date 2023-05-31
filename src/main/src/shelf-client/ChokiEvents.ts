@@ -1,4 +1,4 @@
-import {createReadStream, statSync} from 'fs'
+import {Stats, createReadStream, statSync} from 'fs'
 import {parse} from 'path'
 import {createHash} from 'crypto'
 import {flattenDirectoryTree} from '../utils/chokiUtils'
@@ -33,13 +33,17 @@ export const addChokiEvents = (
   choki.on('change', shelfOnChange)
   choki.on('ready', shelfOnReady)
   choki.on('error', shelfOnError)
-
   choki.on('addDir', shelfOnAddDir)
 
-  async function shelfOnAddDir(path: string) {
+  async function shelfOnAddDir(path: string, stats: Stats) {
     const files = await (await readdir(path)).length
 
-    if (files >= 200 && ConfirmationDialog(path + '' + files) === 0) {
+    if (
+      files >= 200 &&
+      ConfirmationDialog(
+        path + '\nFiles' + files + 'dirs:' + (stats.nlink - 2),
+      ) === 0
+    ) {
       const prev = shelfClient.config.get('ignoredPaths')
       shelfClient.config.set('ignoredPaths', [...prev, path], false)
 
@@ -51,8 +55,6 @@ export const addChokiEvents = (
     if ('path' in error) {
       const prev = shelfClient.config.get('ignoredPaths', false)
       const path = error.path as string
-
-      console.log('Unwatching ->', path)
 
       shelfClient.config.set('ignoredPaths', [...prev, path], false)
       choki.unwatch(path)

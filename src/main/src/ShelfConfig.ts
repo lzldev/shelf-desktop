@@ -18,8 +18,8 @@ export const ClientConfigSchema = {
   additionalPaths: z.array(z.string()),
   ignoredPaths: z.array(z.string()),
   ignoreHidden: z.boolean(),
+  ignoreUnsupported: z.boolean(),
 } as const
 
-export type ShelfConfigType = zJsonSchemaInfer<typeof SHELF_CONFIG_SCHEMA>
 export type ClientConfigSchema = typeof ClientConfigSchema
 export type ClientConfigValues = zJsonValues<typeof ClientConfigSchema>
