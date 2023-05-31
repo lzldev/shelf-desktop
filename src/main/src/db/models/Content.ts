@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import {
   Model,
   Table,
@@ -32,13 +33,13 @@ interface _Content {
 class Content extends Model<_Content, Optional<_Content, 'id'>> {
   @Index
   @Column(DataType.TEXT)
-  hash!: string
+  declare hash: string
   @Column(DataType.TEXT)
-  extension!: string
+  declare extension: string
   @BelongsToMany(() => Tag, () => ContentTag)
-  tags!: Tag[]
+  declare tags?: Tag[]
   @HasMany(() => Path)
-  paths!: Path[]
+  declare paths?: Path[]
 }
 
 export {Content}

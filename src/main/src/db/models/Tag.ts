@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import {InferAttributes, InferCreationAttributes, Optional} from 'sequelize'
 import {
   BelongsToMany,
@@ -25,14 +26,14 @@ interface _Tag {
 @Table
 class Tag extends Model<_Tag, Optional<_Tag, 'id'>> {
   @Column({type: DataType.TEXT})
-  name!: string
+  declare name: string
 
   @ForeignKey(() => TagColor)
   @Column({type: DataType.INTEGER, allowNull: true})
-  colorId?: number
+  declare colorId?: number
 
   @BelongsToMany(() => Content, () => ContentTag)
-  content?: Content[]
+  declare content?: Content[]
 }
 
 export {Tag}

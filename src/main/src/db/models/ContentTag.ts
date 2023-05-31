@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import {
   Model,
   Table,
@@ -27,12 +28,12 @@ class ContentTag extends Model<_ContentTag, Optional<_ContentTag, 'id'>> {
   @Index
   @Column({type: DataType.INTEGER})
   @ForeignKey(() => Content)
-  contentId!: number
+  declare contentId: number
 
   @Index
   @Column({type: DataType.INTEGER})
   @ForeignKey(() => Tag)
-  tagId!: number
+  declare tagId: number
 }
 
 export {ContentTag}

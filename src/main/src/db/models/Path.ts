@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import {InferAttributes, InferCreationAttributes} from 'sequelize'
 import {
   BelongsTo,
@@ -26,18 +27,18 @@ export type PathCreationFields = NonOptional<InferCreationAttributes<Path>>
 class Path extends Model<_Path, InferCreationAttributes<Path, {omit: 'id'}>> {
   @Index
   @Column({type: DataType.TEXT})
-  path!: string
+  declare path: string
 
   @Column({type: DataType.FLOAT})
-  mTimeMs!: number
+  declare mTimeMs: number
 
   @Index
   @ForeignKey(() => Content)
   @Column({type: DataType.INTEGER})
-  contentId?: number
+  declare contentId?: number
 
   @BelongsTo(() => Content)
-  content?: Content
+  declare content?: Content
 }
 
 export {Path}

@@ -5,7 +5,6 @@ import {
   DropdownMenuPortal,
   DropdownMenuContent,
   DropdownMenuProps,
-  DropdownMenuItem,
 } from '@radix-ui/react-dropdown-menu'
 import clsx from 'clsx'
 import {ReactNode, RefObject} from 'react'

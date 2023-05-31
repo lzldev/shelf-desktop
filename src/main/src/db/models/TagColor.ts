@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import {InferAttributes, InferCreationAttributes, Optional} from 'sequelize'
 import {Column, DataType, HasMany, Model, Table} from 'sequelize-typescript'
 import {Tag} from './Tag'
@@ -18,11 +19,11 @@ interface _TagColor {
 @Table
 class TagColor extends Model<_TagColor, Optional<_TagColor, 'id'>> {
   @Column({type: DataType.TEXT})
-  name!: string
+  declare name: string
   @Column({type: DataType.TEXT})
-  color!: string
+  declare color: string
   @HasMany(() => Tag)
-  tags?: Tag[]
+  declare tags?: Tag[]
 }
 
 export {TagColor}
