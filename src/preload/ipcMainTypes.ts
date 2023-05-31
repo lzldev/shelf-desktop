@@ -41,6 +41,10 @@ export type IpcMainEvents = TypeLevelRecord<
       args: [config: ShelfConfigType]
       return: boolean
     }
+    getClientConfig: {
+      args: never
+      return: ShelfClientConfig
+    }
     getShelfImages: {
       args: {
         pagination?: {offset: number; limit: number}

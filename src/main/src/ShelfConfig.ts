@@ -16,6 +16,10 @@ export type ShelfConfigType = zJsonSchemaInfer<typeof SHELF_CONFIG_SCHEMA>
 export const CLIENT_CONFIG_FILE_NAME = '/.shelfcfg'
 export const ClientConfigSchema = {
   additionalPaths: z.array(z.string()),
+  ignoredPaths: z.array(z.string()),
+  ignoreHidden: z.boolean(),
 } as const
+
+export type ShelfConfigType = zJsonSchemaInfer<typeof SHELF_CONFIG_SCHEMA>
 export type ClientConfigSchema = typeof ClientConfigSchema
 export type ClientConfigValues = zJsonValues<typeof ClientConfigSchema>

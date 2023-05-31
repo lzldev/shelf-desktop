@@ -9,6 +9,17 @@ import {Content, Path, Tag, TagColor} from '../db/models'
 import {toFileTuple} from '../utils/chokiUtils'
 import {normalize} from 'path'
 import {defaultColors} from '../utils/defaultColors'
+import {dialog} from 'electron'
+// import {dialog} from 'electron/main'
+import {readdir} from 'fs/promises'
+
+const ConfirmationDialog = (path: string) =>
+  dialog.showMessageBoxSync({
+    message: `${path}\nthis folder is too big it may break the program`,
+    buttons: ['Ignore Dir', 'Scan dir'],
+    noLink: false,
+    title: 'Warning',
+  })
 
 export const addChokiEvents = (
   shelfClient: ShelfClient,
@@ -17,77 +28,143 @@ export const addChokiEvents = (
   const {sequelize} = shelfClient.models
   const choki = shelfClient.choki
 
-  choki.addListener('unlink', shelfOnUnlink)
-  choki.addListener('add', shelfOnAdd)
-  choki.addListener('change', shelfOnChange)
-  choki.addListener('ready', shelfOnReady)
+  choki.on('unlink', shelfOnUnlink)
+  choki.on('add', shelfOnAdd)
+  choki.on('change', shelfOnChange)
+  choki.on('ready', shelfOnReady)
+  choki.on('error', shelfOnError)
+
+  choki.on('addDir', shelfOnAddDir)
+
+  async function shelfOnAddDir(path: string) {
+    const files = await (await readdir(path)).length
+
+    if (files >= 200 && ConfirmationDialog(path + '' + files) === 0) {
+      const prev = shelfClient.config.get('ignoredPaths')
+      shelfClient.config.set('ignoredPaths', [...prev, path], false)
+
+      choki.unwatch(path)
+    }
+  }
+
+  async function shelfOnError(error: Error) {
+    if ('path' in error) {
+      const prev = shelfClient.config.get('ignoredPaths', false)
+      const path = error.path as string
+
+      console.log('Unwatching ->', path)
+
+      shelfClient.config.set('ignoredPaths', [...prev, path], false)
+      choki.unwatch(path)
+      error.path
+    }
+  }
 
   async function shelfOnChange(_filePath: string) {
-    const filePath = normalize(_filePath)
-    const newHash = await hashFileAsync(filePath)
+    if (!shelfClient.ready) {
+      return
+    }
+    try {
+      const filePath = normalize(_filePath)
+      const newHash = await hashFileAsync(filePath)
 
-    const content = await Content.findOne({
-      include: [
-        {
-          model: Path,
-          where: {
-            path: filePath,
+      const content = await Content.findOne({
+        include: [
+          {
+            model: Path,
+            where: {
+              path: filePath,
+            },
           },
-        },
-      ],
-    })
+        ],
+      }).catch((e) => {
+        throw e
+      })
 
-    await content?.update({
-      hash: newHash,
-    })
+      await content
+        ?.update({
+          hash: newHash,
+        })
+        .catch((e) => {
+          throw e
+        })
+    } catch (e) {
+      dialog.showErrorBox('Error', JSON.stringify(e))
+    }
   }
 
   async function shelfOnAdd(pathString: string) {
-    const filePath = normalize(pathString)
-    const fileHash = await hashFileAsync(filePath)
-    const {mtimeMs} = statSync(filePath)
-
-    const [content] = await Content.findOrCreate({
-      where: {
-        hash: fileHash,
-      },
-      defaults: {
-        hash: fileHash,
-        extension: parse(filePath).ext,
-      },
-    })
-
-    const [newPath, created] = await Path.findOrCreate({
-      where: {
-        path: filePath,
-      },
-      defaults: {
-        path: filePath,
-        mTimeMs: mtimeMs,
-        contentId: content.id,
-      },
-    })
-
-    if (created) {
+    if (!shelfClient.ready) {
       return
     }
+    try {
+      const filePath = normalize(pathString)
+      const fileHash = await hashFileAsync(filePath).catch((e) => {
+        throw e
+      })
+      const {mtimeMs} = statSync(filePath)
 
-    await newPath.update({
-      contentId: content.id,
-    })
+      const [content] = await Content.findOrCreate({
+        where: {
+          hash: fileHash,
+        },
+        defaults: {
+          hash: fileHash,
+          extension: parse(filePath).ext,
+        },
+      }).catch((e) => {
+        throw e
+      })
+
+      const [newPath, created] = await Path.findOrCreate({
+        where: {
+          path: filePath,
+        },
+        defaults: {
+          path: filePath,
+          mTimeMs: mtimeMs,
+          contentId: content.id,
+        },
+      }).catch((e) => {
+        throw e
+      })
+
+      if (created) {
+        return
+      }
+
+      await newPath
+        .update({
+          contentId: content.id,
+        })
+        .catch((e) => {
+          throw e
+        })
+    } catch (e) {
+      dialog.showErrorBox('Error', JSON.stringify(e))
+    }
   }
 
   async function shelfOnUnlink(_filePath: string) {
-    const filePath = normalize(_filePath)
-    const path = await Path.findOne({
-      where: {
-        path: filePath,
-      },
-    })
+    try {
+      const filePath = normalize(_filePath)
+      const path = await Path.findOne({
+        where: {
+          path: filePath,
+        },
+      }).catch((e) => {
+        throw e
+      })
 
-    await path?.destroy()
+      await path?.destroy().catch((e) => {
+        throw e
+      })
+    } catch (e) {
+      dialog.showErrorBox('Error', JSON.stringify(e))
+    }
   }
   async function shelfOnReady() {
+    shelfClient.config.save()
     const flatDirTree = flattenDirectoryTree(choki.getWatched()).filter(
       (p) => !statSync(p).isDirectory(),
     )
@@ -96,9 +173,6 @@ export const addChokiEvents = (
     const INITPATHS = new Map<string, number>()
     const lastPaths: string[] = []
     const newFiles = toFileTuple(flatDirTree)
-    //REMOVEME:Debug
-    const contentError = 0
-    let duplicatePath = 0
 
     let lastProgress: number | undefined
     const sendUpdateProgress = (newProgress: number, newPath: string) => {
@@ -129,7 +203,6 @@ export const addChokiEvents = (
         },
         transaction: pathTransaction,
       })
-      console.timeEnd('PATH FINDALL ->')
 
       for (const dbPath of paths) {
         const path = dbPath.toJSON()
@@ -270,7 +343,6 @@ export const addChokiEvents = (
       }
 
       if (foundPath === null && !INITPATHS.get(filePath)) {
-        duplicatePath++
         const createPath = await Path.create(
           {
             path: filePath,
@@ -293,15 +365,12 @@ export const addChokiEvents = (
     await ContentsTransaction.commit()
     console.timeEnd('DB ->')
 
-    //TODO: REMOVE LOGS
-    console.log('Content Errors -> ', contentError)
-    console.log('Duplicate Path -> ', duplicatePath)
     shelfClient.ready = true
     onReadyCallback()
   }
 }
 
-const HASHMAXBYTES = 10485760 - 1 //10mb in bytes -1 bc inclusive
+const HASHMAXBYTES = 10485760 - 1 //10mb in bytes -1
 
 async function hashFileAsync(filePath: string) {
   return new Promise<string>((resolve, reject) => {

@@ -40,15 +40,18 @@ class ShelfClient {
       ClientConfigSchema,
       {
         additionalPaths: [],
+        ignoredPaths: [],
+        ignoreHidden: true,
       },
     )
 
     const choki = chokidar.watch([basePath, ...config.get('additionalPaths')], {
-      ignoreInitial: true,
       ignored: [
+        ...config.get('ignoredPaths'),
         (str) => {
           return str.includes(__DBEXTENSION)
         },
+        config.get('ignoreHidden') ? '**/.**' : '',
       ],
       followSymlinks: false,
     })
