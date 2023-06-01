@@ -2,12 +2,13 @@ import * as chokidar from 'chokidar'
 import {__DBEXTENSION, createShelfDB, ShelfDBModels} from '../db/ShelfDB'
 import {addChokiEvents} from './ChokiEvents'
 import {FSWatcher} from 'chokidar'
-import {zJson} from '../zJson'
+import {zJson, zJsonSchemaInfer} from '../zJson'
 import {join} from 'path'
 import {
   CLIENT_CONFIG_FILE_NAME,
-  ClientConfigSchema,
-  ClientConfigValues,
+  SHELF_CLIENT_CONFIG_SCHEMA,
+  ShelfClientConfig,
+  ShelfClientConfigValues,
 } from '../ShelfConfig'
 import {globSupportedFormats} from '../../../renderer/src/utils/formats'
 
@@ -15,7 +16,10 @@ class ShelfClient {
   private _choki: FSWatcher
   private _ShelfDB: ShelfDBModels
   private _ready = false
-  private _config: zJson<ClientConfigSchema, ClientConfigValues>
+  private _config: zJson<
+    typeof SHELF_CLIENT_CONFIG_SCHEMA,
+    ShelfClientConfigValues
+  >
 
   get config() {
     return this._config
@@ -38,7 +42,7 @@ class ShelfClient {
     )
     const config = new zJson(
       join(basePath + CLIENT_CONFIG_FILE_NAME),
-      ClientConfigSchema,
+      SHELF_CLIENT_CONFIG_SCHEMA,
       {
         additionalPaths: [],
         ignoredPaths: [],
@@ -47,15 +51,13 @@ class ShelfClient {
       },
     )
 
-    const matchers = [
-      // ...config.get('ignoredPaths'),
-      // config.get('ignoreHidden') ? '**/.**' : '',
-      config.get('ignoreUnsupported') ? globSupportedFormats : '',
-    ]
-
-    console.log('matchers ->', matchers)
     const choki = chokidar.watch([basePath, ...config.get('additionalPaths')], {
-      ignored: matchers,
+      ignored: [
+        ...config.get('ignoredPaths'),
+        config.get('ignoreHidden') ? '**/.**' : '',
+        config.get('ignoreUnsupported') ? globSupportedFormats : '',
+        `**/**.${__DBEXTENSION}`,
+      ],
       followSymlinks: false,
     })
 

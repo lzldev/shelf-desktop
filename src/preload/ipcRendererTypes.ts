@@ -12,6 +12,9 @@ export type IpcRendererEvents = TypeLevelRecord<
     updateProgress: {
       args: {value: number; key: string}
     }
+    clientReady: {
+      args: []
+    }
     updateConfig: {
       args: []
     }

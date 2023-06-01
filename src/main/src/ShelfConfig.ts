@@ -11,15 +11,21 @@ export const SHELF_CONFIG_SCHEMA = {
   defaultColor: z.string().min(0),
   layoutMode: z.enum(['grid', 'masonry']),
 } as const
+
 export type ShelfConfigType = zJsonSchemaInfer<typeof SHELF_CONFIG_SCHEMA>
 
 export const CLIENT_CONFIG_FILE_NAME = '/.shelfcfg'
-export const ClientConfigSchema = {
+export const SHELF_CLIENT_CONFIG_SCHEMA = {
   additionalPaths: z.array(z.string()),
   ignoredPaths: z.array(z.string()),
   ignoreHidden: z.boolean(),
   ignoreUnsupported: z.boolean(),
 } as const
 
-export type ClientConfigSchema = typeof ClientConfigSchema
-export type ClientConfigValues = zJsonValues<typeof ClientConfigSchema>
+export type ShelfClientConfig = zJsonSchemaInfer<
+  typeof SHELF_CLIENT_CONFIG_SCHEMA
+>
+
+export type ShelfClientConfigValues = zJsonValues<
+  typeof SHELF_CLIENT_CONFIG_SCHEMA
+>

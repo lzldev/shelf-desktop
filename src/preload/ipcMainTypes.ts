@@ -7,7 +7,10 @@ import {
   TagOperation,
   batchTagging as BatchTagging,
 } from '../types/Operations'
-import {ShelfConfigType as ShelfConfigType} from '../main/src/ShelfConfig'
+import {
+  ShelfClientConfig,
+  ShelfConfigType as ShelfConfigType,
+} from '../main/src/ShelfConfig'
 
 type IpcMainEventShape = {
   args: unknown | unknown[]
@@ -44,6 +47,10 @@ export type IpcMainEvents = TypeLevelRecord<
     getClientConfig: {
       args: never
       return: ShelfClientConfig
+    }
+    saveClientConfig: {
+      args: [config: ShelfClientConfig]
+      return: boolean
     }
     getShelfImages: {
       args: {

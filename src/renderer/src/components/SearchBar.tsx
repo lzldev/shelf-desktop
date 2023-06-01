@@ -25,7 +25,7 @@ export const SearchBar = ({
   selected: Set<Tag>
   pathQueries: Set<pathQuery>
   markedContent: Set<number>
-  onQuery: () => any
+  onQuery: (...any: any[]) => any
   addPathQuery: (query: pathQuery) => any
   removePathQuery: (query: pathQuery) => any
   addSelected: (tag: Tag) => any

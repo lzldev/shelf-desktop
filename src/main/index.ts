@@ -39,7 +39,13 @@ const ShelfConfig = new zJson(SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA, {
   layoutMode: 'grid',
 })
 
-const WindowOptions: WindowOptionsRecord = {
+const WindowOptions: Record<
+  string,
+  {
+    route: string
+    startOptions: Electron.BrowserWindowConstructorOptions
+  }
+> = {
   main: {
     route: '',
     startOptions: {
@@ -67,14 +73,6 @@ const WindowOptions: WindowOptionsRecord = {
     },
   },
 } as const
-
-type WindowOptionsRecord = Record<
-  string,
-  {
-    route: string
-    startOptions: Electron.BrowserWindowConstructorOptions
-  }
->
 
 let Client: ShelfClient
 
@@ -166,14 +164,6 @@ app.whenReady().then(() => {
       },
     },
     {
-      label: 'Options',
-      click: () => {
-        if (Client && !Windows.has('options')) {
-          createWindow('options')
-        }
-      },
-    },
-    {
       label: 'Exit',
       click: () => {
         app.quit()
@@ -256,8 +246,16 @@ ipcMain.handle('toggleFullscreen', async (evt, newStatus) => {
   window.setFullScreen(newStatus ? newStatus : !window.fullScreen)
 })
 ipcMain.handle('getConfig', async () => ShelfConfig.getAll())
+ipcMain.handle('getClientConfig', async () => {
+  return Client?.config.getAll()
+})
 ipcMain.handle('saveConfig', async (_, config) => {
   ShelfConfig.setAll(config)
   sendEventToAllWindows('updateConfig')
+  return true
+})
+ipcMain.handle('saveClientConfig', async (_, config) => {
+  Client.config.setAll(config)
+  // sendEventToAllWindows('updateConfig')
   return true
 })

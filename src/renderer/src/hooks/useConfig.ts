@@ -7,6 +7,7 @@ type ConfigStore = {
   saveConfig: (...any: any[]) => any
   makeReady: (...any: any[]) => any
   setConfig: (config: Partial<ShelfConfigType>) => any
+  modified: boolean
 } & (
   | {
       isReady: true
@@ -21,19 +22,26 @@ type ConfigStore = {
 const useConfigStore = create<ConfigStore>((set, get) => {
   return {
     isReady: false,
+    modified: false,
     config: null,
-    saveConfig: () => {
+    saveConfig: async () => {
       const cfg = get()
 
       if (!cfg.isReady) {
         return
       }
-      window.api.invokeOnMain('saveConfig', get().config as ShelfConfigType)
+      await window.api.invokeOnMain(
+        'saveConfig',
+        get().config as ShelfConfigType,
+      )
+
+      set({modified: false})
     },
     makeReady: () => set({isReady: true}),
     setConfig: (newConfig) =>
       set((state) => ({
         config: {...state.config, ...(newConfig as ShelfConfigType)},
+        modified: true,
       })),
   }
 })

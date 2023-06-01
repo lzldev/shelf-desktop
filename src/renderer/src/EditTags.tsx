@@ -251,7 +251,7 @@ function NewTagItem({
 function DeleteOperation(
   setOperations: Updater<Map<number, TagOperation>>,
   tag: Tag,
-): any {
+) {
   return (
     <span
       className='flex h-full w-full opacity-0 transition-opacity group-hover:opacity-50'
@@ -275,7 +275,7 @@ function UpdateOperation(
   setOperations: Updater<Map<number, TagOperation>>,
   tag: Tag,
   options: JSX.Element[],
-): any {
+) {
   return (
     <>
       <div className='flex w-full flex-col items-stretch'>
@@ -331,7 +331,7 @@ function UpdateOperation(
 function NoOperation(
   tag: Tag,
   setOperations: Updater<Map<number, TagOperation>>,
-): any {
+) {
   return (
     <>
       <div className='flex grow overflow-hidden text-ellipsis'>{tag.name}</div>

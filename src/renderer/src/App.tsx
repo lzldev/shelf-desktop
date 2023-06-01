@@ -12,6 +12,7 @@ import {Progress} from './Progress'
 import {useConfigStore} from './hooks/useConfig'
 import {useTags} from './hooks/useTags'
 import {useColors} from './hooks/useColors'
+import {useLocalConfigStore} from './hooks/useLocalConfig'
 
 const WindowRouter = createHashRouter([
   {
@@ -32,10 +33,12 @@ const ReactQueryClient = new QueryClient()
 
 const App = () => {
   const {isReady: isReadyConfig} = useConfigStore()
+  const {isReady: isReadyLocalConfig} = useLocalConfigStore()
   const {isReady: isReadyTags} = useTags()
   const {isReady: isReadyColors} = useColors()
 
-  const isReady = isReadyTags && isReadyConfig && isReadyColors
+  const isReady =
+    isReadyTags && isReadyConfig && isReadyColors && isReadyLocalConfig
 
   if (!isReady) {
     return <></>

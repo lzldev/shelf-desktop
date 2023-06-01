@@ -15,7 +15,7 @@ export const Dropdown = ({
   ...props
 }: {
   triggerRender: () => ReactNode
-  contentClass?: any
+  contentClass?: string
   modalRef?: RefObject<HTMLDivElement>
 } & DropdownMenuProps) => {
   return (
