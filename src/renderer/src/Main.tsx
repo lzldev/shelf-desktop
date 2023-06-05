@@ -374,6 +374,7 @@ function Main(): JSX.Element {
 }
 
 export {Main}
+export default Main
 
 const ContentGrid = forwardRef(function Body(
   {

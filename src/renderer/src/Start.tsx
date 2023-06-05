@@ -3,6 +3,7 @@ import {useConfigStore} from './hooks/useConfig'
 import {ReactComponent as Logo} from './assets/logo.svg'
 import {CornerThing} from './components/CornerThing'
 import {FolderOpenIcon} from '@heroicons/react/20/solid'
+import {ShelfClientConfig} from 'src/main/src/ShelfConfig'
 
 function Start(): JSX.Element {
   const {config} = useConfigStore()
@@ -51,4 +52,12 @@ function Start(): JSX.Element {
   )
 }
 
+const StartingOptions: React.FC<any> = () => {
+  const startOptions = useRef<ShelfClientConfig>()
+  return (
+    <div className='relative flex h-screen w-full flex-col overflow-hidden bg-background'></div>
+  )
+}
+
 export {Start}
+export default Start

@@ -6,13 +6,9 @@ import {createHashRouter, RouterProvider} from 'react-router-dom'
 
 import './assets/index.css'
 
-import {Main} from './Main'
-import {Start} from './Start'
-import {Progress} from './Progress'
-import {useConfigStore} from './hooks/useConfig'
-import {useTags} from './hooks/useTags'
-import {useColors} from './hooks/useColors'
-import {useLocalConfigStore} from './hooks/useLocalConfig'
+const Main = React.lazy(() => import('./Main'))
+const Start = React.lazy(() => import('./Start'))
+const Progress = React.lazy(() => import('./Progress'))
 
 const WindowRouter = createHashRouter([
   {
@@ -32,17 +28,6 @@ const WindowRouter = createHashRouter([
 const ReactQueryClient = new QueryClient()
 
 const App = () => {
-  const {isReady: isReadyConfig} = useConfigStore()
-  const {isReady: isReadyLocalConfig} = useLocalConfigStore()
-  const {isReady: isReadyTags} = useTags()
-  const {isReady: isReadyColors} = useColors()
-
-  const isReady =
-    isReadyTags && isReadyConfig && isReadyColors && isReadyLocalConfig
-
-  if (!isReady) {
-    return <></>
-  }
   return (
     <React.StrictMode>
       <QueryClientProvider client={ReactQueryClient}>

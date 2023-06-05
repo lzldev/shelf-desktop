@@ -29,3 +29,4 @@ const Progress = (): JSX.Element => {
 }
 
 export {Progress}
+export default Progress
