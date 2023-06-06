@@ -71,7 +71,7 @@ class ShelfClient {
   protected constructor(newInstance: {
     choki: FSWatcher
     ShelfDB: ShelfDBModels
-    config: zJson<ClientConfigSchema, ClientConfigValues>
+    config: zJson<typeof SHELF_CLIENT_CONFIG_SCHEMA, ShelfClientConfigValues>
     callback: () => void
   }) {
     this._ShelfDB = newInstance.ShelfDB

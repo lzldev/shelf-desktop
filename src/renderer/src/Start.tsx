@@ -4,19 +4,43 @@ import {ReactComponent as Logo} from './assets/logo.svg'
 import {CornerThing} from './components/CornerThing'
 import {FolderOpenIcon} from '@heroicons/react/20/solid'
 import {ShelfClientConfig} from 'src/main/src/ShelfConfig'
+import {useState} from 'react'
+import {Route, Routes} from 'react-router-dom'
+import {Mutable} from 'src/types/utils'
+import {useImmer} from 'use-immer'
 
-function Start(): JSX.Element {
-  const {config} = useConfigStore()
+const Router = () => (
+  <Routes>
+    <Route
+      index
+      element={<Start />}
+    />
+    <Route
+      path='/startOptions'
+      element={<StartingOptions />}
+    />
+  </Routes>
+)
 
-  const openDialog = async (dir: 'openFile' | 'openDirectory') => {
-    const dialog = await window.api.invokeOnMain('openDialog', {
-      dialogType: dir,
-    })
+export default Router
+
+function Start() {
+  const [selectedPaths, setSelectedPaths] = useState<string[]>()
+
+  const openDirectoryDialog = async () => {
+    const dialog = await window.api.invokeOnMain('openDirectory')
 
     if (dialog.canceled || dialog.filePaths.length === 0) return
 
-    await window.api.invokeOnMain('startShelfClient', dialog.filePaths[0])
+    if (!dialog.isNew) {
+      window.api.invokeOnMain('startShelfClient', dialog.filePaths[0])
+      return
+    }
+
+    setSelectedPaths(dialog.filePaths)
   }
+
+  const showConfig = !selectedPaths
 
   return (
     <div className='relative flex h-screen w-full flex-col overflow-hidden bg-background'>
@@ -25,39 +49,125 @@ function Start(): JSX.Element {
         <Logo className='mx-auto my-10' />
         <div
           className='group/button flex cursor-pointer flex-row justify-center bg-surface py-2 font-mono font-bold transition-all duration-50 hover:bg-gray-100'
-          onClick={() => openDialog('openDirectory')}
-          // onClick={() => openDialog('openFile')}
+          onClick={
+            showConfig
+              ? openDirectoryDialog
+              : () => {
+                  setSelectedPaths(undefined)
+                }
+          }
         >
-          <FolderOpenIcon className='mr-1 h-6 w-6 self-center' />
-          <span className='text-md mt-1'>OPEN</span>
+          {showConfig ? (
+            <FolderOpenIcon className='mr-1 h-6 w-6 self-center' />
+          ) : (
+            <></>
+          )}
+          <span className='text -md mt-1'>
+            {!selectedPaths ? 'OPEN' : 'BACK'}
+          </span>
         </div>
       </div>
       <div className='flex grow flex-col overflow-y-auto font-mono text-sm font-bold'>
-        {Array.from(new Set(config?.recentFiles).values()).map(
-          (recentPath, idx) => (
-            <h1
-              key={idx}
-              className='px-2 py-0.5 first:pt-1 hover:bg-sky-200'
-              onClick={() => {
-                window.api.invokeOnMain('startShelfClient', recentPath)
-              }}
-            >
-              {recentPath}
-            </h1>
-          ),
-        )}
+        {showConfig ? <RecentFiles /> : <StartingOptions />}
       </div>
       <Versions />
     </div>
   )
 }
 
-const StartingOptions: React.FC<any> = () => {
-  const startOptions = useRef<ShelfClientConfig>()
+function RecentFiles() {
+  const {config} = useConfigStore()
+
   return (
-    <div className='relative flex h-screen w-full flex-col overflow-hidden bg-background'></div>
+    <>
+      {config?.recentFiles.map((recentPath, idx) => (
+        <h1
+          key={idx}
+          className='px-2 py-0.5 first:pt-1 hover:bg-sky-200'
+          onClick={() => {
+            window.api.invokeOnMain('startShelfClient', recentPath)
+          }}
+        >
+          {recentPath}
+        </h1>
+      ))}
+    </>
   )
 }
 
-export {Start}
-export default Start
+function StartingOptions() {
+  const [startOptions, setStartOptions] = useImmer<Mutable<ShelfClientConfig>>({
+    additionalPaths: [],
+    ignoredPaths: [],
+    ignoreHidden: false,
+    ignoreUnsupported: true,
+  })
+
+  return (
+    <div className='relative flex h-screen w-full flex-col overflow-hidden bg-background px-10 pt-2'>
+      <div className='mb-1 flex flex-row justify-between'>
+        <div className='flex flex-row'>
+          <input
+            className='mr-1'
+            type='checkbox'
+            checked={startOptions.ignoreHidden}
+            onChange={() => {
+              setStartOptions((daft) => {
+                daft.ignoreHidden = !daft.ignoreHidden
+              })
+            }}
+          />
+          <span>Ignore Hidden</span>
+        </div>
+        <div className='flex flex-row'>
+          <input
+            className='mr-1'
+            type='checkbox'
+            checked={startOptions.ignoreUnsupported}
+            onChange={() => {
+              setStartOptions((daft) => {
+                daft.ignoreUnsupported = !daft.ignoreUnsupported
+              })
+            }}
+          />
+          <span>Ignore Unsupported Files</span>
+        </div>
+      </div>
+      <span>Additional Paths:</span>
+      <div
+        onClick={async () => {
+          const newPath = await window.api.invokeOnMain('openDialog')
+          if (newPath.canceled) {
+            return
+          }
+
+          setStartOptions((draft) => {
+            draft.additionalPaths.push(...newPath.filePaths)
+          })
+        }}
+      >
+        Add Directory
+      </div>
+      <div className='min-h-[6rem] w-full overflow-y-scroll bg-white'>
+        {startOptions?.additionalPaths.map((p, idx) => (
+          <div
+            className='group/path flex hover:bg-gray-200'
+            key={idx}
+          >
+            <span className='flex grow self-center text-start'>{p}</span>
+            <span
+              className='pointer-events-auto flex px-2 py-0.5 font-mono font-bold hover:bg-red-500'
+              onClick={() => {
+                setStartOptions((draft) => {
+                  draft.additionalPaths.splice(idx, 1)
+                })
+              }}
+            >
+              X
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}

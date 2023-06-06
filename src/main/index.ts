@@ -4,7 +4,6 @@ import {
   BrowserWindow,
   ipcMain,
   dialog,
-  protocol,
   Tray,
   screen,
   nativeImage,
@@ -22,6 +21,9 @@ import {SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA} from './src/ShelfConfig'
 
 //Imports event Handlers.
 import './src/shelf-client'
+import {CLIENT_CONFIG_FILE_NAME} from './src/ShelfConfig'
+import {OpenDialogReturnValue} from 'electron/main'
+import {__DBEXTENSION, __DBFILENAME} from './src/db/ShelfDB'
 
 //TODO: Change name and location
 export function requestClient(): ShelfClient | false {
@@ -31,7 +33,7 @@ export function requestClient(): ShelfClient | false {
   return Client
 }
 
-const ShelfConfig = new zJson(SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA, {
+export const ShelfConfig = new zJson(SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA, {
   recentFiles: [],
   defaultColor: '#ef4444',
   ignorePaths: [],
@@ -47,7 +49,7 @@ const WindowOptions: Record<
   }
 > = {
   main: {
-    route: '',
+    route: 'main',
     startOptions: {
       x: 1024,
       y: 850,
@@ -86,8 +88,7 @@ function createWindow(route: keyof typeof WindowOptions): void {
   const primaryDisplay = screen.getPrimaryDisplay().bounds
   const positionX = Math.max(
     primaryDisplay.width / 2 +
-      primaryDisplay.x -
-      windowOptions.startOptions.width! / 2,
+      (primaryDisplay.x - windowOptions.startOptions.width! / 2),
     0,
   )
   const positionY = Math.max(
@@ -122,6 +123,7 @@ function createWindow(route: keyof typeof WindowOptions): void {
 
   newWindow.on('ready-to-show', () => {
     newWindow.show()
+    newWindow.webContents.openDevTools()
   })
   newWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
@@ -206,56 +208,49 @@ async function startNewClient(path: string) {
   })
 }
 
-ipcMain.handle('openDialog', async (_, options) => {
-  const diagResponse = await dialog.showOpenDialog({
-    properties: [options.dialogType],
-    title: 'Select A Directory',
-  })
+const checkDirectory = (dir: string) => {
+  return (
+    fs.existsSync(path.join(dir, CLIENT_CONFIG_FILE_NAME)) &&
+    fs.existsSync(path.join(dir, __DBFILENAME + __DBEXTENSION))
+  )
+}
 
-  return diagResponse
-})
-ipcMain.handle('startShelfClient', async (Event, path) => {
-  const recentFiles = ShelfConfig.get('recentFiles')
-  if (!fs.existsSync(path)) {
-    const idx = recentFiles.findIndex((p) => p == path)
-    if (idx !== -1) {
-      recentFiles.splice(idx, 1)
-      ShelfConfig.set('recentFiles', recentFiles)
-    }
+ipcMain.handle('openDirectory', async () => {
+  const diagResponse = (await dialog.showOpenDialog({
+    properties: ['openDirectory'],
+  })) as OpenDialogReturnValue
 
-    return
+  if (diagResponse.canceled) {
+    return {...diagResponse, canceled: true}
   }
 
-  Windows.get('start')?.close()
+  return {...diagResponse, isNew: checkDirectory(diagResponse.filePaths[0])}
+})
 
-  recentFiles.push(path)
+ipcMain.handle('startShelfClient', async (_, path) => {
+  const recentFiles = ShelfConfig.get('recentFiles')
+  if (recentFiles.findIndex((p) => p == path)) {
+    recentFiles.push(path)
+  }
   if (recentFiles.length >= 8) {
     recentFiles.shift()
   }
-
   ShelfConfig.set('recentFiles', recentFiles)
 
-  BrowserWindow.fromId(Event.sender.id)?.close()
+  Windows.get('start')?.close()
+
   startNewClient(path)
   return
 })
-ipcMain.handle('toggleFullscreen', async (evt, newStatus) => {
-  const window = BrowserWindow.fromId(evt.sender.id)!
-
-  if (window.fullScreen === newStatus) return
-  window.setFullScreen(newStatus ? newStatus : !window.fullScreen)
-})
 ipcMain.handle('getConfig', async () => ShelfConfig.getAll())
-ipcMain.handle('getClientConfig', async () => {
-  return Client?.config.getAll()
-})
 ipcMain.handle('saveConfig', async (_, config) => {
   ShelfConfig.setAll(config)
   sendEventToAllWindows('updateConfig')
   return true
 })
+
+ipcMain.handle('getClientConfig', async () => Client?.config.getAll())
 ipcMain.handle('saveClientConfig', async (_, config) => {
   Client.config.setAll(config)
-  // sendEventToAllWindows('updateConfig')
   return true
 })

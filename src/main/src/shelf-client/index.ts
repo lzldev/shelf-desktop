@@ -1,6 +1,7 @@
 import './TagEvents'
 import './ContentEvents'
 import './ColorEvents'
+import './LayoutEvents'
 
 import {IpcRendererEvents} from '../../../preload/ipcRendererTypes'
 import {sendEventToAllWindows} from '../..'

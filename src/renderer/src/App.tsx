@@ -12,15 +12,15 @@ const Progress = React.lazy(() => import('./Progress'))
 
 const WindowRouter = createHashRouter([
   {
-    path: '/',
+    path: '/main/*',
     element: <Main />,
   },
   {
-    path: '/start',
+    path: '/start/*',
     element: <Start />,
   },
   {
-    path: '/progress',
+    path: '/progress/*',
     element: <Progress />,
   },
 ])

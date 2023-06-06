@@ -21,3 +21,5 @@ export type RequiredKeys<T> = {
 
 //Removes optinal Fields from a Type
 export type NonOptional<T> = Pick<T, RequiredKeys<T>>
+
+export type Mutable<T> = {-readonly [K in keyof T]: T[K]}

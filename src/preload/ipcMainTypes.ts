@@ -11,6 +11,7 @@ import {
   ShelfClientConfig,
   ShelfConfigType as ShelfConfigType,
 } from '../main/src/ShelfConfig'
+import {OpenDialogReturnValue} from 'electron/main'
 
 type IpcMainEventShape = {
   args: unknown | unknown[]
@@ -28,16 +29,17 @@ export type IpcMainEvents = TypeLevelRecord<
       args: [rootPath: string]
       return: void
     }
-    openDialog: {
-      args: [options: {dialogType: 'openFile' | 'openDirectory'}]
-      return: any //TODO: Agora
+    openDirectory: {
+      args: []
+      return: OpenDialogReturnValue &
+        ({canceled: false; isNew: boolean} | {canceled: true})
     }
     getRecent: {
-      args: null
+      args: []
       return: string[]
     }
     getConfig: {
-      args: never
+      args: []
       return: ShelfConfigType
     }
     saveConfig: {
@@ -45,7 +47,7 @@ export type IpcMainEvents = TypeLevelRecord<
       return: boolean
     }
     getClientConfig: {
-      args: never
+      args: []
       return: ShelfClientConfig
     }
     saveClientConfig: {

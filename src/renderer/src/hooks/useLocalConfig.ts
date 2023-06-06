@@ -61,6 +61,4 @@ await window.api
     })
   })
 
-console.log('local ->', useLocalConfigStore.getState())
-
 export {useLocalConfigStore}
