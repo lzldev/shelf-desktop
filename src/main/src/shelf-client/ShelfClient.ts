@@ -11,6 +11,7 @@ import {
   ShelfClientConfigValues,
 } from '../ShelfConfig'
 import {globSupportedFormats} from '../../../renderer/src/utils/formats'
+import {IpcMainEvents} from '../../../preload/ipcMainTypes'
 
 class ShelfClient {
   private _choki: FSWatcher
@@ -36,30 +37,38 @@ class ShelfClient {
   set ready(value) {
     this._ready = value
   }
-  static async create(basePath: string, callback: () => void) {
-    const ShelfDB = await createShelfDB(
-      Array.isArray(basePath) ? basePath[0] : basePath,
-    )
+  static async create(
+    options: IpcMainEvents['startShelfClient']['args'][0],
+    callback: () => void,
+  ) {
+    console.log('options ->', options)
+    const ShelfDB = await createShelfDB(options.basePath)
+    const objthing = {
+      additionalPaths: [],
+      ignoredPaths: [],
+      ignoreHidden: true,
+      ignoreUnsupported: true,
+      ...(options.config ? options.config : {}),
+    }
+
     const config = new zJson(
-      join(basePath + CLIENT_CONFIG_FILE_NAME),
+      join(options.basePath + CLIENT_CONFIG_FILE_NAME),
       SHELF_CLIENT_CONFIG_SCHEMA,
-      {
-        additionalPaths: [],
-        ignoredPaths: [],
-        ignoreHidden: true,
-        ignoreUnsupported: true,
-      },
+      objthing,
     )
 
-    const choki = chokidar.watch([basePath, ...config.get('additionalPaths')], {
-      ignored: [
-        ...config.get('ignoredPaths'),
-        config.get('ignoreHidden') ? '**/.**' : '',
-        config.get('ignoreUnsupported') ? globSupportedFormats : '',
-        `**/**.${__DBEXTENSION}`,
-      ],
-      followSymlinks: false,
-    })
+    const choki = chokidar.watch(
+      [options.basePath, ...config.get('additionalPaths')],
+      {
+        ignored: [
+          ...config.get('ignoredPaths'),
+          // config.get('ignoreHidden') ? '**/.**' : '', //FIXME:Not Working
+          config.get('ignoreUnsupported') ? globSupportedFormats : '',
+          `**/**.${__DBEXTENSION}`,
+        ],
+        followSymlinks: false,
+      },
+    )
 
     return new ShelfClient({
       choki,

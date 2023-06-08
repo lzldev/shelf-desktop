@@ -194,43 +194,36 @@ export const sendEventToAllWindows: ShelfWebContentsSend = (evt, ...args) => {
 export const updateProgress = (args: {key: string; value: any}) => {
   Windows.get('progress')?.webContents.send('updateProgress', args)
 }
-async function startNewClient(path: string) {
-  if (!Windows.has('progress')) {
-    createWindow('progress')
-  }
-
-  Client = await ShelfClient.create(path, () => {
-    const progressWindow = Windows.get('progress')
-    if (progressWindow) {
-      progressWindow.close()
-    }
-    createWindow('main')
-  })
-}
 
 const checkDirectory = (dir: string) => {
-  return (
+  return !(
     fs.existsSync(path.join(dir, CLIENT_CONFIG_FILE_NAME)) &&
-    fs.existsSync(path.join(dir, __DBFILENAME + __DBEXTENSION))
+    fs.existsSync(path.join(dir, __DBFILENAME))
   )
 }
 
-ipcMain.handle('openDirectory', async () => {
-  const diagResponse = (await dialog.showOpenDialog({
+const openDirDialog = () =>
+  dialog.showOpenDialog({
     properties: ['openDirectory'],
-  })) as OpenDialogReturnValue
+  }) as OpenDialogReturnValue
 
-  if (diagResponse.canceled) {
-    return {...diagResponse, canceled: true}
+ipcMain.handle('openDialog', async () => openDirDialog())
+ipcMain.handle('openDirectory', async () => {
+  const directory = await openDirDialog()
+
+  if (directory.canceled) {
+    return {...directory, canceled: true}
   }
 
-  return {...diagResponse, isNew: checkDirectory(diagResponse.filePaths[0])}
+  const isNew = checkDirectory(directory.filePaths[0])
+  console.log(' ->', isNew)
+  return {...directory, isNew}
 })
 
-ipcMain.handle('startShelfClient', async (_, path) => {
+ipcMain.handle('startShelfClient', async (_, options) => {
   const recentFiles = ShelfConfig.get('recentFiles')
-  if (recentFiles.findIndex((p) => p == path)) {
-    recentFiles.push(path)
+  if (recentFiles.findIndex((p) => p == options.basePath)) {
+    recentFiles.push(options.basePath)
   }
   if (recentFiles.length >= 8) {
     recentFiles.shift()
@@ -239,9 +232,19 @@ ipcMain.handle('startShelfClient', async (_, path) => {
 
   Windows.get('start')?.close()
 
-  startNewClient(path)
-  return
+  if (!Windows.has('progress')) {
+    createWindow('progress')
+  }
+
+  Client = await ShelfClient.create(options, () => {
+    const progressWindow = Windows.get('progress')
+    if (progressWindow) {
+      progressWindow.close()
+    }
+    createWindow('main')
+  })
 })
+
 ipcMain.handle('getConfig', async () => ShelfConfig.getAll())
 ipcMain.handle('saveConfig', async (_, config) => {
   ShelfConfig.setAll(config)

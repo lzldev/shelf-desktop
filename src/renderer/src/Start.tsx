@@ -5,26 +5,10 @@ import {CornerThing} from './components/CornerThing'
 import {FolderOpenIcon} from '@heroicons/react/20/solid'
 import {ShelfClientConfig} from 'src/main/src/ShelfConfig'
 import {useState} from 'react'
-import {Route, Routes} from 'react-router-dom'
 import {Mutable} from 'src/types/utils'
 import {useImmer} from 'use-immer'
 
-const Router = () => (
-  <Routes>
-    <Route
-      index
-      element={<Start />}
-    />
-    <Route
-      path='/startOptions'
-      element={<StartingOptions />}
-    />
-  </Routes>
-)
-
-export default Router
-
-function Start() {
+export default function Start() {
   const [selectedPaths, setSelectedPaths] = useState<string[]>()
 
   const openDirectoryDialog = async () => {
@@ -33,7 +17,9 @@ function Start() {
     if (dialog.canceled || dialog.filePaths.length === 0) return
 
     if (!dialog.isNew) {
-      window.api.invokeOnMain('startShelfClient', dialog.filePaths[0])
+      window.api.invokeOnMain('startShelfClient', {
+        basePath: dialog.filePaths[0],
+      })
       return
     }
 
@@ -68,7 +54,11 @@ function Start() {
         </div>
       </div>
       <div className='flex grow flex-col overflow-y-auto font-mono text-sm font-bold'>
-        {showConfig ? <RecentFiles /> : <StartingOptions />}
+        {showConfig ? (
+          <RecentFiles />
+        ) : (
+          <StartingOptions base={selectedPaths[0]} />
+        )}
       </div>
       <Versions />
     </div>
@@ -85,7 +75,7 @@ function RecentFiles() {
           key={idx}
           className='px-2 py-0.5 first:pt-1 hover:bg-sky-200'
           onClick={() => {
-            window.api.invokeOnMain('startShelfClient', recentPath)
+            window.api.invokeOnMain('startShelfClient', {basePath: recentPath})
           }}
         >
           {recentPath}
@@ -95,8 +85,8 @@ function RecentFiles() {
   )
 }
 
-function StartingOptions() {
-  const [startOptions, setStartOptions] = useImmer<Mutable<ShelfClientConfig>>({
+function StartingOptions(props: {base: string}) {
+  const [startConfig, setStartConfig] = useImmer<Mutable<ShelfClientConfig>>({
     additionalPaths: [],
     ignoredPaths: [],
     ignoreHidden: false,
@@ -110,9 +100,9 @@ function StartingOptions() {
           <input
             className='mr-1'
             type='checkbox'
-            checked={startOptions.ignoreHidden}
+            checked={startConfig.ignoreHidden}
             onChange={() => {
-              setStartOptions((daft) => {
+              setStartConfig((daft) => {
                 daft.ignoreHidden = !daft.ignoreHidden
               })
             }}
@@ -123,9 +113,9 @@ function StartingOptions() {
           <input
             className='mr-1'
             type='checkbox'
-            checked={startOptions.ignoreUnsupported}
+            checked={startConfig.ignoreUnsupported}
             onChange={() => {
-              setStartOptions((daft) => {
+              setStartConfig((daft) => {
                 daft.ignoreUnsupported = !daft.ignoreUnsupported
               })
             }}
@@ -141,7 +131,7 @@ function StartingOptions() {
             return
           }
 
-          setStartOptions((draft) => {
+          setStartConfig((draft) => {
             draft.additionalPaths.push(...newPath.filePaths)
           })
         }}
@@ -149,7 +139,7 @@ function StartingOptions() {
         Add Directory
       </div>
       <div className='min-h-[6rem] w-full overflow-y-scroll bg-white'>
-        {startOptions?.additionalPaths.map((p, idx) => (
+        {startConfig?.additionalPaths.map((p, idx) => (
           <div
             className='group/path flex hover:bg-gray-200'
             key={idx}
@@ -158,7 +148,7 @@ function StartingOptions() {
             <span
               className='pointer-events-auto flex px-2 py-0.5 font-mono font-bold hover:bg-red-500'
               onClick={() => {
-                setStartOptions((draft) => {
+                setStartConfig((draft) => {
                   draft.additionalPaths.splice(idx, 1)
                 })
               }}
@@ -167,6 +157,17 @@ function StartingOptions() {
             </span>
           </div>
         ))}
+      </div>
+      <div
+        className='flex w-full flex-row text-center text-xl'
+        onClick={() => {
+          window.api.invokeOnMain('startShelfClient', {
+            config: startConfig,
+            basePath: props.base,
+          })
+        }}
+      >
+        START
       </div>
     </div>
   )

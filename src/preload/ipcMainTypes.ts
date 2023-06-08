@@ -26,8 +26,17 @@ export type IpcMainEvents = TypeLevelRecord<
       return: void
     }
     startShelfClient: {
-      args: [rootPath: string]
+      args: [
+        options: {
+          basePath: string
+          config?: Partial<ShelfClientConfig>
+        },
+      ]
       return: void
+    }
+    openDialog: {
+      args: []
+      return: OpenDialogReturnValue
     }
     openDirectory: {
       args: []
