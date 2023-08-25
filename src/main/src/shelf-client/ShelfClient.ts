@@ -2,12 +2,11 @@ import * as chokidar from 'chokidar'
 import {__DBEXTENSION, createShelfDB, ShelfDBModels} from '../db/ShelfDB'
 import {addChokiEvents} from './ChokiEvents'
 import {FSWatcher} from 'chokidar'
-import {zJson, zJsonSchemaInfer} from '../zJson'
+import {zJson} from '../zJson'
 import {join} from 'path'
 import {
   CLIENT_CONFIG_FILE_NAME,
   SHELF_CLIENT_CONFIG_SCHEMA,
-  ShelfClientConfig,
   ShelfClientConfigValues,
 } from '../ShelfConfig'
 import {globSupportedFormats} from '../../../renderer/src/utils/formats'
@@ -37,24 +36,28 @@ class ShelfClient {
   set ready(value) {
     this._ready = value
   }
+
+  async destroy() {
+    await this._ShelfDB.sequelize.close()
+    await this.choki.close()
+  }
   static async create(
     options: IpcMainEvents['startShelfClient']['args'][0],
     callback: () => void,
   ) {
     console.log('options ->', options)
     const ShelfDB = await createShelfDB(options.basePath)
-    const objthing = {
-      additionalPaths: [],
-      ignoredPaths: [],
-      ignoreHidden: true,
-      ignoreUnsupported: true,
-      ...(options.config ? options.config : {}),
-    }
 
     const config = new zJson(
       join(options.basePath + CLIENT_CONFIG_FILE_NAME),
       SHELF_CLIENT_CONFIG_SCHEMA,
-      objthing,
+      {
+        additionalPaths: [],
+        ignoredPaths: [],
+        ignoreHidden: true,
+        ignoreUnsupported: true,
+        ...(options.config ? options.config : {}),
+      },
     )
 
     const choki = chokidar.watch(

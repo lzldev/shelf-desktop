@@ -197,13 +197,13 @@ function Main(): JSX.Element {
           })
           const contentIds: number[] = Array.from(markedContent.values())
 
-          const newLocal = {
+          const remove_operation = {
             operation: 'REMOVE',
             contentIds,
             tagIds,
           } as const
 
-          window.api.invokeOnMain('batchTagging', newLocal)
+          window.api.invokeOnMain('batchTagging', remove_operation)
         }}
         onQuery={() => {
           refetch()
@@ -300,7 +300,7 @@ function Main(): JSX.Element {
               >
                 <TagColorThing
                   className='absolute inset-x-0 top-0 flex h-1 w-full flex-row overflow-hidden transition-all duration-50 group-hover/content:h-1.5'
-                  tags={content.tags}
+                  tags={content.tags!}
                 />
                 <input
                   type='checkbox'

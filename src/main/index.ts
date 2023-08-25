@@ -23,7 +23,7 @@ import {SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA} from './src/ShelfConfig'
 import './src/shelf-client'
 import {CLIENT_CONFIG_FILE_NAME} from './src/ShelfConfig'
 import {OpenDialogReturnValue} from 'electron/main'
-import {__DBEXTENSION, __DBFILENAME} from './src/db/ShelfDB'
+import {__DBFILENAME} from './src/db/ShelfDB'
 
 //TODO: Change name and location
 export function requestClient(): ShelfClient | false {
@@ -119,16 +119,16 @@ function createWindow(route: keyof typeof WindowOptions): void {
     },
   })
 
-  newWindow.removeMenu()
-
   newWindow.on('ready-to-show', () => {
     newWindow.show()
     newWindow.webContents.openDevTools()
   })
+
   newWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return {action: 'deny'}
   })
+
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     newWindow.loadURL(
       process.env['ELECTRON_RENDERER_URL'] + `?#/${WindowOptions[route].route}`,
@@ -216,7 +216,6 @@ ipcMain.handle('openDirectory', async () => {
   }
 
   const isNew = checkDirectory(directory.filePaths[0])
-  console.log(' ->', isNew)
   return {...directory, isNew}
 })
 

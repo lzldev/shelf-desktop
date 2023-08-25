@@ -76,7 +76,6 @@ function EditTags({
                   ])
                   .then((r) => {
                     if (r) {
-                      console.log('r ->', r)
                       onClose()
                     }
                   })
