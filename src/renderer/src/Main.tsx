@@ -181,13 +181,12 @@ function Main(): JSX.Element {
           })
 
           const contentIds: number[] = Array.from(markedContent.values())
-          const newLocal = {
+
+          window.api.invokeOnMain('batchTagging', {
             operation: 'ADD',
             contentIds,
             tagIds,
-          } as const
-
-          window.api.invokeOnMain('batchTagging', newLocal)
+          })
         }}
         onBatchRemove={() => {
           const tagIds: number[] = []
@@ -280,6 +279,7 @@ function Main(): JSX.Element {
             if (Array.isArray(page)) {
               return
             }
+
             return page.content!.map((content, contentIdx) => (
               <ShelfContent
                 data-grid-groupkey={pageIdx}
