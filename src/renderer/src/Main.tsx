@@ -38,7 +38,6 @@ function Main(): JSX.Element {
   const {orderDirection, orderField, toggleDirection} = useOrderStore()
   const contentList = useRef<HTMLDivElement & MasonryInfiniteGrid>(null)
   const markerIdx = useRef<[pageNumber: number, contentNumber: number]>()
-
   const {keys} = useHotkeysRef({
     Shift: {
       down: () => {},

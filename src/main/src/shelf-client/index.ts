@@ -13,12 +13,11 @@ export function sendEventAfter(
   return (...args: any[]) => {
     const result = func.call(undefined, ...args)
     if (result instanceof Promise) {
-      //TODO: Find a better way to do this?
-      return result.then((r) => {
+      return result.then((result) => {
         events.forEach((event) => {
           sendEventToAllWindows(event)
         })
-        return r
+        return result
       })
     }
 

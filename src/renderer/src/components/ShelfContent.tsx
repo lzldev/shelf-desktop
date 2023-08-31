@@ -19,6 +19,7 @@ function ShelfContent({
 
   const format = checkFormat(content.extension)
   const [hidden, setHidden] = useState(format === 'image')
+  const [error, setError] = useState<string | null>(null)
 
   const uri = new URL('file://' + content?.paths[0]?.path || '').toString()
 
@@ -35,7 +36,7 @@ function ShelfContent({
         props.className,
       )}
     >
-      {format === 'image' ? (
+      {format === 'image' && !error ? (
         <>
           <img
             className={
@@ -48,6 +49,10 @@ function ShelfContent({
             onLoad={(evt) => {
               setHidden(false)
             }}
+            onError={(evt) => {
+              setError(`${evt.type} Loading Image`)
+              setHidden(false)
+            }}
             hidden={hidden}
             className={clsx(
               'mx-auto h-full object-contain ',
@@ -56,7 +61,7 @@ function ShelfContent({
             src={uri}
           />
         </>
-      ) : format === 'video' ? (
+      ) : format === 'video' && !error ? (
         <div className='relative flex h-full w-full'>
           <video
             className={
@@ -88,6 +93,14 @@ function ShelfContent({
           >
             {content.extension || uri}
           </span>
+          {error && (
+            <span
+              dir={!content.extension ? 'rtl' : undefined}
+              className='mt-1 w-2/3 truncate text-center font-mono text-gray-100'
+            >
+              {error}
+            </span>
+          )}
         </div>
       )}
       {props.children}
