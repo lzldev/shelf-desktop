@@ -9,7 +9,7 @@ export const SHELF_CONFIG_SCHEMA = {
   ignorePaths: z.array(z.string()),
   pageSize: z.number().min(0),
   defaultColor: z.string().min(0),
-  layoutMode: z.enum(['grid', 'masonry']),
+  layoutMode: z.enum(['grid', 'masonry', 'experimental']),
 } as const
 
 export type ShelfConfigType = zJsonSchemaInfer<typeof SHELF_CONFIG_SCHEMA>

@@ -125,6 +125,7 @@ function OptionsModal({
             >
               <option value={'grid'}>Grid</option>
               <option value={'masonry'}>Masonry</option>
+              <option value={'experimental'}>Experimental</option>
             </select>
           </div>
           <div className='flex flex-row-reverse'>

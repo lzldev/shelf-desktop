@@ -10,7 +10,7 @@ import {
 } from 'react'
 import {useTags} from './hooks/useTags'
 import {Content, Tag} from 'src/main/src/db/models'
-import {useInfiniteQuery} from '@tanstack/react-query'
+import {InfiniteData, useInfiniteQuery} from '@tanstack/react-query'
 import {ShelfContent} from './components/ShelfContent'
 import {createPortal} from 'react-dom'
 import {ContentDetails} from './ContentDetails'
@@ -27,6 +27,7 @@ import {useHotkeysRef} from './hooks/useHotkeys'
 import {MasonryInfiniteGrid} from '@egjs/react-infinitegrid'
 import {OptionsModal} from './OptionsModal'
 import {ArrowPathIcon, Cog8ToothIcon} from '@heroicons/react/24/solid'
+import {MarkContent} from './utils/Main'
 
 function Main(): JSX.Element {
   const {config} = useConfigStore()
@@ -52,7 +53,6 @@ function Main(): JSX.Element {
     error,
     isLoading,
     isFetching,
-    isRefetching,
     refetch,
     hasNextPage,
     fetchNextPage,
@@ -74,7 +74,8 @@ function Main(): JSX.Element {
         order: [orderField, orderDirection],
         tags,
       })
-      return files || []
+
+      return files
     },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
@@ -91,7 +92,7 @@ function Main(): JSX.Element {
         window.scrollY + window.innerHeight >=
           contentList.current.scrollHeight - threshold &&
         hasNextPage &&
-        !isRefetching
+        !isFetching
       ) {
         fetchNextPage()
       }
@@ -176,8 +177,8 @@ function Main(): JSX.Element {
         markedContent={markedContent}
         onBatchAdd={() => {
           const tagIds: number[] = []
-          selectedTags.forEach((v) => {
-            tagIds.push(v.id)
+          selectedTags.forEach((tag) => {
+            tagIds.push(tag.id)
           })
 
           const contentIds: number[] = Array.from(markedContent.values())
@@ -190,18 +191,17 @@ function Main(): JSX.Element {
         }}
         onBatchRemove={() => {
           const tagIds: number[] = []
-          selectedTags.forEach((v) => {
-            tagIds.push(v.id)
+          selectedTags.forEach((tag) => {
+            tagIds.push(tag.id)
           })
+
           const contentIds: number[] = Array.from(markedContent.values())
 
-          const remove_operation = {
+          window.api.invokeOnMain('batchTagging', {
             operation: 'REMOVE',
             contentIds,
             tagIds,
-          } as const
-
-          window.api.invokeOnMain('batchTagging', remove_operation)
+          })
         }}
         onQuery={() => {
           refetch()
@@ -312,32 +312,13 @@ function Main(): JSX.Element {
                     if (!keys.current.Shift || !markerIdx.current) {
                       return
                     }
-                    const toBeMarked: number[] = []
 
-                    const [fromPage, fromContent] = markerIdx.current
-
-                    const direction =
-                      fromPage < pageIdx ||
-                      (fromPage === pageIdx && fromContent < contentIdx)
-
-                    const startPage = direction ? fromPage : pageIdx
-                    const endPage = direction ? pageIdx : fromPage
-                    const startContent = direction ? fromContent : contentIdx
-                    const endContent = direction ? contentIdx : fromContent
-
-                    for (let pIdx = startPage; pIdx <= endPage; pIdx++) {
-                      const startOfPage = pIdx === startPage ? startContent : 0
-                      const endOfPage =
-                        pIdx === endPage
-                          ? endContent
-                          : contentQuery!.pages[pIdx]!.content.length
-
-                      for (let cIdx = startOfPage; cIdx < endOfPage; cIdx++) {
-                        toBeMarked.push(
-                          contentQuery.pages[pIdx].content[cIdx].id,
-                        )
-                      }
-                    }
+                    const toBeMarked: number[] = MarkContent(
+                      markerIdx.current,
+                      pageIdx,
+                      contentIdx,
+                      contentQuery,
+                    )
 
                     setMarkedContent((marked) => {
                       toBeMarked.forEach((v) => {
@@ -399,6 +380,20 @@ const ContentGrid = forwardRef(function Body(
   }
 
   switch (config?.layoutMode) {
+    case 'experimental':
+      return (
+        <div
+          {...props}
+          ref={ref}
+          className='grid grid-cols-6 gap-2'
+          style={{
+            gridRow: 'masonry',
+          }}
+        >
+          {children}
+        </div>
+      )
+      break
     case 'grid':
       return (
         <div

@@ -31,7 +31,7 @@ function ShelfContent({
         'relative overflow-clip',
         !hidden && format === 'video' ? '' : '',
         hidden && format === 'image'
-          ? 'animate-gradient_x_fast bg-gradient-to-r from-gray-400 to-gray-800 opacity-50 transition-all duration-2500'
+          ? 'animate-gradient_x_fast bg-gradient-to-r from-gray-400 to-gray-800 opacity-50 duration-2500'
           : '',
         props.className,
       )}
@@ -46,7 +46,7 @@ function ShelfContent({
           />
           <img
             {...contentProps}
-            onLoad={(evt) => {
+            onLoad={() => {
               setHidden(false)
             }}
             onError={(evt) => {
