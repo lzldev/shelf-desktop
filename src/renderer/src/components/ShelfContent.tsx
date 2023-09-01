@@ -16,7 +16,6 @@ function ShelfContent({
     HTMLAttributes<HTMLVideoElement>
 } & HTMLAttributes<HTMLDivElement>) {
   const containerRef = useRef<HTMLDivElement>(null)
-
   const format = checkFormat(content.extension)
   const [hidden, setHidden] = useState(format === 'image')
   const [error, setError] = useState<string | null>(null)
