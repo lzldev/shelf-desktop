@@ -25,7 +25,7 @@ export const addChokiEvents = (
   shelfClient: ShelfClient,
   onReadyCallback: (...args: any[]) => void,
 ) => {
-  const {sequelize} = shelfClient.models
+  const {sequelize} = shelfClient.ShelfDB
   const choki = shelfClient.choki
 
   choki.on('unlink', shelfOnUnlink)

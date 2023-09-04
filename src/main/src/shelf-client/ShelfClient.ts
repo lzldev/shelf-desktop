@@ -13,34 +13,14 @@ import {globSupportedFormats} from '../../../renderer/src/utils/formats'
 import {IpcMainEvents} from '../../../preload/ipcMainTypes'
 
 class ShelfClient {
-  private _choki: FSWatcher
-  private _ShelfDB: ShelfDBModels
-  private _ready = false
-  private _config: zJson<
+  public choki: FSWatcher
+  public ShelfDB: ShelfDBModels
+  public ready = false
+  public config: zJson<
     typeof SHELF_CLIENT_CONFIG_SCHEMA,
     ShelfClientConfigValues
   >
 
-  get config() {
-    return this._config
-  }
-  get models() {
-    return this._ShelfDB
-  }
-  get choki() {
-    return this._choki
-  }
-  get ready() {
-    return this._ready
-  }
-  set ready(value) {
-    this._ready = value
-  }
-
-  async destroy() {
-    await this._ShelfDB.sequelize.close()
-    await this.choki.close()
-  }
   static async create(
     options: IpcMainEvents['startShelfClient']['args'][0],
     callback: () => void,
@@ -80,23 +60,29 @@ class ShelfClient {
       config,
     })
   }
+
   protected constructor(newInstance: {
     choki: FSWatcher
     ShelfDB: ShelfDBModels
     config: zJson<typeof SHELF_CLIENT_CONFIG_SCHEMA, ShelfClientConfigValues>
     callback: () => void
   }) {
-    this._ShelfDB = newInstance.ShelfDB
-    this._choki = newInstance.choki
-    this._config = newInstance.config
+    this.ShelfDB = newInstance.ShelfDB
+    this.choki = newInstance.choki
+    this.config = newInstance.config
 
     addChokiEvents(this, newInstance.callback)
 
     return this
   }
 
+  async destroy() {
+    await this.ShelfDB.sequelize.close()
+    await this.choki.close()
+  }
+
   getWatchedFiles() {
-    return this._choki.getWatched()
+    return this.choki.getWatched()
   }
 }
 

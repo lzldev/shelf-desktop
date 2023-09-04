@@ -71,7 +71,7 @@ async function addTagToContent(
 
 async function editTags(operations: IpcMainEvents['editTags']['args'][0]) {
   const client = requestClient() as ShelfClient
-  const editTagsTransaction = await client.models.sequelize.transaction()
+  const editTagsTransaction = await client.ShelfDB.sequelize.transaction()
 
   try {
     for (const op of operations) {
@@ -164,10 +164,10 @@ async function batchTagging(
     const client = requestClient() as ShelfClient
 
     const removeTagsFromContentTransaction =
-      await client.models.sequelize.transaction()
+      await client.ShelfDB.sequelize.transaction()
 
-    for (let i = 0; i < relations.length; i++) {
-      await relations[i].destroy({
+    for (const relation of relations) {
+      relation.destroy({
         transaction: removeTagsFromContentTransaction,
       })
     }

@@ -21,7 +21,7 @@ async function getColors() {
 
 async function editColors(operations: IpcMainEvents['editColors']['args'][0]) {
   const client = (await requestClient()) as ShelfClient
-  const editColorsTransaction = await client.models.sequelize.transaction()
+  const editColorsTransaction = await client.ShelfDB.sequelize.transaction()
 
   try {
     for (const op of operations) {
