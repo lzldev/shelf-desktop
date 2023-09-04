@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import {useColors} from './hooks/useColors'
 import {InlineButton} from './components/InlineButton'
 import {Updater, useImmer} from 'use-immer'
-import type {TagColor} from 'src/main/src/db/models/TagColor'
+import type {TagColor} from '@models'
 import {
   CreateColorOP,
   ColorOperation,

@@ -1,4 +1,4 @@
-import {Tag} from 'src/main/src/db/models'
+import {Tag} from '@models'
 import {create} from 'zustand'
 
 interface TagStore {

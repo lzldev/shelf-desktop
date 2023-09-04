@@ -2,7 +2,7 @@ import {DocumentIcon} from '@heroicons/react/24/solid'
 import {checkFormat} from '@renderer/utils/formats'
 import clsx from 'clsx'
 import {HTMLAttributes, useMemo, useRef, useState} from 'react'
-import {Content} from 'src/main/src/db/models'
+import {Content} from '@models'
 
 function ShelfContent({
   content,
@@ -29,9 +29,7 @@ function ShelfContent({
       .map((v) => encodeURIComponent(v))
       .join('/')
 
-    const uri = 'file://' + parsed_path
-
-    return uri
+    return 'file://' + parsed_path
   }, [])
 
   return (

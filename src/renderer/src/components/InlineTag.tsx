@@ -1,10 +1,10 @@
 import {useColors} from '@renderer/hooks/useColors'
 import clsx from 'clsx'
 import type {HTMLAttributes} from 'react'
-import type {TagFields} from 'src/main/src/db/models/Tag'
+import type {Tag} from '@models'
 
 export const InlineTag = (
-  props: {tag: TagFields} & HTMLAttributes<HTMLDivElement>,
+  props: {tag: Tag} & HTMLAttributes<HTMLDivElement>,
 ) => {
   const {colors, defaultColor} = useColors()
 

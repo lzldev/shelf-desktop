@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import {HTMLAttributes} from 'react'
-import {Tag} from 'src/main/src/db/models'
+import {Tag} from '@models'
 import {InlineButton} from './InlineButton'
 import {InlineTag} from './InlineTag'
 import {useTagQuery} from '@renderer/hooks/useTagQuery'

@@ -1,4 +1,4 @@
-import {TagColor} from 'src/main/src/db/models'
+import {TagColor} from '@modelsmodels'
 
 function mapFromColors(colors: TagColor[]) {
   const colorsMap = new Map<number, TagColor>()

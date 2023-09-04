@@ -1,7 +1,7 @@
 import {useColors} from '@renderer/hooks/useColors'
 import clsx from 'clsx'
 import {HTMLAttributes} from 'react'
-import {Tag} from 'src/main/src/db/models'
+import {Tag} from '@models'
 
 function TagColorThing({
   tags,

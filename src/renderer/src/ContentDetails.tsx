@@ -9,7 +9,7 @@ import {
 } from 'react'
 import {InlineTag} from './components/InlineTag'
 import {ShelfContent} from './components/ShelfContent'
-import {Content, Tag} from 'src/main/src/db/models'
+import {Content, Tag} from '@models'
 import clsx from 'clsx'
 import {useToggle} from './hooks/useToggle'
 import {InlineButton} from './components/InlineButton'
@@ -22,6 +22,7 @@ import {
 } from '@radix-ui/react-dropdown-menu'
 import {useHotkeys} from './hooks/useHotkeys'
 import {ArrowLeftIcon} from '@heroicons/react/24/solid'
+import {openInAnotherProgram, openContentDirectory} from './utils/Content'
 
 const prevTitle = window.document.title
 
@@ -56,7 +57,10 @@ function ContentDetails({
       return result
     },
     {
+      //TODO: This is fixing the weird bug when opening the modal , look for a more elegant fix
       initialData: contentProp,
+      cacheTime: 0,
+      staleTime: 0,
     },
   )
 
@@ -76,7 +80,10 @@ function ContentDetails({
 
   useEffect(() => {
     if (!content) return
-    window.document.title = `${prevTitle} - ${content?.paths[0]?.path}`
+    window.document.title = `${prevTitle} - ${
+      content?.paths?.at(0)?.path ?? 'Invalid Path'
+    }`
+
     return () => {
       window.document.title = prevTitle
     }
@@ -262,23 +269,3 @@ export const AddTagDropdown = ({
 }
 
 export {ContentDetails}
-function openInAnotherProgram(content?: Content) {
-  if (!content) {
-    return
-  }
-  window.open('file://' + content?.paths[0].path)
-}
-
-function openContentDirectory(content?: Content) {
-  if (!content) {
-    return
-  }
-
-  window.open(
-    'file://' +
-      content?.paths[0].path.substring(
-        0,
-        content?.paths[0].path.lastIndexOf('\\'),
-      ),
-  )
-}

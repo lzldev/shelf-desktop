@@ -9,7 +9,7 @@ import {
   useState,
 } from 'react'
 import {useTags} from './hooks/useTags'
-import {Content, Tag} from 'src/main/src/db/models'
+import {Content, Tag} from '@models'
 import {InfiniteData, useInfiniteQuery} from '@tanstack/react-query'
 import {ShelfContent} from './components/ShelfContent'
 import {createPortal} from 'react-dom'

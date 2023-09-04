@@ -1,10 +1,10 @@
 import {create} from 'zustand'
-import type {ContentFields} from 'src/main/src/db/models/Content'
+import type {Content} from '@models'
 
 type sequelizeDirections = 'ASC' | 'DESC'
 
 interface orderStore {
-  orderField: keyof ContentFields
+  orderField: keyof Content
   orderDirection: sequelizeDirections
   toggleDirection: () => void
 }

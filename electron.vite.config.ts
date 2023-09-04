@@ -15,6 +15,7 @@ export default defineConfig({
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src'),
+        '@models': resolve('src/main/src/db/models'),
       },
     },
     plugins: [react(), svgr(), million.vite({auto: true})],
