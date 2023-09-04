@@ -23,6 +23,7 @@ module.exports = {
     'plugin:@typescript-eslint/eslint-recommended',
   ],
   rules: {
+    'react/prop-types': 'off',
     '@typescript-eslint/no-extra-semi': 'off',
     '@typescript-eslint/ban-ts-comment': [
       'error',
@@ -38,6 +39,7 @@ module.exports = {
     '@typescript-eslint/no-var-requires': 'off',
   },
   overrides: [
+    {rules: {'react/prop-types': 'off'}},
     {
       files: ['*.js'],
       rules: {

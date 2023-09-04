@@ -11,12 +11,12 @@ function mapFromColors(colors: TagColor[]) {
 
 import {create} from 'zustand'
 
-interface TagStore {
+interface ColorStore {
   colors: Map<number, TagColor>
   isReady: boolean
 }
 
-const useColors = create<TagStore>(() => ({
+const useColors = create<ColorStore>(() => ({
   colors: new Map(),
   isReady: false,
 }))
