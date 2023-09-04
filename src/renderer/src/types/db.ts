@@ -10,6 +10,7 @@ import {
 /* 
     Re-Exporting Types without Functions
 */
+
 export type Content = InferAttributes<ContentModel>
 export type ContentCreation = InferCreationAttributes<ContentModel>
 

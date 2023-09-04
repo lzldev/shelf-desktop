@@ -1,7 +1,4 @@
-import {Content as ContentModel} from 'src/main/src/db/models'
-import {ContentFields} from 'src/main/src/db/models/Content'
-
-export type Content = ContentFields
+import {Content} from '@models'
 
 export const openInAnotherProgram = (content?: Content) => {
   if (!content) {

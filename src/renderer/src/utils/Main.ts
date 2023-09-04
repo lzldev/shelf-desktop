@@ -1,5 +1,5 @@
 import {InfiniteData} from '@tanstack/react-query'
-import {Content} from 'src/main/src/db/models'
+import {Content} from '@models'
 
 export function MarkContent(
   markerIdx: [number, number],
