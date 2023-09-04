@@ -125,26 +125,31 @@ async function editTags(operations: IpcMainEvents['editTags']['args'][0]) {
 async function batchTagging(
   operations: IpcMainEvents['batchTagging']['args'][0],
 ) {
-  const ids: ContentTagFields[] = []
-
   if (operations.operation === 'ADD') {
-    for (let x = 0; x < operations.tagIds.length; x++) {
-      for (let y = 0; y < operations.contentIds.length; y++) {
+    const ids: ContentTagFields[] = []
+
+    for (const tagId of operations.tagIds) {
+      for (const contentId of operations.contentIds) {
         ids.push({
-          tagId: operations.tagIds[x],
-          contentId: operations.contentIds[y],
+          tagId,
+          contentId,
         })
       }
-
-      await ContentTag.bulkCreate(ids, {
-        ignoreDuplicates: true,
-      })
-      return true
     }
+
+    await ContentTag.bulkCreate(ids, {
+      ignoreDuplicates: true,
+    })
+
+    return true
   }
 
   if (operations.operation === 'REMOVE') {
-    const relations = await ContentTag.findAll({
+    const bulkDestroyTransaction = await (
+      requestClient() as ShelfClient
+    ).ShelfDB.sequelize.transaction()
+
+    await ContentTag.destroy({
       where: [
         {
           tagId: {
@@ -155,26 +160,12 @@ async function batchTagging(
           },
         },
       ],
+      transaction: bulkDestroyTransaction,
     })
 
-    if (relations.length === 0) {
-      return false
-    }
+    await bulkDestroyTransaction.commit()
 
-    const client = requestClient() as ShelfClient
-
-    const removeTagsFromContentTransaction =
-      await client.ShelfDB.sequelize.transaction()
-
-    for (const relation of relations) {
-      relation.destroy({
-        transaction: removeTagsFromContentTransaction,
-      })
-    }
-
-    await removeTagsFromContentTransaction.commit()
-
-    return
+    return true
   }
 
   return false

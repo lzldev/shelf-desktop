@@ -13,9 +13,7 @@ ipcMain.handle(
 )
 
 async function getColors() {
-  const result = await TagColor.findAll({
-    attributes: ['id', 'color', 'name'],
-  })
+  const result = await TagColor.findAll()
   return result
 }
 

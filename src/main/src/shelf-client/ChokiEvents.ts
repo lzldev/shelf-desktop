@@ -52,14 +52,16 @@ export const addChokiEvents = (
   }
 
   async function shelfOnError(error: Error) {
-    if ('path' in error) {
-      const prev = shelfClient.config.get('ignoredPaths', false)
-      const path = error.path as string
-
-      shelfClient.config.set('ignoredPaths', [...prev, path], false)
-      choki.unwatch(path)
-      error.path
+    if (!('path' in error)) {
+      return
     }
+
+    const prev = shelfClient.config.get('ignoredPaths', false)
+    const path = error.path as string
+
+    shelfClient.config.set('ignoredPaths', [...prev, path], false)
+    choki.unwatch(path)
+    error.path
   }
 
   async function shelfOnChange(_filePath: string) {
