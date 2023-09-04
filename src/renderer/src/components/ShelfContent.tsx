@@ -1,7 +1,7 @@
 import {DocumentIcon} from '@heroicons/react/24/solid'
 import {checkFormat} from '@renderer/utils/formats'
 import clsx from 'clsx'
-import {HTMLAttributes, useRef, useState} from 'react'
+import {HTMLAttributes, useMemo, useRef, useState} from 'react'
 import {Content} from 'src/main/src/db/models'
 
 function ShelfContent({
@@ -20,7 +20,19 @@ function ShelfContent({
   const [hidden, setHidden] = useState(format === 'image')
   const [error, setError] = useState<string | null>(null)
 
-  const uri = new URL('file://' + content?.paths[0]?.path || '').toString()
+  const uri = useMemo(() => {
+    const path = content?.paths?.at(0)?.path
+
+    const parsed_path = path
+      ?.replaceAll('\\', '/')
+      .split('/')
+      .map((v) => encodeURIComponent(v))
+      .join('/')
+
+    const uri = 'file://' + parsed_path
+
+    return uri
+  }, [])
 
   return (
     <div
