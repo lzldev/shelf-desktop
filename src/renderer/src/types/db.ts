@@ -11,13 +11,16 @@ import {
     Re-Exporting Types without Functions
 */
 export type Content = InferAttributes<ContentModel>
-//             ^?
+export type ContentCreation = InferCreationAttributes<ContentModel>
+
 export type Tag = InferAttributes<TagModel>
 export type TagCreation = InferCreationAttributes<TagModel>
-//             ^?
+
 export type ContentTag = InferAttributes<ContentTagModel>
-//             ^?
+export type ContentTagCreation = InferCreationAttributes<ContentTagModel>
+
 export type TagColor = InferAttributes<TagColorModel>
-//             ^?
+export type TagColorCreation = InferCreationAttributes<TagColorModel>
+
 export type Path = InferAttributes<PathModel>
-//             ^?
+export type PathCreation = InferCreationAttributes<PathModel>
