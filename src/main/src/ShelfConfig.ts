@@ -1,7 +1,8 @@
-import {app} from 'electron'
-import {join} from 'path'
-import {z} from 'zod'
-import {zJsonSchemaInfer, zJsonValues} from './zJson'
+// import {app} from 'electron'
+import { app } from 'electron'
+import { join } from 'path'
+import { z } from 'zod'
+import { zJsonSchemaInfer, zJsonValues } from './zJson'
 
 export const SHELF_CONFIG_PATH = join(app.getPath('userData'), 'config.json')
 export const SHELF_CONFIG_SCHEMA = {

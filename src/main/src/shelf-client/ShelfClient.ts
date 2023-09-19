@@ -4,11 +4,13 @@ import {addChokiEvents} from './ChokiEvents'
 import {FSWatcher} from 'chokidar'
 import {zJson} from '../zJson'
 import {join} from 'path'
+
 import {
   CLIENT_CONFIG_FILE_NAME,
   SHELF_CLIENT_CONFIG_SCHEMA,
   ShelfClientConfigValues,
 } from '../ShelfConfig'
+
 import {globSupportedFormats} from '../../../renderer/src/utils/formats'
 import {IpcMainEvents} from '../../../preload/ipcMainTypes'
 
@@ -25,7 +27,7 @@ class ShelfClient {
     options: IpcMainEvents['startShelfClient']['args'][0],
     callback: () => void,
   ) {
-    console.log('options ->', options)
+    console.log('[CLIENT] OPTIONS ->', options)
     const ShelfDB = await createShelfDB(options.basePath)
 
     const config = new zJson(

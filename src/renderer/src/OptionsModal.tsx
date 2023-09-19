@@ -1,3 +1,5 @@
+import {useState} from 'react'
+import {SwitchComponent} from './GenericEditComponent'
 import {InlineButton} from './components/InlineButton'
 import {SidePanelModal} from './components/SidebarPanelModal'
 import Versions from './components/Versions'
@@ -5,12 +7,18 @@ import {useConfigStore} from './hooks/useConfig'
 import {useHotkeys} from './hooks/useHotkeys'
 import {useLocalConfigStore} from './hooks/useLocalConfig'
 
+const switch_keys = ['teste', 'teste1', 'teste2', 'teste3', 'nop'] as const
+
+type b = (typeof switch_keys)[number]
+
 function OptionsModal({
   onClose,
 }: {
   onClose: (...any: any[]) => any
 }): JSX.Element {
   const {config, modified, setConfig, saveConfig} = useConfigStore()
+
+  const [curkey, setCurKey] = useState<number>(0)
 
   const {
     config: clientConfig,
@@ -134,6 +142,34 @@ function OptionsModal({
               <span className='grow self-center text-end text-sm'>
                 Unsaved Changes*
               </span>
+            )}
+          </div>
+          {/* TODO:REMOVE THIS , DEBUG CODE */}
+          <button
+            onClick={() => {
+              setCurKey(Math.max(curkey - 1, 0))
+            }}
+          >
+            prev
+          </button>
+          <button
+            onClick={() => {
+              setCurKey(Math.min(curkey + 1, switch_keys.length - 1))
+            }}
+          >
+            next
+          </button>
+          <div>
+            {SwitchComponent<{jadas: string}, typeof switch_keys>(
+              switch_keys[curkey],
+              {
+                teste: (p) => <InlineButton>Button {p.jadas} :)</InlineButton>,
+                teste1: (p) => <div>number02{p.jadas}</div>,
+                teste2: (p) => <div>number02{p.jadas}</div>,
+                teste3: (p) => <div>number02{p.jadas}</div>,
+                nop: (p) => <div>number02{p.jadas}</div>,
+              },
+              {jadas: curkey.toString()},
             )}
           </div>
         </div>
