@@ -14,7 +14,7 @@
 
   <div align="center">
 Built with Electron.<br>
-Blazingy <b>Fast ⚡</b>
+Blazingly<b>Fast ⚡</b>
 File organization.<br>
 </div>
 
