@@ -1,4 +1,4 @@
-import { createWorkerLogger } from '../../utils/Loggers'
+import {createWorkerLogger} from '../../utils/Loggers'
 
 type AsyncFunc = (...any: any[]) => Promise<any>
 
@@ -9,6 +9,10 @@ export class AsyncQueue {
   private Logger = createWorkerLogger(0, 'ASYNC QUEUE', 0)
   private clean = true
   public onClear: Function
+
+  public getRunning() {
+    return this.running
+  }
 
   private defaultClear() {
     this.Logger.info('Queue Clean')
@@ -48,11 +52,12 @@ export class AsyncQueue {
   private async internalEnqueue(job: AsyncFunc) {
     this.addRunning()
 
-    return job().finally(() => {
+    return job().then((passThrough) => {
       this.Logger.info(`JOB DONE | REMAINING = ${this.queue.length}`)
 
       this.decreaseRunning()
       this.moveQueue()
+      return passThrough
     })
   }
 

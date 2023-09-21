@@ -1,27 +1,22 @@
 import {useEffect, useState} from 'react'
+//@ts-ignore
+import {IpcRendererEvents} from 'src/preload/ipcRendererTypes'
 
-//FIXME: ...
-export class ProgressMap<
-  TK extends keyof ProgressType,
-  TR extends ProgressType[TK],
-> extends Map<TK, TR> {}
+type ProgressValueType = IpcRendererEvents['updateProgress']['args']
 
 const useProgress = () => {
-  const [progress, setProgress] = useState(new ProgressMap())
+  const [progress, setProgress] = useState<ProgressValueType>({
+    total: 0,
+    messages: [],
+  })
 
   useEffect(() => {
     window.api.ipcRendererHandle('updateProgress', (_, args) => {
-      setProgress(new ProgressMap(progress.set(args.key, args.value)))
+      setProgress(args)
     })
   }, [])
 
   return {progress}
 }
 
-type ProgressType = {
-  start: {
-    value: number
-    lastPaths: [string, string, string]
-  }
-}
 export {useProgress}

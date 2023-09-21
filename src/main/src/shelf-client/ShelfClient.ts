@@ -52,7 +52,6 @@ class ShelfClient {
       {
         ignored: [
           ...config.get('ignoredPaths'),
-          // config.get('ignoreHidden') ? '**/.**' : '', //FIXME:Not Working
           config.get('ignoreUnsupported') ? globSupportedFormats : '',
           `**/**.${__DBEXTENSION}`,
         ],

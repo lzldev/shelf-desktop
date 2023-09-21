@@ -1,6 +1,6 @@
 import * as os from 'os'
-import { AiWorkerInvoke, AiWorkerReceive } from './types'
-import ts, { Tensor3D } from '@tensorflow/tfjs-node'
+import {AiWorkerInvoke, AiWorkerReceive} from './types'
+import ts, {Tensor3D} from '@tensorflow/tfjs-node'
 import mnet from '@tensorflow-models/mobilenet'
 import {
   isMainThread,
@@ -8,11 +8,11 @@ import {
   threadId,
   workerData as _workerData,
 } from 'node:worker_threads'
-import { DB } from '../../db/kysely-types'
+import {DB} from '../../db/kysely-types'
 import SQLite from 'better-sqlite3'
-import { Kysely, SqliteDialect } from 'kysely'
-import { AsyncQueue } from './AsyncQueue'
-import { createWorkerLogger } from '../../utils/Loggers'
+import {Kysely, SqliteDialect} from 'kysely'
+import {AsyncQueue} from './AsyncQueue'
+import {createWorkerLogger} from '../../utils/Loggers'
 import sharp from 'sharp'
 
 type ai_worker_data = {
@@ -53,7 +53,7 @@ async function main() {
   await ts.ready()
   // ts.enableDebugMode() //REMOVEME:DEBUG MODE -------------------------------------------------------------------
   //
-  const model = await mnet.load({ version: 2, alpha: 1.0 }).catch((e) => {
+  const model = await mnet.load({version: 2, alpha: 1.0}).catch((e) => {
     throw new Error("Couldn't load MOBILENET model")
   })
 
@@ -71,12 +71,10 @@ async function main() {
     }
   })()
 
-  const start_message = {
+  pp!.postMessage({
     type: 'ready',
     data: undefined,
-  } satisfies AiWorkerReceive
-
-  pp!.postMessage(start_message)
+  } satisfies AiWorkerReceive)
 
   const asyncQueue = new AsyncQueue(5) //TODO: MAKE THIS BIGGER FOR PERFORMANCE
 
@@ -87,18 +85,25 @@ async function main() {
       case 'new_file':
         asyncQueue.enqueue(() =>
           classifyImage(message.data).then(() => {
-            pp!.postMessage({ type: 'new_file', data: {} } as AiWorkerInvoke)
+            pp!.postMessage({type: 'new_file', data: {}} as AiWorkerInvoke)
           }),
         )
         break
       case 'emit_batch':
-        asyncQueue.onClearOnce(() => {
-          const message = {
+        const listener = () => {
+          WORKER_LOGGER.info('SENDING BATCH_DONE')
+
+          pp!.postMessage({
             type: 'batch_done',
             data: true,
-          } as AiWorkerReceive
-          pp!.postMessage(message)
-        })
+          } as AiWorkerReceive)
+        }
+
+        if (!asyncQueue.getRunning()) {
+          listener()
+          return
+        }
+        asyncQueue.onClearOnce(listener)
         break
       case 'start':
         break
@@ -114,7 +119,7 @@ async function main() {
   // }
 
   async function classifyImage(
-    classifyData: Extract<AiWorkerInvoke, { type: 'new_file' }>['data'],
+    classifyData: Extract<AiWorkerInvoke, {type: 'new_file'}>['data'],
   ) {
     WORKER_LOGGER.info(`STARTING CLASSIFICATION OFF ${classifyData.path}`)
 
@@ -192,7 +197,14 @@ async function main() {
 
     WORKER_LOGGER.info(`Finished`)
 
+    pp!.postMessage({
+      type: 'tagged_file',
+      data: {
+        path: classifyData.path,
+      },
+    } as AiWorkerReceive)
+
     return classify
   }
 }
-main().catch(() => { })
+main().catch(() => {})

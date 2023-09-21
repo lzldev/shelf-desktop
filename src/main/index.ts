@@ -17,7 +17,10 @@ import * as path from 'path'
 import {electronApp, optimizer, is} from '@electron-toolkit/utils'
 import {ShelfClient} from './src/shelf-client/ShelfClient'
 import {zJson} from './src/zJson'
-import {ShelfWebContentsSend} from '../preload/ipcRendererTypes'
+import {
+  IpcRendererEvents,
+  ShelfWebContentsSend,
+} from '../preload/ipcRendererTypes'
 import {SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA} from './src/ShelfConfig'
 
 //Imports event Handlers.
@@ -244,7 +247,9 @@ export const sendEventToAllWindows: ShelfWebContentsSend = (evt, ...args) => {
     window.webContents.send(evt, ...args)
   })
 }
-export const updateProgress = (args: {key: string; value: any}) => {
+export const updateProgress = (
+  args: IpcRendererEvents['updateProgress']['args'],
+) => {
   Windows.get('progress')?.webContents.send('updateProgress', args)
 }
 
@@ -255,7 +260,7 @@ const checkDirectory = (dir: string) => {
   )
 }
 
-const openDirDialog = () =>
+const openDirDialog = async () =>
   dialog.showOpenDialog({
     properties: ['openDirectory'],
   }) as OpenDialogReturnValue
@@ -308,4 +313,8 @@ ipcMain.handle('getClientConfig', async () => Client?.config.getAll())
 ipcMain.handle('saveClientConfig', async (_, config) => {
   Client.config.setAll(config)
   return true
+})
+
+process.on('SIGINT', () => {
+  app.exit()
 })

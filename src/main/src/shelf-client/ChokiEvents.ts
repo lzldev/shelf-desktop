@@ -1,19 +1,19 @@
-import { Stats, createReadStream, statSync } from 'fs'
-import { parse } from 'path'
-import { createHash } from 'crypto'
-import { flattenDirectoryTree } from '../utils/chokiUtils'
-import { updateProgress } from '../..'
-import { ShelfClient } from './ShelfClient'
-import { mockTags } from '../utils/mockTags'
-import { Content, Path, Tag, TagColor } from '../db/models'
-import { toFileTuple } from '../utils/chokiUtils'
-import { normalize } from 'path'
-import { defaultColors } from '../utils/defaultColors'
-import { dialog } from 'electron'
+import {Stats, createReadStream, statSync} from 'fs'
+import {parse} from 'path'
+import {createHash} from 'crypto'
+import {flattenDirectoryTree} from '../utils/chokiUtils'
+import {updateProgress as sendUpdateProgressEvent} from '../..'
+import {ShelfClient} from './ShelfClient'
+import {mockTags} from '../utils/mockTags'
+import {Content, Path, Tag, TagColor} from '../db/models'
+import {toFileTuple} from '../utils/chokiUtils'
+import {normalize} from 'path'
+import {defaultColors} from '../utils/defaultColors'
+import {dialog} from 'electron'
 // import {dialog} from 'electron/main'
-import { readdir } from 'fs/promises'
-import { checkFormat } from '../../../renderer/src/utils/formats'
-import { SHELF_LOGGER } from '../utils/Loggers'
+import {readdir} from 'fs/promises'
+import {checkFormat} from '../../../renderer/src/utils/formats'
+import {SHELF_LOGGER} from '../utils/Loggers'
 
 const ConfirmationDialog = (path: string) =>
   dialog.showMessageBoxSync({
@@ -27,7 +27,7 @@ export const addChokiEvents = (
   shelfClient: ShelfClient,
   onReadyCallback: (...args: any[]) => void,
 ) => {
-  const { sequelize } = shelfClient.ShelfDB
+  const {sequelize} = shelfClient.ShelfDB
   const choki = shelfClient.choki
 
   choki.on('unlink', shelfOnUnlink)
@@ -109,7 +109,7 @@ export const addChokiEvents = (
       const fileHash = await hashFileAsync(filePath).catch((e) => {
         throw e
       })
-      const { mtimeMs } = statSync(filePath)
+      const {mtimeMs} = statSync(filePath)
 
       const [content] = await Content.findOrCreate({
         where: {
@@ -185,40 +185,97 @@ export const addChokiEvents = (
       dialog.showErrorBox('Error', JSON.stringify(e))
     }
   }
-  async function shelfOnReady() {
-    shelfClient.config.save()
-    const flatDirTree = flattenDirectoryTree(choki.getWatched()).filter(
-      (p) => !statSync(p).isDirectory(),
-    )
-    const ContentsTransaction = await sequelize.transaction()
-    const INITHASHES = new Map<string, number>()
-    const INITPATHS = new Map<string, number>()
-    const lastPaths: string[] = []
-    const newFiles = toFileTuple(flatDirTree)
 
-    let lastProgress: number | undefined
-    const sendUpdateProgress = (newProgress: number, newPath: string) => {
-      if (!lastProgress || lastProgress !== newProgress) {
-        updateProgress({
-          key: 'start',
-          value: {
-            value: newProgress,
-            lastPaths: lastPaths,
-          },
-        })
+  const createProgressUpdater = <TParts extends Record<string, number>>(
+    parts: TParts,
+  ) => {
+    const idx_key_map: Record<keyof TParts, number> = {} as Record<
+      keyof TParts,
+      number
+    >
 
-        lastProgress = newProgress
+    const progress = Object.entries(parts).map(([key, _], i) => {
+      idx_key_map[key as keyof TParts] = i
+      return 0
+    })
+    const last_messages: string[] = []
+    let last_progress = 0
 
-        if (lastPaths.length <= 2) {
-          lastPaths.shift()
+    const sendProgress = (
+      key: keyof TParts,
+      completion: number,
+      message: string,
+    ) => {
+      progress[idx_key_map[key]] = completion / parts[key]
+      sendUpdateProgress(message)
+    }
+
+    const addToKey = (key: keyof TParts, message: string) => {
+      progress[idx_key_map[key]] =
+        (progress[idx_key_map[key]] * parts[key] + 1) / parts[key]
+      sendUpdateProgress(message)
+    }
+
+    const sendUpdateProgress = (new_message: string) => {
+      const parts_from_thing = 100 / progress.length
+      let total_progress = 0
+
+      progress.forEach((v) => {
+        total_progress += parts_from_thing * v
+      })
+
+      total_progress = Math.round(total_progress) / 100
+
+      if (total_progress !== last_progress) {
+        last_progress = total_progress
+
+        if (last_messages.length <= 2) {
+          last_messages.shift()
         }
-        lastPaths.push(newPath)
+
+        last_messages.push(new_message)
+
+        sendUpdateProgressEvent({
+          total: total_progress,
+          messages: last_messages,
+        })
       }
     }
 
+    return {sendProgress, addToKey}
+  }
+  async function shelfOnReady() {
+    shelfClient.config.save()
+
+    // const ContentsTransaction = await sequelize.transaction()
+    const INITHASHES = new Map<string, number>()
+    const INITPATHS = new Map<string, number>()
+    const newFiles = toFileTuple(
+      flattenDirectoryTree(choki.getWatched()).filter(
+        (p) => !statSync(p).isDirectory(),
+      ),
+    )
+    const ui_parts = {
+      AI: newFiles.length,
+      SHELF: newFiles.length,
+    } as {
+      AI: number
+      SHELF: number
+    }
+
+    const {sendProgress, addToKey} = createProgressUpdater(ui_parts)
+
+    shelfClient.AIWorker.on('message', (message) => {
+      if (message.type !== 'tagged_file') {
+        return
+      }
+
+      addToKey('AI', '[AI] File Tagged...')
+    })
+
     //DB Already Initialized
     if (!shelfClient.config.isNew) {
-      const pathTransaction = await sequelize.transaction()
+      // const pathTransaction = await sequelize.transaction()
 
       //Cleaning up loose paths
       console.time('DB CLEANUP ->')
@@ -226,7 +283,7 @@ export const addChokiEvents = (
         attributes: {
           exclude: ['updatedAt', 'createdAt'],
         },
-        transaction: pathTransaction,
+        // transaction: pathTransaction,
       })
 
       for (const dbPath of paths) {
@@ -238,7 +295,9 @@ export const addChokiEvents = (
         if (foundPath === -1) {
           //TODO: REMOVE LOG
           console.log('CLEANING >', path.path)
-          await dbPath.destroy({ transaction: pathTransaction })
+          await dbPath.destroy({
+            // transaction: pathTransaction
+          })
           continue
         }
 
@@ -254,7 +313,7 @@ export const addChokiEvents = (
             where: {
               id: path.contentId,
             },
-            transaction: pathTransaction,
+            // transaction: pathTransaction,
           })
 
           await content?.update(
@@ -262,7 +321,7 @@ export const addChokiEvents = (
               hash: newHash,
             },
             {
-              transaction: pathTransaction,
+              // transaction: pathTransaction,
             },
           )
 
@@ -271,29 +330,34 @@ export const addChokiEvents = (
               mTimeMs: newFiles[foundPath][1],
             },
             {
-              transaction: pathTransaction,
+              // transaction: pathTransaction,
             },
           )
           continue
         }
       }
 
-      await pathTransaction.commit()
+      // await pathTransaction.commit()
       console.timeEnd('DB CLEANUP ->')
     } else {
       //Initalizing the DB -----------------------------------------
       //Initializing Tag Colors
-      console.time('TagColor [bulkCreate] >')
+      const tagTimerName = '\x1b[44m\x1b[37m[TAGCOLOR]\x1b[0m [BULKCREATE]'
+
+      console.time(tagTimerName)
       await TagColor.bulkCreate(defaultColors)
-      console.timeEnd('TagColor [bulkCreate] >')
+      console.timeEnd(tagTimerName)
 
       //REMOVEME : MOCK TAGS ---------------------------------------
-      const tagTransaction = await sequelize.transaction()
+      // const tagTransaction = await sequelize.transaction()
+      const mockTagTimerName =
+        '\x1b[44m\x1b[37m[MOCK_TAGS]\x1b[0m [TRANSACTIOn]'
 
+      console.time(mockTagTimerName)
       for (const tag of mockTags) {
         const randomColor = (await TagColor.findOne({
           order: sequelize.random(),
-          transaction: tagTransaction,
+          // transaction: tagTransaction,
         }))!
 
         await Tag.findOrCreate({
@@ -304,11 +368,12 @@ export const addChokiEvents = (
             name: tag.name,
             colorId: randomColor.id,
           },
-          transaction: tagTransaction,
+          // transaction: tagTransaction,
         })
       }
 
-      await tagTransaction.commit()
+      // await tagTransaction.commit()
+      console.timeEnd(mockTagTimerName)
     }
     //------------------------------------------------------------
 
@@ -319,13 +384,13 @@ export const addChokiEvents = (
       const fileHash = await hashFileAsync(filePath)
       const tempContentID = INITHASHES.get(fileHash)
 
-      sendUpdateProgress(i / newFiles.length, filePath)
+      sendProgress('SHELF', i + 1, filePath)
 
       const foundPath = await Path.findOne({
         where: {
           path: filePath,
         },
-        transaction: ContentsTransaction,
+        // transaction: ContentsTransaction,
       })
 
       const foundContent = await Content.findOne({
@@ -333,7 +398,7 @@ export const addChokiEvents = (
           hash: fileHash,
         },
         attributes: ['id'],
-        transaction: ContentsTransaction,
+        // transaction: ContentsTransaction,
       })
 
       //This Content is completely new.
@@ -351,7 +416,7 @@ export const addChokiEvents = (
           },
           {
             include: [Path, Tag],
-            transaction: ContentsTransaction,
+            // transaction: ContentsTransaction,
           },
         )
 
@@ -367,6 +432,8 @@ export const addChokiEvents = (
               path: filePath,
             },
           })
+        } else {
+          ui_parts.SHELF--
         }
 
         //REMOVEME: MOCK
@@ -395,7 +462,7 @@ export const addChokiEvents = (
             contentId: foundContent?.id || tempContentID,
           },
           {
-            transaction: ContentsTransaction,
+            // transaction: ContentsTransaction,
           },
         )
         continue
@@ -422,17 +489,22 @@ export const addChokiEvents = (
         }, 60 * 1000)
       })
     }
+
     SHELF_LOGGER.info('Wainting for AI Tagging...')
-    sendUpdateProgress(1, 'Finished')
-    await ContentsTransaction.commit()
+    // await ContentsTransaction.commit()
     /*
      * FIXME:
      * This Will crash the app since the Worker
      * can register before the Transaction being commited
+     *
+     *
+     * removed the transaction from the content part ...
+     *  the work wont crash the app now
      */
     console.timeEnd('DB ->')
 
     console.time('Waiting...')
+
     await WaitForAITOWork()
       .then(() => {
         SHELF_LOGGER.info('Batch FINISHED')
