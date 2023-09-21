@@ -38,6 +38,7 @@ export const __DBFILENAME = `.shelfdb${__DBEXTENSION}`
 const createDbPath = (dbPath: string) => `${dbPath}/${__DBFILENAME}`
 const createShelfKyselyDB = (dbPath: string) => {
   return new Kysely<DB>({
+    log: ['query'],
     dialect: new SqliteDialect({
       database: new SQLite(createDbPath(dbPath)),
     }),
@@ -62,14 +63,13 @@ async function main() {
 
   const db = createShelfKyselyDB(workerData.dbPath)
   WORKER_LOGGER.info('DB Started')
-  const tMap = new Map<string, number>()
+  const TagToIDMap = new Map<string, number>()
 
-  await (async () => {
-    const tags = await db.selectFrom('Tags').select(['id', 'name']).execute()
-    for (const tag of tags) {
-      tMap.set(tag.name!, tag.id)
-    }
-  })()
+  const tags = await db.selectFrom('Tags').select(['id', 'name']).execute()
+  for (const tag of tags) {
+    WORKER_LOGGER.info(`OLD Tag : [${tag.id}]${tag.name}`)
+    TagToIDMap.set(tag.name!, tag.id)
+  }
 
   pp!.postMessage({
     type: 'ready',
@@ -158,7 +158,7 @@ async function main() {
         .trim()
         .toLowerCase()
 
-      const mappedTagId = tMap.get(normalized)
+      const mappedTagId = TagToIDMap.get(normalized)
 
       let id
       if (mappedTagId) {
@@ -179,6 +179,7 @@ async function main() {
           })
 
         id = newTag![0].id
+        TagToIDMap.set(normalized, id)
       }
 
       db.insertInto('ContentTags')

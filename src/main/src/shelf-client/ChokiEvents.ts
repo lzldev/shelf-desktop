@@ -14,6 +14,7 @@ import {dialog} from 'electron'
 import {readdir} from 'fs/promises'
 import {checkFormat} from '../../../renderer/src/utils/formats'
 import {SHELF_LOGGER} from '../utils/Loggers'
+import {WaitForWorkerEvent} from './ai_worker/WorkerUtils'
 
 const ConfirmationDialog = (path: string) =>
   dialog.showMessageBoxSync({
@@ -469,6 +470,18 @@ export const addChokiEvents = (
       }
     }
 
+    SHELF_LOGGER.info('Wainting for AI Tagging...')
+    // await ContentsTransaction.commit()
+    /*
+     * FIXME:
+     * This Will crash the app since the Worker
+     * can register before the Transaction being commited
+     * removed the transaction from the content part ...
+     *  the work wont crash the app now
+     */
+    console.timeEnd('DB ->')
+    console.time('Waiting...')
+
     const WaitForAITOWork = async () => {
       return new Promise(async (resolve, reject) => {
         shelfClient.AIWorker.postMessage({
@@ -480,7 +493,6 @@ export const addChokiEvents = (
           if (data.type !== 'batch_done') {
             return
           }
-
           resolve(true)
         })
 
@@ -490,28 +502,14 @@ export const addChokiEvents = (
       })
     }
 
-    SHELF_LOGGER.info('Wainting for AI Tagging...')
-    // await ContentsTransaction.commit()
-    /*
-     * FIXME:
-     * This Will crash the app since the Worker
-     * can register before the Transaction being commited
-     *
-     *
-     * removed the transaction from the content part ...
-     *  the work wont crash the app now
-     */
-    console.timeEnd('DB ->')
-
-    console.time('Waiting...')
-
     await WaitForAITOWork()
       .then(() => {
         SHELF_LOGGER.info('Batch FINISHED')
       })
       .catch(() => {
-        SHELF_LOGGER.info('Worker Timedout')
+        SHELF_LOGGER.info('AIWORKER TIMED OUT')
       })
+
     console.timeEnd('Waiting...')
 
     shelfClient.ready = true
