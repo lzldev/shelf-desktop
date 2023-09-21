@@ -483,7 +483,7 @@ export const addChokiEvents = (
     console.time('Waiting...')
 
     const WaitForAITOWork = async () => {
-      return new Promise(async (resolve, reject) => {
+      return new Promise((resolve, reject) => {
         shelfClient.AIWorker.postMessage({
           type: 'emit_batch',
           data: undefined,

@@ -1,7 +1,7 @@
 import {Content, Tag, TagColor} from '../main/src/db/models'
 import {TagFields} from '../main/src/db/models/Tag'
 import {TagColorFields} from '../main/src/db/models/TagColor'
-import {Prettify, SomeRequired, TypeLevelRecord} from '../types/utils'
+import {SomeRequired, TypeLevelRecord} from '../types/utils'
 import {
   ColorOperation,
   TagOperation,
@@ -63,22 +63,22 @@ export type IpcMainEvents = TypeLevelRecord<
       args: [config: ShelfClientConfig]
       return: boolean
     }
-    getShelfImages: {
+    getShelfContent: {
       args: {
         pagination?: {offset: number; limit: number}
         order?: [string, 'ASC' | 'DESC']
-        tags?: Tag[]
         paths?: {value: string}[]
+        tags?: TagFields[]
       }
       return: {content: Content[]; nextCursor?: {offset: number; limit: number}}
     }
     createTag: {
-      args: Prettify<
+      args:
         | SomeRequired<TagFields, 'colorId'>
         | (Omit<TagFields, 'colorId'> & {
             newColor: Pick<TagColorFields, 'color' | 'name'>
           })
-      >
+
       return: boolean
     }
     addTagToContent: {

@@ -10,7 +10,7 @@ import {
 } from 'react'
 import {useTags} from './hooks/useTags'
 import {Content, Tag} from '@models'
-import {InfiniteData, useInfiniteQuery} from '@tanstack/react-query'
+import {useInfiniteQuery} from '@tanstack/react-query'
 import {ShelfContent} from './components/ShelfContent'
 import {createPortal} from 'react-dom'
 import {ContentDetails} from './ContentDetails'
@@ -65,7 +65,7 @@ function Main(): JSX.Element {
       const tags =
         selectedTags.size > 0 ? Array.from(selectedTags.values()) : undefined
 
-      const files = await window.api.invokeOnMain('getShelfImages', {
+      const files = await window.api.invokeOnMain('getShelfContent', {
         pagination: {
           offset: pagination.offset,
           limit: pagination.limit,
@@ -84,6 +84,7 @@ function Main(): JSX.Element {
 
   useEffect(() => {
     if (!contentList.current) return
+
     const onScroll = () => {
       if (!contentList.current) return
       const threshold = 100

@@ -23,7 +23,9 @@ module.exports = {
     'plugin:@typescript-eslint/eslint-recommended',
   ],
   rules: {
+    camelcase: 1,
     'react/prop-types': 'off',
+    '@typescript-eslint/ban-types': 'off',
     '@typescript-eslint/no-extra-semi': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
