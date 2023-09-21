@@ -1,18 +1,19 @@
-import {Stats, createReadStream, statSync} from 'fs'
-import {parse} from 'path'
-import {createHash} from 'crypto'
-import {flattenDirectoryTree} from '../utils/chokiUtils'
-import {updateProgress} from '../..'
-import {ShelfClient} from './ShelfClient'
-import {mockTags} from '../utils/mockTags'
-import {Content, Path, Tag, TagColor} from '../db/models'
-import {toFileTuple} from '../utils/chokiUtils'
-import {normalize} from 'path'
-import {defaultColors} from '../utils/defaultColors'
-import {dialog} from 'electron'
+import { Stats, createReadStream, statSync } from 'fs'
+import { parse } from 'path'
+import { createHash } from 'crypto'
+import { flattenDirectoryTree } from '../utils/chokiUtils'
+import { updateProgress } from '../..'
+import { ShelfClient } from './ShelfClient'
+import { mockTags } from '../utils/mockTags'
+import { Content, Path, Tag, TagColor } from '../db/models'
+import { toFileTuple } from '../utils/chokiUtils'
+import { normalize } from 'path'
+import { defaultColors } from '../utils/defaultColors'
+import { dialog } from 'electron'
 // import {dialog} from 'electron/main'
-import {readdir} from 'fs/promises'
-import {checkFormat} from '../../../renderer/src/utils/formats'
+import { readdir } from 'fs/promises'
+import { checkFormat } from '../../../renderer/src/utils/formats'
+import { SHELF_LOGGER } from '../utils/Loggers'
 
 const ConfirmationDialog = (path: string) =>
   dialog.showMessageBoxSync({
@@ -26,7 +27,7 @@ export const addChokiEvents = (
   shelfClient: ShelfClient,
   onReadyCallback: (...args: any[]) => void,
 ) => {
-  const {sequelize} = shelfClient.ShelfDB
+  const { sequelize } = shelfClient.ShelfDB
   const choki = shelfClient.choki
 
   choki.on('unlink', shelfOnUnlink)
@@ -37,7 +38,7 @@ export const addChokiEvents = (
   choki.on('addDir', shelfOnAddDir)
 
   async function shelfOnAddDir(path: string, stats: Stats) {
-    const files = await (await readdir(path)).length
+    const files = (await readdir(path)).length
 
     if (
       files >= 200 &&
@@ -102,12 +103,13 @@ export const addChokiEvents = (
     if (!shelfClient.ready) {
       return
     }
+
     try {
       const filePath = normalize(pathString)
       const fileHash = await hashFileAsync(filePath).catch((e) => {
         throw e
       })
-      const {mtimeMs} = statSync(filePath)
+      const { mtimeMs } = statSync(filePath)
 
       const [content] = await Content.findOrCreate({
         where: {
@@ -138,6 +140,21 @@ export const addChokiEvents = (
         return
       }
 
+      //FIXME : Create a separate check for the AI thing
+      if (
+        checkFormat(content.extension) === 'image' &&
+        content.extension !== '.webp'
+      ) {
+        shelfClient.AIWorker.postMessage({
+          type: 'new_file',
+          data: {
+            id: content.id,
+            path: filePath,
+          },
+        })
+      }
+
+      //TODO: Hmm
       await newPath
         .update({
           contentId: content.id,
@@ -202,6 +219,8 @@ export const addChokiEvents = (
     //DB Already Initialized
     if (!shelfClient.config.isNew) {
       const pathTransaction = await sequelize.transaction()
+
+      //Cleaning up loose paths
       console.time('DB CLEANUP ->')
       const paths = await Path.findAll({
         attributes: {
@@ -219,7 +238,7 @@ export const addChokiEvents = (
         if (foundPath === -1) {
           //TODO: REMOVE LOG
           console.log('CLEANING >', path.path)
-          await dbPath.destroy({transaction: pathTransaction})
+          await dbPath.destroy({ transaction: pathTransaction })
           continue
         }
 
@@ -230,6 +249,7 @@ export const addChokiEvents = (
 
         if (path.mTimeMs !== newFiles[foundPath][1]) {
           const newHash = await hashFileAsync(path.path)
+
           const content = await Content.findOne({
             where: {
               id: path.contentId,
@@ -257,9 +277,12 @@ export const addChokiEvents = (
           continue
         }
       }
+
       await pathTransaction.commit()
       console.timeEnd('DB CLEANUP ->')
     } else {
+      //Initalizing the DB -----------------------------------------
+      //Initializing Tag Colors
       console.time('TagColor [bulkCreate] >')
       await TagColor.bulkCreate(defaultColors)
       console.timeEnd('TagColor [bulkCreate] >')
@@ -284,15 +307,18 @@ export const addChokiEvents = (
           transaction: tagTransaction,
         })
       }
+
       await tagTransaction.commit()
-      //------------------------------------------------------------
     }
+    //------------------------------------------------------------
 
     console.time('DB ->')
+
     for (let i = 0; i < newFiles.length; i++) {
       const [filePath, mTimeMs] = newFiles[i]
       const fileHash = await hashFileAsync(filePath)
       const tempContentID = INITHASHES.get(fileHash)
+
       sendUpdateProgress(i / newFiles.length, filePath)
 
       const foundPath = await Path.findOne({
@@ -301,6 +327,7 @@ export const addChokiEvents = (
         },
         transaction: ContentsTransaction,
       })
+
       const foundContent = await Content.findOne({
         where: {
           hash: fileHash,
@@ -309,6 +336,7 @@ export const addChokiEvents = (
         transaction: ContentsTransaction,
       })
 
+      //This Content is completely new.
       if (foundContent === null && !tempContentID && foundPath === null) {
         const content = await Content.create(
           {
@@ -326,17 +354,6 @@ export const addChokiEvents = (
             transaction: ContentsTransaction,
           },
         )
-        //TODO: Check if this can error
-        // const newPath = await Path.create(
-        //   {
-        //     path: filePath,
-        //     mTimeMs: mTimeMs,
-        //     contentId: content?.id,
-        //   },
-        //   {
-        //     transaction: ContentsTransaction,
-        //   },
-        // )
 
         //FIXME : Create a separate check for the AI thing
         if (
@@ -351,6 +368,7 @@ export const addChokiEvents = (
             },
           })
         }
+
         //REMOVEME: MOCK
         // await content.$add('tag', Math.round(Math.random() * mockTags.length), {
         //   transaction: ContentsTransaction,
@@ -363,32 +381,66 @@ export const addChokiEvents = (
         continue
       }
 
+      //TODO: I think this should be !tempContentID
       if (tempContentID && foundContent !== null) {
         INITHASHES.set(fileHash, foundContent.id)
       }
 
+      //Content is found but path isn't
       if (foundPath === null && !INITPATHS.get(filePath)) {
-        const createPath = await Path.create(
+        await Path.create(
           {
             path: filePath,
             mTimeMs: mTimeMs,
+            contentId: foundContent?.id || tempContentID,
           },
           {
             transaction: ContentsTransaction,
           },
         )
-
-        await createPath.update(
-          {contentId: foundContent?.id || tempContentID},
-          {
-            transaction: ContentsTransaction,
-          },
-        )
+        continue
       }
     }
+
+    const WaitForAITOWork = async () => {
+      return new Promise(async (resolve, reject) => {
+        shelfClient.AIWorker.postMessage({
+          type: 'emit_batch',
+          data: undefined,
+        })
+
+        shelfClient.AIWorker.on('message', (data) => {
+          if (data.type !== 'batch_done') {
+            return
+          }
+
+          resolve(true)
+        })
+
+        setTimeout(() => {
+          reject()
+        }, 60 * 1000)
+      })
+    }
+    SHELF_LOGGER.info('Wainting for AI Tagging...')
     sendUpdateProgress(1, 'Finished')
     await ContentsTransaction.commit()
+    /*
+     * FIXME:
+     * This Will crash the app since the Worker
+     * can register before the Transaction being commited
+     */
     console.timeEnd('DB ->')
+
+    console.time('Waiting...')
+    await WaitForAITOWork()
+      .then(() => {
+        SHELF_LOGGER.info('Batch FINISHED')
+      })
+      .catch(() => {
+        SHELF_LOGGER.info('Worker Timedout')
+      })
+    console.timeEnd('Waiting...')
 
     shelfClient.ready = true
     onReadyCallback()

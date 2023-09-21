@@ -1,9 +1,9 @@
 import * as chokidar from 'chokidar'
-import {__DBEXTENSION, createShelfDB, ShelfDBModels} from '../db/ShelfDB'
-import {addChokiEvents} from './ChokiEvents'
-import {FSWatcher} from 'chokidar'
-import {zJson} from '../zJson'
-import {join} from 'path'
+import { __DBEXTENSION, createShelfDB, ShelfDBModels } from '../db/ShelfDB'
+import { addChokiEvents } from './ChokiEvents'
+import { FSWatcher } from 'chokidar'
+import { zJson } from '../zJson'
+import { join } from 'path'
 
 import {
   CLIENT_CONFIG_FILE_NAME,
@@ -11,11 +11,11 @@ import {
   ShelfClientConfigValues,
 } from '../ShelfConfig'
 
-import {globSupportedFormats} from '../../../renderer/src/utils/formats'
-import {IpcMainEvents} from '../../../preload/ipcMainTypes'
+import { globSupportedFormats } from '../../../renderer/src/utils/formats'
+import { IpcMainEvents } from '../../../preload/ipcMainTypes'
 
 import CreateAIWorker from './ai_worker/worker?nodeWorker'
-import type {AIWORKERTYPE} from './ai_worker/types'
+import type { AIWORKERTYPE } from './ai_worker/types'
 
 class ShelfClient {
   public choki: FSWatcher
@@ -62,7 +62,7 @@ class ShelfClient {
 
     //TODO: Add option to turn this off
     const aiWorker = CreateAIWorker({
-      workerData: {path: options.basePath, dbPath: options.basePath},
+      workerData: { path: options.basePath, dbPath: options.basePath },
     }) as AIWORKERTYPE
 
     return new ShelfClient({
@@ -101,4 +101,4 @@ class ShelfClient {
   }
 }
 
-export {ShelfClient}
+export { ShelfClient }

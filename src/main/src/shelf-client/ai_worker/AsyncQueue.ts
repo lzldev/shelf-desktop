@@ -1,4 +1,4 @@
-import {createWorkerLogger} from '../../utils/Loggers'
+import { createWorkerLogger } from '../../utils/Loggers'
 
 type AsyncFunc = (...any: any[]) => Promise<any>
 
@@ -7,16 +7,16 @@ export class AsyncQueue {
   private running: number = 0
   private concurrent: number
   private Logger = createWorkerLogger(0, 'ASYNC QUEUE', 0)
-  public onClear: Function
   private clean = true
+  public onClear: Function
+
+  private defaultClear() {
+    this.Logger.info('Queue Clean')
+  }
 
   constructor(concurrent: number, onClear?: Function) {
     this.concurrent = concurrent
-    this.onClear =
-      onClear ??
-      (() => {
-        this.Logger.info('Queue Clean')
-      })
+    this.onClear = onClear ?? this.defaultClear
   }
   private checkCap() {
     return this.running >= this.concurrent
@@ -32,13 +32,14 @@ export class AsyncQueue {
     if (this.checkCap()) {
       return
     }
+
     const job = this.queue.shift()
 
+    if (!this.clean && this.running === 0) {
+      this.clean = true
+      this.onClear()
+    }
     if (!job) {
-      if (!this.clean && this.running === 0) {
-        this.clean = false
-        this.onClear()
-      }
       return
     }
 
@@ -64,5 +65,12 @@ export class AsyncQueue {
     }
 
     this.internalEnqueue(job)
+  }
+
+  onClearOnce(onClear: Function) {
+    this.onClear = () => {
+      onClear()
+      this.onClear = this.defaultClear
+    }
   }
 }

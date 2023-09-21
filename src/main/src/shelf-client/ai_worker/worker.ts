@@ -1,28 +1,41 @@
-console.log('[WORKER] DIR ', import.meta.url)
-// console.log('[WORKER] DIR ', resolveBaseUrl('./', false, createLogger()))
-
-import * as fs from 'fs/promises'
-import {AiWorkerInvoke, AiWorkerReceive} from './types'
-import ts, {Tensor3D} from '@tensorflow/tfjs-node'
+import * as os from 'os'
+import { AiWorkerInvoke, AiWorkerReceive } from './types'
+import ts, { Tensor3D } from '@tensorflow/tfjs-node'
 import mnet from '@tensorflow-models/mobilenet'
 import {
   isMainThread,
-  parentPort,
   parentPort as pp,
   threadId,
-  workerData as wd,
+  workerData as _workerData,
 } from 'node:worker_threads'
-import * as winston from 'winston'
+import { DB } from '../../db/kysely-types'
+import SQLite from 'better-sqlite3'
+import { Kysely, SqliteDialect } from 'kysely'
+import { AsyncQueue } from './AsyncQueue'
+import { createWorkerLogger } from '../../utils/Loggers'
+import sharp from 'sharp'
 
+type ai_worker_data = {
+  path: string
+  dbPath: string
+}
+
+const workerData = _workerData as ai_worker_data
+
+if (isMainThread) {
+  throw new Error('Worker called in main thread')
+} else if (!pp) {
+  throw new Error('Worker Parent port missing')
+} else if (typeof workerData?.path !== 'string') {
+  throw new Error('AI Worker Path Missing')
+} else if (typeof workerData?.dbPath !== 'string') {
+  throw new Error('AI Worker dbPath Missing')
+}
+
+const WORKER_LOGGER = createWorkerLogger(threadId)
 export const __DBEXTENSION = '.shelf'
 export const __DBFILENAME = `.shelfdb${__DBEXTENSION}`
 const createDbPath = (dbPath: string) => `${dbPath}/${__DBFILENAME}`
-import {DB, Tags} from '../../db/kysely-types'
-import SQLite from 'better-sqlite3'
-import {Kysely, SqliteDialect} from 'kysely'
-import {AsyncQueue} from './AsyncQueue'
-import {createWorkerLogger} from '../../utils/Loggers'
-
 const createShelfKyselyDB = (dbPath: string) => {
   return new Kysely<DB>({
     dialect: new SqliteDialect({
@@ -31,32 +44,18 @@ const createShelfKyselyDB = (dbPath: string) => {
   })
 }
 
-;(async () => {
+WORKER_LOGGER.info(`META URL |${import.meta.url}|`)
+WORKER_LOGGER.info(`10% RAM: ${os.totalmem() / 10} bytes`)
+
+// console.log('[WORKER] DIR ', resolveBaseUrl('./', false, createLogger()))
+
+async function main() {
   await ts.ready()
   // ts.enableDebugMode() //REMOVEME:DEBUG MODE -------------------------------------------------------------------
   //
-  const model = await mnet.load({version: 2, alpha: 1.0}).catch((e) => {
+  const model = await mnet.load({ version: 2, alpha: 1.0 }).catch((e) => {
     throw new Error("Couldn't load MOBILENET model")
   })
-
-  type ai_worker_data = {
-    path: string
-    dbPath: string
-  }
-
-  const workerData = wd as ai_worker_data
-
-  if (isMainThread) {
-    throw new Error('Worker called in main thread')
-  } else if (!pp) {
-    throw new Error('Worker Parent port missing')
-  } else if (typeof workerData?.path !== 'string') {
-    throw new Error('AI Worker Path Missing')
-  } else if (typeof workerData?.dbPath !== 'string') {
-    throw new Error('AI Worker dbPath Missing')
-  }
-
-  const WORKER_LOGGER = createWorkerLogger(threadId)
 
   WORKER_LOGGER.info(`AI MODULES LOADED ... starting DB`)
   WORKER_LOGGER.info(` on Path ${workerData.path}`)
@@ -77,17 +76,29 @@ const createShelfKyselyDB = (dbPath: string) => {
     data: undefined,
   } satisfies AiWorkerReceive
 
-  parentPort?.postMessage(start_message)
+  pp!.postMessage(start_message)
 
-  const asyncQueue = new AsyncQueue(1) //TODO: MAKE THIS BIGGER FOR PERFORMANCE
+  const asyncQueue = new AsyncQueue(5) //TODO: MAKE THIS BIGGER FOR PERFORMANCE
 
-  parentPort?.on('message', async (value) => {
+  pp!.on('message', async (value) => {
     const message = value as AiWorkerInvoke
 
     switch (message.type) {
       case 'new_file':
-        asyncQueue.enqueue(() => classifyImage(message.data))
-
+        asyncQueue.enqueue(() =>
+          classifyImage(message.data).then(() => {
+            pp!.postMessage({ type: 'new_file', data: {} } as AiWorkerInvoke)
+          }),
+        )
+        break
+      case 'emit_batch':
+        asyncQueue.onClearOnce(() => {
+          const message = {
+            type: 'batch_done',
+            data: true,
+          } as AiWorkerReceive
+          pp!.postMessage(message)
+        })
         break
       case 'start':
         break
@@ -103,13 +114,9 @@ const createShelfKyselyDB = (dbPath: string) => {
   // }
 
   async function classifyImage(
-    classifyData: Extract<AiWorkerInvoke, {type: 'new_file'}>['data'],
+    classifyData: Extract<AiWorkerInvoke, { type: 'new_file' }>['data'],
   ) {
-    WORKER_LOGGER.info(
-      `STARTING CLASSIFICATION OFF ${classifyData.path} \n ${JSON.stringify(
-        classifyData,
-      )}`,
-    )
+    WORKER_LOGGER.info(`STARTING CLASSIFICATION OFF ${classifyData.path}`)
 
     /*
      * Hmm i think a good solution for this is
@@ -125,18 +132,10 @@ const createShelfKyselyDB = (dbPath: string) => {
      * resize it with magick
      *
      * */
-    const image = await fs.readFile(classifyData.path!).catch((e) => {
-      throw e
-    })
 
-    WORKER_LOGGER.info(
-      `${classifyData.path!.split('/').at(-1)} size : ${
-        image.buffer.byteLength
-      } bytes`,
-    )
+    const image = await sharp(classifyData.path!).toBuffer()
 
     let tensor
-
     try {
       tensor = ts.node.decodeImage(image, 3, undefined, false) as Tensor3D
     } catch (err) {
@@ -185,11 +184,15 @@ const createShelfKyselyDB = (dbPath: string) => {
           updatedAt: new Date().toISOString(),
         })
         .execute()
+
+      WORKER_LOGGER.info(
+        `TAG ${normalized} | Confidence : ${classification.probability}`,
+      )
     }
 
-    WORKER_LOGGER.info(
-      `Finished ${classifyData.path} \n${JSON.stringify(classify)}`,
-    )
+    WORKER_LOGGER.info(`Finished`)
+
     return classify
   }
-})()
+}
+main().catch(() => { })
