@@ -10,11 +10,9 @@ import {toFileTuple} from '../utils/chokiUtils'
 import {normalize} from 'path'
 import {defaultColors} from '../utils/defaultColors'
 import {dialog} from 'electron'
-// import {dialog} from 'electron/main'
 import {readdir} from 'fs/promises'
-import {checkFormat} from '../../../renderer/src/utils/formats'
+import {canClassify, checkFormat} from '../../../renderer/src/utils/formats'
 import {SHELF_LOGGER} from '../utils/Loggers'
-import {WaitForWorkerEvent} from './ai_worker/WorkerUtils'
 
 const ConfirmationDialog = (path: string) =>
   dialog.showMessageBoxSync({
@@ -47,8 +45,11 @@ export const addChokiEvents = (
         path + '\nFiles' + files + 'dirs:' + (stats.nlink - 2),
       ) === 0
     ) {
-      const prev = shelfClient.config.get('ignoredPaths')
-      shelfClient.config.set('ignoredPaths', [...prev, path], false)
+      shelfClient.config.set(
+        'ignoredPaths',
+        [...shelfClient.config.get('ignoredPaths'), path],
+        false,
+      )
 
       choki.unwatch(path)
     }
@@ -59,18 +60,22 @@ export const addChokiEvents = (
       return
     }
 
-    const prev = shelfClient.config.get('ignoredPaths', false)
     const path = error.path as string
 
-    shelfClient.config.set('ignoredPaths', [...prev, path], false)
+    shelfClient.config.set(
+      'ignoredPaths',
+      [...shelfClient.config.get('ignoredPaths', false), path],
+      false,
+    )
+
     choki.unwatch(path)
-    error.path
   }
 
   async function shelfOnChange(_filePath: string) {
     if (!shelfClient.ready) {
       return
     }
+
     try {
       const filePath = normalize(_filePath)
       const newHash = await hashFileAsync(filePath)
@@ -96,7 +101,7 @@ export const addChokiEvents = (
           throw e
         })
     } catch (e) {
-      dialog.showErrorBox('Error', JSON.stringify(e))
+      dialog.showErrorBox('Error [ONCHANGE]', JSON.stringify(e))
     }
   }
 
@@ -110,6 +115,7 @@ export const addChokiEvents = (
       const fileHash = await hashFileAsync(filePath).catch((e) => {
         throw e
       })
+
       const {mtimeMs} = statSync(filePath)
 
       const [content] = await Content.findOrCreate({
@@ -141,11 +147,7 @@ export const addChokiEvents = (
         return
       }
 
-      //FIXME : Create a separate check for the AI thing
-      if (
-        checkFormat(content.extension) === 'image' &&
-        content.extension !== '.webp'
-      ) {
+      if (canClassify(content.extension)) {
         shelfClient.AIWorker.postMessage({
           type: 'new_file',
           data: {
@@ -190,55 +192,55 @@ export const addChokiEvents = (
   const createProgressUpdater = <TParts extends Record<string, number>>(
     parts: TParts,
   ) => {
-    const idx_key_map: Record<keyof TParts, number> = {} as Record<
+    const idxToKeyMap: Record<keyof TParts, number> = {} as Record<
       keyof TParts,
       number
     >
 
     const progress = Object.entries(parts).map(([key, _], i) => {
-      idx_key_map[key as keyof TParts] = i
+      idxToKeyMap[key as keyof TParts] = i
       return 0
     })
-    const last_messages: string[] = []
-    let last_progress = 0
+    const lastMessages: string[] = []
+    let lastProgress = 0
 
     const sendProgress = (
       key: keyof TParts,
       completion: number,
       message: string,
     ) => {
-      progress[idx_key_map[key]] = completion / parts[key]
+      progress[idxToKeyMap[key]] = completion / parts[key]
       sendUpdateProgress(message)
     }
 
     const addToKey = (key: keyof TParts, message: string) => {
-      progress[idx_key_map[key]] =
-        (progress[idx_key_map[key]] * parts[key] + 1) / parts[key]
+      progress[idxToKeyMap[key]] =
+        (progress[idxToKeyMap[key]] * parts[key] + 1) / parts[key]
       sendUpdateProgress(message)
     }
 
-    const sendUpdateProgress = (new_message: string) => {
-      const parts_from_thing = 100 / progress.length
-      let total_progress = 0
+    const sendUpdateProgress = (message: string) => {
+      const totalParts = 100 / progress.length
+      let total = 0
 
       progress.forEach((v) => {
-        total_progress += parts_from_thing * v
+        total += totalParts * v
       })
 
-      total_progress = Math.round(total_progress) / 100
+      total = Math.round(total) / 100
 
-      if (total_progress !== last_progress) {
-        last_progress = total_progress
+      if (total !== lastProgress) {
+        lastProgress = total
 
-        if (last_messages.length <= 2) {
-          last_messages.shift()
+        if (lastMessages.length <= 2) {
+          lastMessages.shift()
         }
 
-        last_messages.push(new_message)
+        lastMessages.push(message)
 
         sendUpdateProgressEvent({
-          total: total_progress,
-          messages: last_messages,
+          total: total,
+          messages: lastMessages,
         })
       }
     }
@@ -256,7 +258,7 @@ export const addChokiEvents = (
         (p) => !statSync(p).isDirectory(),
       ),
     )
-    const ui_parts = {
+    const uiParts = {
       AI: newFiles.length,
       SHELF: newFiles.length,
     } as {
@@ -264,7 +266,7 @@ export const addChokiEvents = (
       SHELF: number
     }
 
-    const {sendProgress, addToKey} = createProgressUpdater(ui_parts)
+    const {sendProgress, addToKey} = createProgressUpdater(uiParts)
 
     shelfClient.AIWorker.on('message', (message) => {
       if (message.type !== 'tagged_file') {
@@ -421,11 +423,7 @@ export const addChokiEvents = (
           },
         )
 
-        //FIXME : Create a separate check for the AI thing
-        if (
-          checkFormat(content.extension) === 'image' &&
-          content.extension !== '.webp'
-        ) {
+        if (canClassify(content.extension)) {
           shelfClient.AIWorker.postMessage({
             type: 'new_file',
             data: {
@@ -434,7 +432,8 @@ export const addChokiEvents = (
             },
           })
         } else {
-          ui_parts.SHELF--
+          //Content Can't be classified so its ignored by the progress bar.
+          uiParts.AI--
         }
 
         //REMOVEME: MOCK
@@ -445,11 +444,10 @@ export const addChokiEvents = (
 
         INITHASHES.set(fileHash, content.id)
         INITPATHS.set(filePath, content.paths![0].id)
-        // INITPATHS.set(filePath, newPath.id)
         continue
       }
 
-      //TODO: I think this should be !tempContentID
+      //FIXME: I think this should be !tempContentID
       if (tempContentID && foundContent !== null) {
         INITHASHES.set(fileHash, foundContent.id)
       }
@@ -472,6 +470,7 @@ export const addChokiEvents = (
 
     SHELF_LOGGER.info('Wainting for AI Tagging...')
     // await ContentsTransaction.commit()
+
     /*
      * FIXME:
      * This Will crash the app since the Worker
@@ -479,6 +478,7 @@ export const addChokiEvents = (
      * removed the transaction from the content part ...
      *  the work wont crash the app now
      */
+
     console.timeEnd('DB ->')
     console.time('Waiting...')
 

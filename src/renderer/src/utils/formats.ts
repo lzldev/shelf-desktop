@@ -57,3 +57,11 @@ export const checkFormat = (extension: string) => {
 
   return 'unrecognized'
 }
+
+export const canClassify = (extension: string) => {
+  if (extension !== '.webp') {
+    return checkFormat(extension) === 'image'
+  }
+
+  return false
+}

@@ -56,13 +56,16 @@ async function main() {
 
   const db = createShelfKyselyDB(workerData.dbPath)
   WORKER_LOGGER.info('DB Started')
-  const TagToIDMap = new Map<string, number>()
 
-  const tags = await db.selectFrom('Tags').select(['id', 'name']).execute()
-  for (const tag of tags) {
-    WORKER_LOGGER.info(`OLD Tag : [${tag.id}]${tag.name}`)
-    TagToIDMap.set(tag.name!, tag.id)
-  }
+  const TagToIDMap = new Map<string, number>()
+  await (async () => {
+    const tags = await db.selectFrom('Tags').select(['id', 'name']).execute()
+
+    for (const tag of tags) {
+      WORKER_LOGGER.info(`OLD Tag : [${tag.id}]${tag.name}`)
+      TagToIDMap.set(tag.name!, tag.id)
+    }
+  })()
 
   pp!.postMessage({
     type: 'ready',
