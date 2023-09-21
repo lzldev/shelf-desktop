@@ -1,12 +1,14 @@
+console.log('[SHELFDB] DIR ', import.meta.url)
+
 import {Sequelize} from 'sequelize-typescript'
 import {Content, ContentTag, Path, Tag, TagColor} from './models'
 
 export const __DBEXTENSION = '.shelf'
 export const __DBFILENAME = `.shelfdb${__DBEXTENSION}`
 
-/* 
+/*
     TODO:
-    If you need to minify your code, you need to set tableName and modelName 
+    If you need to minify your code, you need to set tableName and modelName
     in the DefineOptions for @Table annotation.
     sequelize-typescript uses the class name as default name for tableName and modelName.
     When the code is minified the class name will no longer be the originally
@@ -31,6 +33,7 @@ export const createShelfDB = async (dbPath: string) => {
   process.on('SIGINT', async () => {
     await ShelfDB.close()
   })
+
   process.on('exit', async () => {
     await ShelfDB.close()
   })

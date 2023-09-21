@@ -12,6 +12,7 @@ import {defaultColors} from '../utils/defaultColors'
 import {dialog} from 'electron'
 // import {dialog} from 'electron/main'
 import {readdir} from 'fs/promises'
+import {checkFormat} from '../../../renderer/src/utils/formats'
 
 const ConfirmationDialog = (path: string) =>
   dialog.showMessageBoxSync({
@@ -198,6 +199,7 @@ export const addChokiEvents = (
       }
     }
 
+    //DB Already Initialized
     if (!shelfClient.config.isNew) {
       const pathTransaction = await sequelize.transaction()
       console.time('DB CLEANUP ->')
@@ -211,8 +213,7 @@ export const addChokiEvents = (
       for (const dbPath of paths) {
         const path = dbPath.toJSON()
         const foundPath = newFiles.findIndex((nf) => {
-          const bol = nf[0] === path.path
-          return bol
+          return nf[0] === path.path
         })
 
         if (foundPath === -1) {
@@ -313,32 +314,52 @@ export const addChokiEvents = (
           {
             hash: fileHash,
             extension: parse(filePath).ext,
+            paths: [
+              {
+                path: filePath,
+                mTimeMs: mTimeMs,
+              },
+            ] as Path[],
           },
           {
             include: [Path, Tag],
             transaction: ContentsTransaction,
           },
         )
+        //TODO: Check if this can error
+        // const newPath = await Path.create(
+        //   {
+        //     path: filePath,
+        //     mTimeMs: mTimeMs,
+        //     contentId: content?.id,
+        //   },
+        //   {
+        //     transaction: ContentsTransaction,
+        //   },
+        // )
 
-        const newPath = await Path.create(
-          {
-            path: filePath,
-            mTimeMs: mTimeMs,
-            contentId: content?.id,
-          },
-          {
-            transaction: ContentsTransaction,
-          },
-        )
-
+        //FIXME : Create a separate check for the AI thing
+        if (
+          checkFormat(content.extension) === 'image' &&
+          content.extension !== '.webp'
+        ) {
+          shelfClient.AIWorker.postMessage({
+            type: 'new_file',
+            data: {
+              id: content.id,
+              path: filePath,
+            },
+          })
+        }
         //REMOVEME: MOCK
-        await content.$add('tag', Math.round(Math.random() * mockTags.length), {
-          transaction: ContentsTransaction,
-        })
+        // await content.$add('tag', Math.round(Math.random() * mockTags.length), {
+        //   transaction: ContentsTransaction,
+        // })
         //----
 
         INITHASHES.set(fileHash, content.id)
-        INITPATHS.set(filePath, newPath.id)
+        INITPATHS.set(filePath, content.paths![0].id)
+        // INITPATHS.set(filePath, newPath.id)
         continue
       }
 

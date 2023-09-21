@@ -14,10 +14,15 @@ import {
 import {globSupportedFormats} from '../../../renderer/src/utils/formats'
 import {IpcMainEvents} from '../../../preload/ipcMainTypes'
 
+import CreateAIWorker from './ai_worker/worker?nodeWorker'
+import type {AIWORKERTYPE} from './ai_worker/types'
+
 class ShelfClient {
   public choki: FSWatcher
   public ShelfDB: ShelfDBModels
+  public AIWorker: AIWORKERTYPE
   public ready = false
+
   public config: zJson<
     typeof SHELF_CLIENT_CONFIG_SCHEMA,
     ShelfClientConfigValues
@@ -55,7 +60,13 @@ class ShelfClient {
       },
     )
 
+    //TODO: Add option to turn this off
+    const aiWorker = CreateAIWorker({
+      workerData: {path: options.basePath, dbPath: options.basePath},
+    }) as AIWORKERTYPE
+
     return new ShelfClient({
+      aiWorker,
       choki,
       ShelfDB,
       callback,
@@ -64,11 +75,13 @@ class ShelfClient {
   }
 
   protected constructor(newInstance: {
+    aiWorker: AIWORKERTYPE
     choki: FSWatcher
     ShelfDB: ShelfDBModels
     config: zJson<typeof SHELF_CLIENT_CONFIG_SCHEMA, ShelfClientConfigValues>
     callback: () => void
   }) {
+    this.AIWorker = newInstance.aiWorker
     this.ShelfDB = newInstance.ShelfDB
     this.choki = newInstance.choki
     this.config = newInstance.config

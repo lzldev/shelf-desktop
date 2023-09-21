@@ -15,7 +15,7 @@ export type Contents = {
 export type ContentTags = {
   contentId: number
   tagId: number
-  createdAt: string
+  createdAt: Generated<string>
   updatedAt: string
 }
 export type Paths = {
@@ -23,14 +23,14 @@ export type Paths = {
   path: string | null
   mTimeMs: number | null
   contentId: number | null
-  createdAt: string
+  createdAt: Generated<string>
   updatedAt: string
 }
 export type TagColors = {
   id: Generated<number>
   name: string | null
   color: string | null
-  createdAt: string
+  createdAt: Generated<string>
   updatedAt: string
 }
 export type Tags = {

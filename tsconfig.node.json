@@ -20,12 +20,6 @@
     "emitDecoratorMetadata": true,
     "noImplicitAny": true,
     "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "baseUrl": ".",
-    "paths": {
-      "@main/*": [
-        "src/main/src/*"
-      ]
-    }
+    "noUnusedParameters": false
   }
 }
