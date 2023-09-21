@@ -2,7 +2,7 @@ import {Stats, createReadStream, statSync} from 'fs'
 import {parse} from 'path'
 import {createHash} from 'crypto'
 import {flattenDirectoryTree} from '../utils/chokiUtils'
-import {updateProgress} from '../..'
+import {updateProgress as sendUpdateProgressEvent} from '../..'
 import {ShelfClient} from './ShelfClient'
 import {mockTags} from '../utils/mockTags'
 import {Content, Path, Tag, TagColor} from '../db/models'
@@ -10,8 +10,9 @@ import {toFileTuple} from '../utils/chokiUtils'
 import {normalize} from 'path'
 import {defaultColors} from '../utils/defaultColors'
 import {dialog} from 'electron'
-// import {dialog} from 'electron/main'
 import {readdir} from 'fs/promises'
+import {canClassify, checkFormat} from '../../../renderer/src/utils/formats'
+import {SHELF_LOGGER} from '../utils/Loggers'
 
 const ConfirmationDialog = (path: string) =>
   dialog.showMessageBoxSync({
@@ -36,7 +37,7 @@ export const addChokiEvents = (
   choki.on('addDir', shelfOnAddDir)
 
   async function shelfOnAddDir(path: string, stats: Stats) {
-    const files = await (await readdir(path)).length
+    const files = (await readdir(path)).length
 
     if (
       files >= 200 &&
@@ -44,8 +45,11 @@ export const addChokiEvents = (
         path + '\nFiles' + files + 'dirs:' + (stats.nlink - 2),
       ) === 0
     ) {
-      const prev = shelfClient.config.get('ignoredPaths')
-      shelfClient.config.set('ignoredPaths', [...prev, path], false)
+      shelfClient.config.set(
+        'ignoredPaths',
+        [...shelfClient.config.get('ignoredPaths'), path],
+        false,
+      )
 
       choki.unwatch(path)
     }
@@ -56,18 +60,22 @@ export const addChokiEvents = (
       return
     }
 
-    const prev = shelfClient.config.get('ignoredPaths', false)
     const path = error.path as string
 
-    shelfClient.config.set('ignoredPaths', [...prev, path], false)
+    shelfClient.config.set(
+      'ignoredPaths',
+      [...shelfClient.config.get('ignoredPaths', false), path],
+      false,
+    )
+
     choki.unwatch(path)
-    error.path
   }
 
   async function shelfOnChange(_filePath: string) {
     if (!shelfClient.ready) {
       return
     }
+
     try {
       const filePath = normalize(_filePath)
       const newHash = await hashFileAsync(filePath)
@@ -93,7 +101,7 @@ export const addChokiEvents = (
           throw e
         })
     } catch (e) {
-      dialog.showErrorBox('Error', JSON.stringify(e))
+      dialog.showErrorBox('Error [ONCHANGE]', JSON.stringify(e))
     }
   }
 
@@ -101,11 +109,13 @@ export const addChokiEvents = (
     if (!shelfClient.ready) {
       return
     }
+
     try {
       const filePath = normalize(pathString)
       const fileHash = await hashFileAsync(filePath).catch((e) => {
         throw e
       })
+
       const {mtimeMs} = statSync(filePath)
 
       const [content] = await Content.findOrCreate({
@@ -137,6 +147,17 @@ export const addChokiEvents = (
         return
       }
 
+      if (canClassify(content.extension)) {
+        shelfClient.AIWorker.postMessage({
+          type: 'new_file',
+          data: {
+            id: content.id,
+            path: filePath,
+          },
+        })
+      }
+
+      //TODO: Hmm
       await newPath
         .update({
           contentId: content.id,
@@ -167,58 +188,119 @@ export const addChokiEvents = (
       dialog.showErrorBox('Error', JSON.stringify(e))
     }
   }
-  async function shelfOnReady() {
-    shelfClient.config.save()
-    const flatDirTree = flattenDirectoryTree(choki.getWatched()).filter(
-      (p) => !statSync(p).isDirectory(),
-    )
-    const ContentsTransaction = await sequelize.transaction()
-    const INITHASHES = new Map<string, number>()
-    const INITPATHS = new Map<string, number>()
-    const lastPaths: string[] = []
-    const newFiles = toFileTuple(flatDirTree)
 
-    let lastProgress: number | undefined
-    const sendUpdateProgress = (newProgress: number, newPath: string) => {
-      if (!lastProgress || lastProgress !== newProgress) {
-        updateProgress({
-          key: 'start',
-          value: {
-            value: newProgress,
-            lastPaths: lastPaths,
-          },
-        })
+  const createProgressUpdater = <TParts extends Record<string, number>>(
+    parts: TParts,
+  ) => {
+    const idxToKeyMap: Record<keyof TParts, number> = {} as Record<
+      keyof TParts,
+      number
+    >
 
-        lastProgress = newProgress
+    const progress = Object.entries(parts).map(([key, _], i) => {
+      idxToKeyMap[key as keyof TParts] = i
+      return 0
+    })
+    const lastMessages: string[] = []
+    let lastProgress = 0
 
-        if (lastPaths.length <= 2) {
-          lastPaths.shift()
+    const sendProgress = (
+      key: keyof TParts,
+      completion: number,
+      message: string,
+    ) => {
+      progress[idxToKeyMap[key]] = completion / parts[key]
+      sendUpdateProgress(message)
+    }
+
+    const addToKey = (key: keyof TParts, message: string) => {
+      progress[idxToKeyMap[key]] =
+        (progress[idxToKeyMap[key]] * parts[key] + 1) / parts[key]
+      sendUpdateProgress(message)
+    }
+
+    const sendUpdateProgress = (message: string) => {
+      const totalParts = 100 / progress.length
+      let total = 0
+
+      progress.forEach((v) => {
+        total += totalParts * v
+      })
+
+      total = Math.round(total) / 100
+
+      if (total !== lastProgress) {
+        lastProgress = total
+
+        if (lastMessages.length <= 2) {
+          lastMessages.shift()
         }
-        lastPaths.push(newPath)
+
+        lastMessages.push(message)
+
+        sendUpdateProgressEvent({
+          total: total,
+          messages: lastMessages,
+        })
       }
     }
 
+    return {sendProgress, addToKey}
+  }
+  async function shelfOnReady() {
+    shelfClient.config.save()
+
+    // const ContentsTransaction = await sequelize.transaction()
+    const INITHASHES = new Map<string, number>()
+    const INITPATHS = new Map<string, number>()
+    const newFiles = toFileTuple(
+      flattenDirectoryTree(choki.getWatched()).filter(
+        (p) => !statSync(p).isDirectory(),
+      ),
+    )
+    const uiParts = {
+      AI: newFiles.length,
+      SHELF: newFiles.length,
+    } as {
+      AI: number
+      SHELF: number
+    }
+
+    const {sendProgress, addToKey} = createProgressUpdater(uiParts)
+
+    shelfClient.AIWorker.on('message', (message) => {
+      if (message.type !== 'tagged_file') {
+        return
+      }
+
+      addToKey('AI', '[AI] File Tagged...')
+    })
+
+    //DB Already Initialized
     if (!shelfClient.config.isNew) {
-      const pathTransaction = await sequelize.transaction()
+      // const pathTransaction = await sequelize.transaction()
+
+      //Cleaning up loose paths
       console.time('DB CLEANUP ->')
       const paths = await Path.findAll({
         attributes: {
           exclude: ['updatedAt', 'createdAt'],
         },
-        transaction: pathTransaction,
+        // transaction: pathTransaction,
       })
 
       for (const dbPath of paths) {
         const path = dbPath.toJSON()
         const foundPath = newFiles.findIndex((nf) => {
-          const bol = nf[0] === path.path
-          return bol
+          return nf[0] === path.path
         })
 
         if (foundPath === -1) {
           //TODO: REMOVE LOG
           console.log('CLEANING >', path.path)
-          await dbPath.destroy({transaction: pathTransaction})
+          await dbPath.destroy({
+            // transaction: pathTransaction
+          })
           continue
         }
 
@@ -229,11 +311,12 @@ export const addChokiEvents = (
 
         if (path.mTimeMs !== newFiles[foundPath][1]) {
           const newHash = await hashFileAsync(path.path)
+
           const content = await Content.findOne({
             where: {
               id: path.contentId,
             },
-            transaction: pathTransaction,
+            // transaction: pathTransaction,
           })
 
           await content?.update(
@@ -241,7 +324,7 @@ export const addChokiEvents = (
               hash: newHash,
             },
             {
-              transaction: pathTransaction,
+              // transaction: pathTransaction,
             },
           )
 
@@ -250,26 +333,34 @@ export const addChokiEvents = (
               mTimeMs: newFiles[foundPath][1],
             },
             {
-              transaction: pathTransaction,
+              // transaction: pathTransaction,
             },
           )
           continue
         }
       }
-      await pathTransaction.commit()
+
+      // await pathTransaction.commit()
       console.timeEnd('DB CLEANUP ->')
     } else {
-      console.time('TagColor [bulkCreate] >')
+      //Initalizing the DB -----------------------------------------
+      //Initializing Tag Colors
+      const tagTimerName = '\x1b[44m\x1b[37m[TAGCOLOR]\x1b[0m [BULKCREATE]'
+
+      console.time(tagTimerName)
       await TagColor.bulkCreate(defaultColors)
-      console.timeEnd('TagColor [bulkCreate] >')
+      console.timeEnd(tagTimerName)
 
       //REMOVEME : MOCK TAGS ---------------------------------------
-      const tagTransaction = await sequelize.transaction()
+      // const tagTransaction = await sequelize.transaction()
+      const mockTagTimerName =
+        '\x1b[44m\x1b[37m[MOCK_TAGS]\x1b[0m [TRANSACTIOn]'
 
+      console.time(mockTagTimerName)
       for (const tag of mockTags) {
         const randomColor = (await TagColor.findOne({
           order: sequelize.random(),
-          transaction: tagTransaction,
+          // transaction: tagTransaction,
         }))!
 
         await Tag.findOrCreate({
@@ -280,94 +371,146 @@ export const addChokiEvents = (
             name: tag.name,
             colorId: randomColor.id,
           },
-          transaction: tagTransaction,
+          // transaction: tagTransaction,
         })
       }
-      await tagTransaction.commit()
-      //------------------------------------------------------------
+
+      // await tagTransaction.commit()
+      console.timeEnd(mockTagTimerName)
     }
+    //------------------------------------------------------------
 
     console.time('DB ->')
+
     for (let i = 0; i < newFiles.length; i++) {
       const [filePath, mTimeMs] = newFiles[i]
       const fileHash = await hashFileAsync(filePath)
       const tempContentID = INITHASHES.get(fileHash)
-      sendUpdateProgress(i / newFiles.length, filePath)
+
+      sendProgress('SHELF', i + 1, filePath)
 
       const foundPath = await Path.findOne({
         where: {
           path: filePath,
         },
-        transaction: ContentsTransaction,
+        // transaction: ContentsTransaction,
       })
+
       const foundContent = await Content.findOne({
         where: {
           hash: fileHash,
         },
         attributes: ['id'],
-        transaction: ContentsTransaction,
+        // transaction: ContentsTransaction,
       })
 
+      //This Content is completely new.
       if (foundContent === null && !tempContentID && foundPath === null) {
         const content = await Content.create(
           {
             hash: fileHash,
             extension: parse(filePath).ext,
+            paths: [
+              {
+                path: filePath,
+                mTimeMs: mTimeMs,
+              },
+            ] as Path[],
           },
           {
             include: [Path, Tag],
-            transaction: ContentsTransaction,
+            // transaction: ContentsTransaction,
           },
         )
 
-        const newPath = await Path.create(
-          {
-            path: filePath,
-            mTimeMs: mTimeMs,
-            contentId: content?.id,
-          },
-          {
-            transaction: ContentsTransaction,
-          },
-        )
+        if (canClassify(content.extension)) {
+          shelfClient.AIWorker.postMessage({
+            type: 'new_file',
+            data: {
+              id: content.id,
+              path: filePath,
+            },
+          })
+        } else {
+          //Content Can't be classified so its ignored by the progress bar.
+          uiParts.AI--
+        }
 
         //REMOVEME: MOCK
-        await content.$add('tag', Math.round(Math.random() * mockTags.length), {
-          transaction: ContentsTransaction,
-        })
+        // await content.$add('tag', Math.round(Math.random() * mockTags.length), {
+        //   transaction: ContentsTransaction,
+        // })
         //----
 
         INITHASHES.set(fileHash, content.id)
-        INITPATHS.set(filePath, newPath.id)
+        INITPATHS.set(filePath, content.paths![0].id)
         continue
       }
 
+      //FIXME: I think this should be !tempContentID
       if (tempContentID && foundContent !== null) {
         INITHASHES.set(fileHash, foundContent.id)
       }
 
+      //Content is found but path isn't
       if (foundPath === null && !INITPATHS.get(filePath)) {
-        const createPath = await Path.create(
+        await Path.create(
           {
             path: filePath,
             mTimeMs: mTimeMs,
+            contentId: foundContent?.id || tempContentID,
           },
           {
-            transaction: ContentsTransaction,
+            // transaction: ContentsTransaction,
           },
         )
-
-        await createPath.update(
-          {contentId: foundContent?.id || tempContentID},
-          {
-            transaction: ContentsTransaction,
-          },
-        )
+        continue
       }
     }
-    sendUpdateProgress(1, 'Finished')
-    await ContentsTransaction.commit()
+
+    SHELF_LOGGER.info('Wainting for AI Tagging...')
+    // await ContentsTransaction.commit()
+
+    /*
+     * FIXME:
+     * This Will crash the app since the Worker
+     * can register before the Transaction being commited
+     * removed the transaction from the content part ...
+     *  the work wont crash the app now
+     */
+
     console.timeEnd('DB ->')
+    console.time('Waiting...')
+
+    const WaitForAITOWork = async () => {
+      return new Promise((resolve, reject) => {
+        shelfClient.AIWorker.postMessage({
+          type: 'emit_batch',
+          data: undefined,
+        })
+
+        shelfClient.AIWorker.on('message', (data) => {
+          if (data.type !== 'batch_done') {
+            return
+          }
+          resolve(true)
+        })
+
+        setTimeout(() => {
+          reject()
+        }, 60 * 1000)
+      })
+    }
+
+    await WaitForAITOWork()
+      .then(() => {
+        SHELF_LOGGER.info('Batch FINISHED')
+      })
+      .catch(() => {
+        SHELF_LOGGER.info('AIWORKER TIMED OUT')
+      })
+
+    console.timeEnd('Waiting...')
 
     shelfClient.ready = true
     onReadyCallback()

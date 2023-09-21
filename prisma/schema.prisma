@@ -1,0 +1,69 @@
+generator client {
+  provider     = "prisma-kysely"
+  output       = "../src/main/src/db/"
+  fileName     = "kysely-types.ts"
+  enumFileName = "kysely-enums.ts"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../examples/.shelfdb.shelf"
+}
+
+model ContentTags {
+  contentId Int
+  tagId     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  Tags      Tags     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  Contents  Contents @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, tagId])
+  @@index([tagId], map: "content_tags_tag_id")
+  @@index([contentId], map: "content_tags_content_id")
+}
+
+model Contents {
+  id          Int           @id @default(autoincrement())
+  hash        String?
+  extension   String?
+  createdAt   DateTime
+  updatedAt   DateTime
+  deletedAt   DateTime?
+  ContentTags ContentTags[]
+  Paths       Paths[]
+
+  @@index([hash], map: "contents_hash")
+}
+
+model Paths {
+  id        Int       @id @default(autoincrement())
+  path      String?
+  mTimeMs   Float?
+  contentId Int?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  Contents  Contents? @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([contentId], map: "paths_content_id")
+  @@index([path], map: "paths_path")
+}
+
+model TagColors {
+  id        Int      @id @default(autoincrement())
+  name      String?
+  color     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  Tags      Tags[]
+}
+
+model Tags {
+  id          Int           @id @default(autoincrement())
+  name        String?
+  colorId     Int?
+  createdAt   DateTime
+  updatedAt   DateTime
+  ContentTags ContentTags[]
+  TagColors   TagColors?    @relation(fields: [colorId], references: [id])
+}

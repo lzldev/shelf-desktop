@@ -10,7 +10,7 @@ export type IpcRendererEvents = TypeLevelRecord<
   IpcRendererEventShape,
   {
     updateProgress: {
-      args: {value: number; key: string}
+      args: {total: number; messages: string[]}
     }
     clientReady: {
       args: []

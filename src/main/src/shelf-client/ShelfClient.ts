@@ -14,10 +14,15 @@ import {
 import {globSupportedFormats} from '../../../renderer/src/utils/formats'
 import {IpcMainEvents} from '../../../preload/ipcMainTypes'
 
+import CreateAIWorker from './ai_worker/worker?nodeWorker'
+import type {AIWORKERTYPE} from './ai_worker/types'
+
 class ShelfClient {
   public choki: FSWatcher
   public ShelfDB: ShelfDBModels
+  public AIWorker: AIWORKERTYPE
   public ready = false
+
   public config: zJson<
     typeof SHELF_CLIENT_CONFIG_SCHEMA,
     ShelfClientConfigValues
@@ -47,7 +52,6 @@ class ShelfClient {
       {
         ignored: [
           ...config.get('ignoredPaths'),
-          // config.get('ignoreHidden') ? '**/.**' : '', //FIXME:Not Working
           config.get('ignoreUnsupported') ? globSupportedFormats : '',
           `**/**.${__DBEXTENSION}`,
         ],
@@ -55,7 +59,13 @@ class ShelfClient {
       },
     )
 
+    //TODO: Add option to turn this off
+    const aiWorker = CreateAIWorker({
+      workerData: {dbPath: options.basePath},
+    }) as AIWORKERTYPE
+
     return new ShelfClient({
+      aiWorker,
       choki,
       ShelfDB,
       callback,
@@ -64,11 +74,13 @@ class ShelfClient {
   }
 
   protected constructor(newInstance: {
+    aiWorker: AIWORKERTYPE
     choki: FSWatcher
     ShelfDB: ShelfDBModels
     config: zJson<typeof SHELF_CLIENT_CONFIG_SCHEMA, ShelfClientConfigValues>
     callback: () => void
   }) {
+    this.AIWorker = newInstance.aiWorker
     this.ShelfDB = newInstance.ShelfDB
     this.choki = newInstance.choki
     this.config = newInstance.config
