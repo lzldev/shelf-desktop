@@ -1,3 +1,4 @@
+import {z} from 'zod'
 import {Contents, Paths} from '../../db/kysely-types'
 import {CustomWorker} from '../../utils/workertypes'
 
@@ -30,5 +31,13 @@ export type AiWorkerReceive =
       type: 'batch_done'
       data: boolean
     }
+
+export const AIWorkerDataParser = z.object({
+  dbPath: z.string({
+    description: 'Path of SHELFDB',
+  }),
+})
+
+export type AIWorkerData = z.infer<typeof AIWorkerDataParser>
 
 export type AIWORKERTYPE = CustomWorker<AiWorkerInvoke, AiWorkerReceive>

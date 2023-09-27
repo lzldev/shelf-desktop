@@ -1,7 +1,7 @@
 console.log('[SHELFDB] DIR ', import.meta.url)
 
-import {Sequelize} from 'sequelize-typescript'
-import {Content, ContentTag, Path, Tag, TagColor} from './models'
+import { Sequelize } from 'sequelize-typescript'
+import { Content, ContentTag, Path, Tag, TagColor } from './models'
 
 export const __DBEXTENSION = '.shelf'
 export const __DBFILENAME = `.shelfdb${__DBEXTENSION}`
@@ -15,11 +15,15 @@ export const __DBFILENAME = `.shelfdb${__DBEXTENSION}`
     defined one (So that class User will become class b for example).
 */
 
+// import { SHELF_LOGGER } from '../utils/Loggers'
+
 const createSQLiteDB = (dbPath: string) => {
   return new Sequelize({
     dialect: 'sqlite',
     storage: `${dbPath}/${__DBFILENAME}`,
-    logging: false,
+    // logging(query, timing) {
+    //   SHELF_LOGGER.info(query, timing)
+    // },
   })
 }
 

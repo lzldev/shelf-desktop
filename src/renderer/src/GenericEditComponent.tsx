@@ -1,8 +1,8 @@
-import type { HTMLAttributes } from 'react'
+import type {HTMLAttributes} from 'react'
 import clsx from 'clsx'
-import { Updater } from 'use-immer'
-import { TagOperation } from 'src/types/Operations'
-import { Tag } from '@models'
+import {Updater} from 'use-immer'
+import {TagOperation} from 'src/types/Operations'
+import {Tag} from '@models'
 
 const TagColorBody = clsx(
   'relative text-white z-10 m-1 flex group flex-row items-center justify-between rounded-full bg-[--bgColor] py-3 px-6 outline ring-2 ring-inset ring-white ring-opacity-50',

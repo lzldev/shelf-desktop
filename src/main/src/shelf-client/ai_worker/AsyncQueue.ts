@@ -1,10 +1,10 @@
-import {createWorkerLogger} from '../../utils/Loggers'
+import { createWorkerLogger } from '../../utils/Loggers'
 
 type AsyncFunc = (...any: any[]) => Promise<any>
 
 export class AsyncQueue {
   private queue: AsyncFunc[] = []
-  private running: number = 0
+  private running = 0
   private concurrent: number
   private Logger = createWorkerLogger(0, 'ASYNC QUEUE', 0)
   private clean = true
@@ -70,6 +70,89 @@ export class AsyncQueue {
     }
 
     this.internalEnqueue(job)
+  }
+
+  onClearOnce(onClear: Function) {
+    this.onClear = () => {
+      onClear()
+      this.onClear = this.defaultClear
+    }
+  }
+}
+
+export class AsyncBatchQueue {
+  private queue: AsyncFunc[] = []
+  private running = 0
+  private concurrent: number
+  private Logger = createWorkerLogger(0, 'BATCH QUEUE', 0)
+  private clean = true
+  private batchTimeout?: NodeJS.Timeout
+
+  public onClear: Function
+  public onBatch: Function
+
+  public getRunning() {
+    return this.running
+  }
+
+  private defaultClear() {
+    this.Logger.info('Queue Clean')
+  }
+
+  constructor(concurrent: number, onClear?: Function, onBatch?: Function) {
+    this.concurrent = concurrent
+    this.onClear = onClear ?? this.defaultClear
+    this.onBatch = onBatch ?? (async () => { })
+  }
+
+  private async internalBatchEnqueue() {
+    if (this.running >= this.concurrent) {
+      return
+    }
+
+    if (this.queue.length === 0) {
+      this.Logger.info('BATCH QUEUE CLEAR')
+      this.onClear()
+      return
+    }
+
+    this.Logger.info('BATCH ENQUEUE')
+
+    if (this.batchTimeout) {
+      this.Logger.info('BATCH TIMEOUT CLEAN')
+      clearTimeout(this.batchTimeout)
+    }
+
+    this.running = Math.min(this.concurrent, this.queue.length)
+
+    this.batchTimeout = setTimeout(async () => {
+      const batch = this.queue.slice(0, this.running).map((v) => v())
+
+      this.queue = this.queue.slice(this.running)
+      this.Logger.info(`BATCH RUNNING | ${batch}`)
+
+      this.running = batch.length
+
+      Promise.allSettled(batch).then(async (res) => {
+        this.batchTimeout = undefined
+        this.running = 0
+
+        this.Logger.info(`BATCH DONE | ${JSON.stringify(res)}`)
+
+        await this.onBatch()
+
+        this.internalBatchEnqueue()
+        return res
+      })
+    }, 500)
+  }
+
+  enqueue(job: AsyncFunc) {
+    this.clean = false
+
+    this.queue.push(job)
+
+    this.internalBatchEnqueue()
   }
 
   onClearOnce(onClear: Function) {
