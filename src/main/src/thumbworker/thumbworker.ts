@@ -4,10 +4,10 @@ import {
   threadId,
   workerData as _workerData,
 } from 'node:worker_threads'
-import { createWorkerLogger } from '../utils/Loggers'
+import {createWorkerLogger} from '../utils/Loggers'
 import sharp from 'sharp'
 
-import { ThumbWorkerDataParser } from './types'
+import {ThumbWorkerDataParser} from './types'
 
 const workerData = ThumbWorkerDataParser.parse(_workerData)
 
