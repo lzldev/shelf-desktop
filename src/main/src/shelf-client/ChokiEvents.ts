@@ -1,18 +1,19 @@
-import {Stats, createReadStream, statSync} from 'fs'
-import {parse} from 'path'
-import {createHash} from 'crypto'
-import {flattenDirectoryTree} from '../utils/chokiUtils'
-import {updateProgress as sendUpdateProgressEvent} from '../..'
-import {ShelfClient} from './ShelfClient'
-import {mockTags} from '../utils/mockTags'
-import {Content, Path, Tag, TagColor} from '../db/models'
-import {toFileTuple} from '../utils/chokiUtils'
-import {normalize} from 'path'
-import {defaultColors} from '../utils/defaultColors'
-import {dialog} from 'electron'
-import {readdir} from 'fs/promises'
-import {canClassify, checkFormat} from '../../../renderer/src/utils/formats'
-import {SHELF_LOGGER} from '../utils/Loggers'
+import { Stats, createReadStream, statSync } from 'fs'
+import { parse } from 'path'
+import { createHash } from 'crypto'
+import { flattenDirectoryTree } from '../utils/chokiUtils'
+import { updateProgress as sendUpdateProgressEvent } from '../..'
+import { ShelfClient } from './ShelfClient'
+import { mockTags } from '../utils/mockTags'
+import { Content, Path, Tag, TagColor } from '../db/models'
+import { toFileTuple } from '../utils/chokiUtils'
+import { normalize } from 'path'
+import { defaultColors } from '../utils/defaultColors'
+import { dialog } from 'electron'
+import { readdir } from 'fs/promises'
+import { canClassify, checkFormat } from '../../../renderer/src/utils/formats'
+import { SHELF_LOGGER } from '../utils/Loggers'
+import { AiWorkerInvoke } from './ai_worker/types'
 
 const ConfirmationDialog = (path: string) =>
   dialog.showMessageBoxSync({
@@ -26,7 +27,7 @@ export const addChokiEvents = (
   shelfClient: ShelfClient,
   onReadyCallback: (...args: any[]) => void,
 ) => {
-  const {sequelize} = shelfClient.ShelfDB
+  const { sequelize } = shelfClient.ShelfDB
   const choki = shelfClient.choki
 
   choki.on('unlink', shelfOnUnlink)
@@ -116,7 +117,7 @@ export const addChokiEvents = (
         throw e
       })
 
-      const {mtimeMs} = statSync(filePath)
+      const { mtimeMs } = statSync(filePath)
 
       const [content] = await Content.findOrCreate({
         where: {
@@ -245,7 +246,7 @@ export const addChokiEvents = (
       }
     }
 
-    return {sendProgress, addToKey}
+    return { sendProgress, addToKey }
   }
   async function shelfOnReady() {
     shelfClient.config.save()
@@ -266,7 +267,7 @@ export const addChokiEvents = (
       SHELF: number
     }
 
-    const {sendProgress, addToKey} = createProgressUpdater(uiParts)
+    const { sendProgress, addToKey } = createProgressUpdater(uiParts)
 
     shelfClient.AIWorker.on('message', (message) => {
       if (message.type !== 'tagged_file') {
@@ -422,23 +423,23 @@ export const addChokiEvents = (
             // transaction: ContentsTransaction,
           },
         ).catch((e) => {
-          SHELF_LOGGER.error('CREATE QUERY FAILED', e)
+          throw e
         })
 
         if (content && canClassify(content.extension)) {
-          const sent_message = {
+          const sentMessage = {
             type: 'new_file',
             data: {
               id: content.id,
               path: filePath,
             },
-          } as any
+          } satisfies AiWorkerInvoke
 
           SHELF_LOGGER.info(
-            `CONTENT ${sent_message.data.id} | ${sent_message.data.path}`,
+            `CONTENT ${sentMessage.data.id} | ${sentMessage.data.path}`,
           )
 
-          shelfClient.AIWorker.postMessage(sent_message)
+          shelfClient.AIWorker.postMessage(sentMessage)
         } else {
           //Content Can't be classified so its ignored by the progress bar.
           uiParts.AI--

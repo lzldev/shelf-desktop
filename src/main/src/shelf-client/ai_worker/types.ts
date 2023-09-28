@@ -1,36 +1,31 @@
-import {z} from 'zod'
-import {Contents, Paths} from '../../db/kysely-types'
-import {CustomWorker} from '../../utils/workertypes'
+import { z } from 'zod'
+import { CustomWorker } from '../../utils/workertypes'
 
-type ContentIdWithPath = NonNullable<Pick<Contents, 'id'> & Pick<Paths, 'path'>>
+type ContentIdWithPath = { id: number; path: string }
 
 export type AiWorkerInvoke =
   | {
-      type: 'new_file'
-      data: ContentIdWithPath
-    }
+    type: 'new_file'
+    data: ContentIdWithPath
+  }
   | {
-      type: 'start'
-      data: {files: string[]}
-    }
-  | {
-      type: 'emit_batch'
-      data: void
-    }
+    type: 'emit_batch'
+    data: void
+  }
 
 export type AiWorkerReceive =
   | {
-      type: 'ready'
-      data: void
-    }
+    type: 'ready'
+    data: void
+  }
   | {
-      type: 'tagged_file'
-      data: {path: string}
-    }
+    type: 'tagged_file'
+    data: { path: string }
+  }
   | {
-      type: 'batch_done'
-      data: boolean
-    }
+    type: 'batch_done'
+    data: boolean
+  }
 
 export const AIWorkerDataParser = z.object({
   dbPath: z.string({

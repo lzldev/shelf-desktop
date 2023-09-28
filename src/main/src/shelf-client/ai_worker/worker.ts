@@ -1,6 +1,6 @@
 import * as os from 'os'
-import {AIWorkerDataParser, AiWorkerInvoke, AiWorkerReceive} from './types'
-import ts, {Tensor3D} from '@tensorflow/tfjs-node'
+import { AIWorkerDataParser, AiWorkerInvoke, AiWorkerReceive } from './types'
+import ts, { Tensor3D } from '@tensorflow/tfjs-node'
 import mnet from '@tensorflow-models/mobilenet'
 import {
   isMainThread,
@@ -8,11 +8,11 @@ import {
   threadId,
   workerData as _workerData,
 } from 'node:worker_threads'
-import {DB} from '../../db/kysely-types'
-import {Kysely, SqliteDialect} from 'kysely'
+import { Contents, DB, Paths } from '../../db/kysely-types'
+import { Kysely, SqliteDialect } from 'kysely'
 import SQLite from 'better-sqlite3'
-import {AsyncBatchQueue} from './AsyncQueue'
-import {createWorkerLogger} from '../../utils/Loggers'
+import { AsyncBatchQueue } from './AsyncQueue'
+import { createWorkerLogger } from '../../utils/Loggers'
 import sharp from 'sharp'
 
 const workerData = AIWorkerDataParser.parse(_workerData)
@@ -29,7 +29,14 @@ export const __DBFILENAME = `.shelfdb${__DBEXTENSION}`
 const createDbPath = (dbPath: string) => `${dbPath}/${__DBFILENAME}`
 const createShelfKyselyDB = (dbPath: string) => {
   return new Kysely<DB>({
-    log: ['query'],
+    log(event) {
+      switch (event.level) {
+        // case 'query':
+        case 'error':
+          WORKER_LOGGER.error(event.error)
+          break
+      }
+    },
     dialect: new SqliteDialect({
       database: new SQLite(createDbPath(dbPath)),
     }),
@@ -43,7 +50,7 @@ async function main() {
   ts.enableProdMode()
   await ts.ready()
 
-  const model = await mnet.load({version: 2, alpha: 1.0}).catch(() => {
+  const model = await mnet.load({ version: 2, alpha: 1.0 }).catch(() => {
     throw new Error("Couldn't load MOBILENET model")
   })
 
@@ -73,19 +80,20 @@ async function main() {
     ts.disposeVariables()
   })
 
-  //TODO: MAKE THIS BIGGER FOR PERFORMANCE
+  const onFile = (data: ClassifyInput) => {
+    asyncQueue.enqueue(async () => {
+      return classifyImage(data).then(() => {
+        pp!.postMessage({ type: 'new_file', data: {} } as AiWorkerInvoke)
+      })
+    })
+  }
 
   pp!.on('message', async (value) => {
     const message = value as AiWorkerInvoke
 
     switch (message.type) {
       case 'new_file': {
-        asyncQueue.enqueue(async () => {
-          WORKER_LOGGER.info('CLASSIFY')
-          return classifyImage(message.data).then(() => {
-            pp!.postMessage({type: 'new_file', data: {}} as AiWorkerInvoke)
-          })
-        })
+        onFile(message.data)
         break
       }
       case 'emit_batch': {
@@ -105,16 +113,13 @@ async function main() {
         asyncQueue.onClearOnce(listener)
         break
       }
-      case 'start': {
-        break
-      }
     }
   })
 
-  async function classifyImage(
-    classifyData: Extract<AiWorkerInvoke, {type: 'new_file'}>['data'],
-  ) {
-    WORKER_LOGGER.info(`STARTING CLASSIFICATION OFF ${classifyData.path}`)
+  type ClassifyInput = Extract<AiWorkerInvoke, { type: 'new_file' }>['data']
+
+  async function classifyImage(classifyData: ClassifyInput) {
+    WORKER_LOGGER.info(`STARTING CLASSIFICATION OF ${classifyData.path}`)
 
     const image = await sharp(classifyData.path!).toBuffer()
 
@@ -129,6 +134,10 @@ async function main() {
     const classify = await model.classify(tensor, 1).catch((e) => {
       throw e
     })
+
+    console.time('dispose')
+    tensor.dispose()
+    console.timeEnd('dispose')
 
     for (const classification of classify) {
       const normalized = classification.className
