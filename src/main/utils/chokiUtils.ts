@@ -2,6 +2,7 @@ import {FSWatcher} from 'chokidar'
 import {statSync} from 'fs'
 import {normalize} from 'path'
 
+export type FileTuple = [filePath: string, modifiedTimeMS: number]
 export type DirectoryTree = ReturnType<typeof FSWatcher.prototype.getWatched>
 
 export const flattenDirectoryTree = (tree: DirectoryTree): string[] => {
@@ -14,10 +15,8 @@ export const flattenDirectoryTree = (tree: DirectoryTree): string[] => {
   return paths
 }
 
-export type FileTuple = [string, number]
-
-export const toFileTuple = (stringArr: string[]) => {
-  return stringArr.map((p) => {
+export const toFileTuple = (filePaths: string[]) => {
+  return filePaths.map((p) => {
     const {mtimeMs} = statSync(p)
     const normalizedPath = normalize(p)
 
@@ -25,11 +24,20 @@ export const toFileTuple = (stringArr: string[]) => {
   }) as FileTuple[]
 }
 
-export const toFileMap = (pathArr: string[]) => {
+export const toFileMap = (filePaths: string[]) => {
   const newSet = new Map<string, number>()
-  pathArr.forEach((path) => {
+  filePaths.forEach((path) => {
     const {mtimeMs} = statSync(path)
     newSet.set(path, mtimeMs)
   })
   return newSet
 }
+
+/**
+ *
+ * Filter out Directories from Choki directory tree, and returns an array of FileTuple.
+ * */
+export const filterDirectoryTree = (tree: DirectoryTree): FileTuple[] =>
+  toFileTuple(
+    flattenDirectoryTree(tree).filter((p) => !statSync(p).isDirectory()),
+  )

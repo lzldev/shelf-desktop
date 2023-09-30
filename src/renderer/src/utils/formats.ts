@@ -58,9 +58,13 @@ export const checkFormat = (extension: string) => {
   return 'unrecognized'
 }
 
-export const canClassify = (extension: string) => {
-  if (extension !== '.webp') {
-    return checkFormat(extension) === 'image'
+/**
+ *
+ * Checks if file extension is able to be classified by Mobilenet
+ * */
+export const canClassify = (fileExtension: string) => {
+  if (fileExtension !== '.webp') {
+    return checkFormat(fileExtension) === 'image'
   }
 
   return false
