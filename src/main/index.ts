@@ -159,11 +159,11 @@ function createWindow(route: keyof typeof WindowOptions): void {
 }
 
 app.whenReady().then(async () => {
-  //STARTS IN NO_UI
   if (import.meta.env.MAIN_VITE_NO_UI) {
     if (!import.meta.env.MAIN_VITE_NO_UI_PATH) {
       throw 'INVALID PATH FOR [NO_UI] MODE'
     }
+
     SHELF_LOGGER.info('STARTING IN NO_UI MODE')
 
     Client = await ShelfClient.create(
@@ -182,14 +182,13 @@ app.whenReady().then(async () => {
     })
 
     rl.on('SIGINT', () => {
-      // console.log('[SHELF] Closing')
       app.exit()
     })
 
     rl.on('line', async (str) => {
       switch (str) {
         case 'l':
-          // console.log(Client.getWatchedFiles())
+          console.log(Client.getWatchedFiles())
           break
         case 'c': {
           const content = await Content.findAll({

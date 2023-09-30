@@ -7,9 +7,7 @@ import {useConfigStore} from './hooks/useConfig'
 import {useHotkeys} from './hooks/useHotkeys'
 import {useLocalConfigStore} from './hooks/useLocalConfig'
 
-const switch_keys = ['teste', 'teste1', 'teste2', 'teste3', 'nop'] as const
-
-type b = (typeof switch_keys)[number]
+const switchKeys = ['teste', 'teste1', 'teste2', 'teste3', 'nop'] as const
 
 function OptionsModal({
   onClose,
@@ -154,14 +152,14 @@ function OptionsModal({
           </button>
           <button
             onClick={() => {
-              setCurKey(Math.min(curkey + 1, switch_keys.length - 1))
+              setCurKey(Math.min(curkey + 1, switchKeys.length - 1))
             }}
           >
             next
           </button>
           <div>
-            {SwitchComponent<{jadas: string}, typeof switch_keys>(
-              switch_keys[curkey],
+            {SwitchComponent<{jadas: string}, typeof switchKeys>(
+              switchKeys[curkey],
               {
                 teste: (p) => <InlineButton>Button {p.jadas} :)</InlineButton>,
                 teste1: (p) => <div>number02{p.jadas}</div>,

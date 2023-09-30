@@ -148,6 +148,7 @@ const EditableColorItem = ({
   setOperations: Updater<Map<number, ColorOperation>>
 } & HTMLAttributes<HTMLDivElement>) => {
   let body
+
   if (!operation) {
     body = (
       <>
@@ -229,27 +230,33 @@ const EditableColorItem = ({
         )
         break
       }
-      case 'DELETE': {
-        body = (
-          <span
-            className='flex h-full w-full opacity-0 transition-opacity group-hover:opacity-50'
-            onClick={() => {
-              setOperations((ops) => {
-                ops.delete(tagColor.id)
-              })
-            }}
-          >
-            undo
-          </span>
-        )
-      }
+      case 'DELETE':
+        {
+          body = (
+            <span
+              className='flex h-full w-full opacity-0 transition-opacity group-hover:opacity-50'
+              onClick={() => {
+                setOperations((ops) => {
+                  ops.delete(tagColor.id)
+                })
+              }}
+            >
+              undo
+            </span>
+          )
+        }
+        break
     }
   }
+
   return (
     <div
       style={
         {
-          '--bgColor': operation?.color || tagColor.color,
+          '--bgColor':
+            !operation || operation.operation === 'DELETE'
+              ? tagColor.color
+              : operation.color ?? '#ff0000',
         } as React.CSSProperties
       }
       className={clsx(TagColorBody)}

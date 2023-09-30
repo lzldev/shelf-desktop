@@ -1,4 +1,4 @@
-import {TagColor} from '@modelsmodels'
+import {TagColor} from '@models'
 
 function mapFromColors(colors: TagColor[]) {
   const colorsMap = new Map<number, TagColor>()

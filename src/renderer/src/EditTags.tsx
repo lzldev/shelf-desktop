@@ -135,7 +135,6 @@ const EditTagItem = ({
   operation,
   options,
   setOperations,
-  ...props
 }: {
   tag: Tag
   operation?: TagOperation

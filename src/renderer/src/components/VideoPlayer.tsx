@@ -1,3 +1,5 @@
+//@ts-nocheck TODO:Still not finished
+
 import {useHotkeys} from '@renderer/hooks/useHotkeys'
 import clsx from 'clsx'
 import {HTMLAttributes, useState, useRef} from 'react'
