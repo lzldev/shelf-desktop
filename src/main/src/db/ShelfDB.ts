@@ -1,6 +1,5 @@
 console.log('[SHELFDB] DIR ', import.meta.url)
 
-import SQLite from 'sqlite3'
 import { Sequelize } from 'sequelize-typescript'
 import { Content, ContentTag, Path, Tag, TagColor } from './models'
 
@@ -16,11 +15,13 @@ export const __DBFILENAME = `.shelfdb${__DBEXTENSION}`
     defined one (So that class User will become class b for example).
 */
 
-// import { SHELF_LOGGER } from '../utils/Loggers'
-
 const createSQLiteDB = (dbPath: string) => {
   return new Sequelize({
     dialect: 'sqlite',
+    // logQueryParameters: true,
+    // logging: (sql, timing) => {
+    //   SHELF_LOGGER.info(`SQL QUERY -> ${sql}`, sql)
+    // },
     logging: false,
     dialectOptions: {
       // mode: [SQLite.OPEN_CREATE, SQLite.OPEN_READWRITE, SQLite.OPEN_FULLMUTEX],

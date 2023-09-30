@@ -5,7 +5,7 @@ import { flattenDirectoryTree } from '../utils/chokiUtils'
 import { updateProgress as sendUpdateProgressEvent } from '../..'
 import { ShelfClient } from './ShelfClient'
 import { mockTags } from '../utils/mockTags'
-import { Content, Path, Tag, TagColor } from '../db/models'
+import { Content, Path, TagColor } from '../db/models'
 import { toFileTuple } from '../utils/chokiUtils'
 import { normalize } from 'path'
 import { defaultColors } from '../utils/defaultColors'
@@ -13,7 +13,7 @@ import { dialog } from 'electron'
 import { readdir } from 'fs/promises'
 import { canClassify, checkFormat } from '../../../renderer/src/utils/formats'
 import { SHELF_LOGGER } from '../utils/Loggers'
-import { AiWorkerInvoke } from './ai_worker/types'
+import { AiWorkerInvoke, AiWorkerReceive } from './ai_worker/types'
 
 const ConfirmationDialog = (path: string) =>
   dialog.showMessageBoxSync({
@@ -33,7 +33,13 @@ export const addChokiEvents = (
   choki.on('unlink', shelfOnUnlink)
   choki.on('add', shelfOnAdd)
   choki.on('change', shelfOnChange)
-  choki.on('ready', shelfOnReady)
+  choki.on('ready', () => {
+    shelfOnReady().catch((e) => {
+      SHELF_LOGGER.error('ERROR CAUGHT IN THE READY EVENT')
+      SHELF_LOGGER.error(e)
+      process.exit(1)
+    })
+  })
   choki.on('error', shelfOnError)
   // choki.on('addDir', shelfOnAddDir)
 
@@ -228,7 +234,7 @@ export const addChokiEvents = (
         total += totalParts * v
       })
 
-      total = Math.round(total) / 100
+      total = total / 100
 
       if (total !== lastProgress) {
         lastProgress = total
@@ -259,7 +265,8 @@ export const addChokiEvents = (
         (p) => !statSync(p).isDirectory(),
       ),
     )
-    const uiParts = {
+
+    const progressRecord = {
       AI: newFiles.length,
       SHELF: newFiles.length,
     } as {
@@ -267,14 +274,14 @@ export const addChokiEvents = (
       SHELF: number
     }
 
-    const { sendProgress, addToKey } = createProgressUpdater(uiParts)
+    const { sendProgress, addToKey } = createProgressUpdater(progressRecord)
 
     shelfClient.AIWorker.on('message', (message) => {
       if (message.type !== 'tagged_file') {
         return
       }
 
-      addToKey('AI', '[AI] File Tagged...')
+      addToKey('AI', `[AI] File Tagged ${message?.data?.path}`)
     })
 
     //DB Already Initialized
@@ -407,7 +414,7 @@ export const addChokiEvents = (
 
       //This Content is completely new.
       if (foundContent === null && !tempContentID && foundPath === null) {
-        const content = await Content.create(
+        const newContent = await Content.create(
           {
             hash: fileHash,
             extension: parse(filePath).ext,
@@ -415,34 +422,32 @@ export const addChokiEvents = (
               {
                 path: filePath,
                 mTimeMs: mTimeMs,
-              },
-            ] as Path[],
+              } as Path,
+            ],
           },
           {
-            include: [Path, Tag],
-            // transaction: ContentsTransaction,
+            include: [Path],
           },
         ).catch((e) => {
-          throw e
+          SHELF_LOGGER.error(`ERROR ON CONTENT INSERT ${filePath} \n${e}`)
         })
 
-        if (content && canClassify(content.extension)) {
+        if (!newContent) {
+          continue
+        }
+
+        if (newContent && canClassify(newContent.extension)) {
           const sentMessage = {
             type: 'new_file',
             data: {
-              id: content.id,
+              id: newContent.id,
               path: filePath,
             },
           } satisfies AiWorkerInvoke
 
-          SHELF_LOGGER.info(
-            `CONTENT ${sentMessage.data.id} | ${sentMessage.data.path}`,
-          )
-
           shelfClient.AIWorker.postMessage(sentMessage)
         } else {
-          //Content Can't be classified so its ignored by the progress bar.
-          uiParts.AI--
+          progressRecord.AI--
         }
 
         //REMOVEME: MOCK
@@ -451,8 +456,9 @@ export const addChokiEvents = (
         // })
         //----
 
-        INITHASHES.set(fileHash, content.id)
-        INITPATHS.set(filePath, content.paths![0].id)
+        INITHASHES.set(fileHash, newContent.id)
+        INITPATHS.set(filePath, newContent.paths?.at(0)?.id ?? -1)
+
         continue
       }
 
@@ -480,18 +486,10 @@ export const addChokiEvents = (
     SHELF_LOGGER.info('Wainting for AI Tagging...')
     // await ContentsTransaction.commit()
 
-    /*
-     * FIXME:
-     * This Will crash the app since the Worker
-     * can register before the Transaction being commited
-     * removed the transaction from the content part ...
-     *  the work wont crash the app now
-     */
-
     console.timeEnd('DB ->')
     console.time('Waiting...')
 
-    const WaitForAITOWork = async () => {
+    const WaitForAIWork = async () => {
       return new Promise((resolve, reject) => {
         shelfClient.AIWorker.postMessage({
           type: 'emit_batch',
@@ -507,11 +505,11 @@ export const addChokiEvents = (
 
         setTimeout(() => {
           reject()
-        }, 60 * 1000)
+        }, 10 * 60 * 1000)
       })
     }
 
-    await WaitForAITOWork()
+    await WaitForAIWork()
       .then(() => {
         SHELF_LOGGER.info('Batch FINISHED')
       })

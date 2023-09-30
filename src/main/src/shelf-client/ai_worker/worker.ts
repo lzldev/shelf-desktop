@@ -72,7 +72,7 @@ async function main() {
 
   pp!.postMessage({
     type: 'ready',
-    data: undefined,
+    data: null,
   } satisfies AiWorkerReceive)
 
   const asyncQueue = new AsyncBatchQueue(5, undefined, async () => {
@@ -82,14 +82,19 @@ async function main() {
 
   const onFile = (data: ClassifyInput) => {
     asyncQueue.enqueue(async () => {
-      return classifyImage(data).then(() => {
-        pp!.postMessage({ type: 'new_file', data: {} } as AiWorkerInvoke)
+      return classifyImage(data).then((res) => {
+        pp!.postMessage({
+          type: 'tagged_file',
+          data: {
+            path: res.path,
+          },
+        } satisfies AiWorkerReceive)
       })
     })
   }
 
   pp!.on('message', async (value) => {
-    const message = value as AiWorkerInvoke
+    const message = value satisfies AiWorkerInvoke
 
     switch (message.type) {
       case 'new_file': {
@@ -126,18 +131,16 @@ async function main() {
     let tensor
     try {
       tensor = ts.node.decodeImage(image, 3, undefined, false) as Tensor3D
-    } catch (err) {
+    } catch (e) {
       WORKER_LOGGER.error(`Couldn't load ${classifyData.path} into Tensor`)
-      return
+      throw e
     }
 
     const classify = await model.classify(tensor, 1).catch((e) => {
       throw e
     })
 
-    console.time('dispose')
     tensor.dispose()
-    console.timeEnd('dispose')
 
     for (const classification of classify) {
       const normalized = classification.className
@@ -163,13 +166,15 @@ async function main() {
           .execute()
           .catch((e) => {
             WORKER_LOGGER.error(JSON.stringify(e))
+            throw e
           })
 
         id = newTag![0].id
         TagToIDMap.set(normalized, id)
       }
 
-      db.insertInto('ContentTags')
+      await db
+        .insertInto('ContentTags')
         .values({
           tagId: id,
           contentId: classifyData.id as unknown as number,
@@ -185,14 +190,7 @@ async function main() {
 
     WORKER_LOGGER.info(`Finished`)
 
-    pp!.postMessage({
-      type: 'tagged_file',
-      data: {
-        path: classifyData.path,
-      },
-    } as AiWorkerReceive)
-
-    return classify
+    return { classification: classify, path: classifyData.path }
   }
 }
 

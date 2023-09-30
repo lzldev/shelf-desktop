@@ -3,6 +3,7 @@ import { CustomWorker } from '../../utils/workertypes'
 
 type ContentIdWithPath = { id: number; path: string }
 
+// MAIN -> WORKER
 export type AiWorkerInvoke =
   | {
     type: 'new_file'
@@ -13,10 +14,11 @@ export type AiWorkerInvoke =
     data: void
   }
 
+// MAIN <- WORKER
 export type AiWorkerReceive =
   | {
     type: 'ready'
-    data: void
+    data: null
   }
   | {
     type: 'tagged_file'

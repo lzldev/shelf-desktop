@@ -81,11 +81,12 @@ export class AsyncQueue {
 }
 
 export class AsyncBatchQueue {
+  private clean = true
   private queue: AsyncFunc[] = []
   private running = 0
+  private batchtimeout = 500
   private concurrent: number
   private Logger = createWorkerLogger(0, 'BATCH QUEUE', 0)
-  private clean = true
   private batchTimeout?: NodeJS.Timeout
 
   public onClear: Function
@@ -112,6 +113,7 @@ export class AsyncBatchQueue {
 
     if (this.queue.length === 0) {
       this.Logger.info('BATCH QUEUE CLEAR')
+      this.clean = true
       this.onClear()
       return
     }
@@ -125,26 +127,30 @@ export class AsyncBatchQueue {
 
     this.running = Math.min(this.concurrent, this.queue.length)
 
-    this.batchTimeout = setTimeout(async () => {
-      const batch = this.queue.slice(0, this.running).map((v) => v())
+    this.batchTimeout = setTimeout(
+      async () => {
+        const batch = this.queue.slice(0, this.running).map((v) => v())
 
-      this.queue = this.queue.slice(this.running)
-      this.Logger.info(`BATCH RUNNING | ${batch}`)
+        this.queue = this.queue.slice(this.running)
+        this.Logger.info(`BATCH RUNNING | ${batch}`)
 
-      this.running = batch.length
+        this.running = batch.length
 
-      Promise.allSettled(batch).then(async (res) => {
-        this.batchTimeout = undefined
-        this.running = 0
+        Promise.allSettled(batch).then(async (res) => {
+          this.batchTimeout = undefined
+          this.running = 0
 
-        this.Logger.info(`BATCH DONE | ${JSON.stringify(res)}`)
+          this.Logger.info(`BATCH DONE | ${JSON.stringify(res)}`)
 
-        await this.onBatch()
+          await this.onBatch()
 
-        this.internalBatchEnqueue()
-        return res
-      })
-    }, 500)
+          this.internalBatchEnqueue()
+          return res
+        })
+      },
+      //Ignores Batch Timeout if queue is too long.
+      this.queue.length >= this.concurrent ? 0 : this.batchtimeout,
+    )
   }
 
   enqueue(job: AsyncFunc) {
