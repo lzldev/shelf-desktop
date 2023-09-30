@@ -1,5 +1,5 @@
-import {TagCreationFields} from '../main/src/db/models/Tag'
-import {TagColorCreationFields} from '../main/src/db/models/TagColor'
+import {TagCreationFields} from '../main/db/models/Tag'
+import {TagColorCreationFields} from '../main/db/models/TagColor'
 import {Prettify} from './utils'
 
 export type ColorOperation =

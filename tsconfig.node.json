@@ -8,9 +8,6 @@
     "src/preload/*",
     "src/preload/*/*",
     "src/preload/**/*",
-    "src/*",
-    "src/*/*",
-    "src/**/*",
     "src/types/**/*"
   ],
   "compilerOptions": {

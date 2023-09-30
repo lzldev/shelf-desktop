@@ -1,6 +1,6 @@
-import {Content, Tag, TagColor} from '../main/src/db/models'
-import {TagFields} from '../main/src/db/models/Tag'
-import {TagColorFields} from '../main/src/db/models/TagColor'
+import {Content, Tag, TagColor} from '../main/db/models'
+import {TagFields} from '../main/db/models/Tag'
+import {TagColorFields} from '../main/db/models/TagColor'
 import {SomeRequired, TypeLevelRecord} from '../types/utils'
 import {
   ColorOperation,
@@ -10,7 +10,7 @@ import {
 import {
   ShelfClientConfig,
   ShelfConfigType as ShelfConfigType,
-} from '../main/src/ShelfConfig'
+} from '../main/ShelfConfig'
 import {OpenDialogReturnValue} from 'electron/main'
 
 type IpcMainEventShape = {

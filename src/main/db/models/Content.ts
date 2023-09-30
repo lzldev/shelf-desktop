@@ -12,7 +12,7 @@ import {Tag} from './Tag'
 import {Path} from './Path'
 import {ContentTag} from './ContentTag'
 import {InferAttributes, InferCreationAttributes, Optional} from 'sequelize'
-import {NonOptional} from '../../../../types/utils'
+import {NonOptional} from '../../../types/utils'
 
 export type ContentFields = InferAttributes<Content>
 export type ContentCreationFields = NonOptional<

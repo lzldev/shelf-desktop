@@ -15,22 +15,22 @@ import * as readline from 'readline'
 import * as fs from 'fs'
 import * as path from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { ShelfClient } from './src/shelf-client/ShelfClient'
-import { zJson } from './src/zJson'
+import { ShelfClient } from './shelf-client/ShelfClient'
+import { zJson } from './zJson'
 import {
   IpcRendererEvents,
   ShelfWebContentsSend,
 } from '../preload/ipcRendererTypes'
-import { SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA } from './src/ShelfConfig'
+import { SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA } from './ShelfConfig'
 
 //Imports event Handlers.
-import './src/shelf-client'
+import './shelf-client'
 
-import { CLIENT_CONFIG_FILE_NAME } from './src/ShelfConfig'
+import { CLIENT_CONFIG_FILE_NAME } from './ShelfConfig'
 import { OpenDialogReturnValue } from 'electron/main'
-import { __DBFILENAME } from './src/db/ShelfDB'
-import { Content, Path, Tag } from './src/db/models'
-import { SHELF_LOGGER } from './src/utils/Loggers'
+import { __DBFILENAME } from './db/ShelfDB'
+import { Content, Path, Tag } from './db/models'
+import { SHELF_LOGGER } from './utils/Loggers'
 
 app.commandLine.appendSwitch('--trace-warnings')
 

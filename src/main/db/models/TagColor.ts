@@ -2,7 +2,7 @@ import 'reflect-metadata'
 import {InferAttributes, InferCreationAttributes, Optional} from 'sequelize'
 import {Column, DataType, HasMany, Model, Table} from 'sequelize-typescript'
 import {Tag} from './Tag'
-import {NonOptional} from '../../../../types/utils'
+import {NonOptional} from '../../../types/utils'
 
 export type TagColorFields = InferAttributes<TagColor>
 export type TagColorCreationFields = NonOptional<

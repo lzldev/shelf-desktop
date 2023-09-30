@@ -11,8 +11,8 @@ import {
   ShelfClientConfigValues,
 } from '../ShelfConfig'
 
-import {globSupportedFormats} from '../../../renderer/src/utils/formats'
-import {IpcMainEvents} from '../../../preload/ipcMainTypes'
+import {globSupportedFormats} from '../../renderer/src/utils/formats'
+import {IpcMainEvents} from '../../preload/ipcMainTypes'
 
 import CreateAIWorker from './ai_worker/worker?nodeWorker'
 import type {AIWORKERTYPE} from './ai_worker/types'

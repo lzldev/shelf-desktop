@@ -10,7 +10,7 @@ import {
   Table,
 } from 'sequelize-typescript'
 import {Content} from './Content'
-import {NonOptional} from '../../../../types/utils'
+import {NonOptional} from '../../../types/utils'
 
 interface _Path {
   id: number

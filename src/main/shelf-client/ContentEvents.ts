@@ -1,6 +1,6 @@
 import {Op} from 'sequelize'
 import {Tag, Content, Path} from '../db/models'
-import {IpcMainEvents} from '../../../preload/ipcMainTypes'
+import {IpcMainEvents} from '../../preload/ipcMainTypes'
 import {defaultHandler} from './TagEvents'
 import {ipcMain} from 'electron'
 

@@ -9,5 +9,5 @@ examples/*
 !examples/ignored
 examples/ignored/*
 
-.env.*
+.env.development
 !.env.example

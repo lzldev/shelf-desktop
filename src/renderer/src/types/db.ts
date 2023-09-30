@@ -5,7 +5,7 @@ import {
   ContentTag as ContentTagModel,
   TagColor as TagColorModel,
   Path as PathModel,
-} from 'src/main/src/db/models'
+} from '../../../main/db/models'
 
 /* 
     Re-Exporting Types without Functions
