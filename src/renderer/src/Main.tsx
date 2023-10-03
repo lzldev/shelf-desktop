@@ -8,40 +8,40 @@ import {
   useRef,
   useState,
 } from 'react'
-import {useTags} from './hooks/useTags'
-import {Content, Tag} from '@models'
-import {useInfiniteQuery} from '@tanstack/react-query'
-import {ShelfContent} from './components/ShelfContent'
-import {createPortal} from 'react-dom'
-import {ContentDetails} from './ContentDetails'
-import {useToggle} from './hooks/useToggle'
-import {useOrderStore} from './hooks/useOrderStore'
-import {Dropdown} from './components/Dropdown'
-import {useConfigStore} from './hooks/useConfig'
-import {TagColorThing} from './components/TagColorThing'
-import {EditColors} from './EditColors'
-import {pathQuery, SearchBar} from './components/SearchBar'
-import {EditTags} from './EditTags'
-import {useImmer} from 'use-immer'
-import {useHotkeysRef} from './hooks/useHotkeys'
-import {MasonryInfiniteGrid} from '@egjs/react-infinitegrid'
-import {OptionsModal} from './OptionsModal'
-import {ArrowPathIcon, Cog8ToothIcon} from '@heroicons/react/24/solid'
-import {MarkContent} from './utils/Main'
+import { useTags } from './hooks/useTags'
+import { Content, Tag } from '@models'
+import { useInfiniteQuery } from '@tanstack/react-query'
+import { ShelfContent } from './components/ShelfContent'
+import { createPortal } from 'react-dom'
+import { ContentDetails } from './ContentDetails'
+import { useToggle } from './hooks/useToggle'
+import { useOrderStore } from './hooks/useOrderStore'
+import { Dropdown } from './components/Dropdown'
+import { useConfigStore } from './hooks/useConfig'
+import { TagColorThing } from './components/TagColorThing'
+import { EditColors } from './EditColors'
+import { pathQuery, SearchBar } from './components/SearchBar'
+import { EditTags } from './EditTags'
+import { useImmer } from 'use-immer'
+import { useHotkeysRef } from './hooks/useHotkeys'
+import { MasonryInfiniteGrid } from '@egjs/react-infinitegrid'
+import { OptionsModal } from './OptionsModal'
+import { ArrowPathIcon, Cog8ToothIcon } from '@heroicons/react/24/solid'
+import { MarkContent } from './utils/Main'
 
 function Main(): JSX.Element {
-  const {config} = useConfigStore()
-  const {tags} = useTags()
+  const { config } = useConfigStore()
+  const { tags } = useTags()
   const [modalContent, setModalContent] = useState<Content | undefined>()
   const [selectedTags, setSelectedTags] = useImmer<Set<Tag>>(new Set())
   const [pathQueries, setPathQueries] = useImmer<Set<pathQuery>>(new Set())
   const [markedContent, setMarkedContent] = useImmer<Set<number>>(new Set())
-  const {orderDirection, orderField, toggleDirection} = useOrderStore()
+  const { orderDirection, orderField, toggleDirection } = useOrderStore()
   const contentList = useRef<HTMLDivElement & MasonryInfiniteGrid>(null)
   const markerIdx = useRef<[pageNumber: number, contentNumber: number]>()
-  const {keys} = useHotkeysRef({
+  const { keys } = useHotkeysRef({
     Shift: {
-      down: () => {},
+      down: () => { },
       up: () => {
         markerIdx.current = undefined
       },
@@ -59,9 +59,9 @@ function Main(): JSX.Element {
   } = useInfiniteQuery(
     ['content'],
     async (context) => {
-      const {orderDirection, orderField} = useOrderStore.getState()
-      const {pageParam = {offset: 0, limit: config!.pageSize}} = context
-      const pagination = pageParam || {offset: 0, limit: config!.pageSize}
+      const { orderDirection, orderField } = useOrderStore.getState()
+      const { pageParam = { offset: 0, limit: config!.pageSize } } = context
+      const pagination = pageParam || { offset: 0, limit: config!.pageSize }
       const tags =
         selectedTags.size > 0 ? Array.from(selectedTags.values()) : undefined
 
@@ -91,7 +91,7 @@ function Main(): JSX.Element {
 
       if (
         window.scrollY + window.innerHeight >=
-          contentList.current.scrollHeight - threshold &&
+        contentList.current.scrollHeight - threshold &&
         hasNextPage &&
         !isFetching
       ) {
@@ -281,7 +281,7 @@ function Main(): JSX.Element {
               return
             }
 
-            return page.content!.map((content, contentIdx) => (
+            return page.content.map((content, contentIdx) => (
               <ShelfContent
                 data-grid-groupkey={pageIdx}
                 key={content.id}
@@ -354,7 +354,7 @@ function Main(): JSX.Element {
   )
 }
 
-export {Main}
+export { Main }
 export default Main
 
 const ContentGrid = forwardRef(function Body(
@@ -362,12 +362,12 @@ const ContentGrid = forwardRef(function Body(
     error,
     children,
     ...props
-  }: {error: unknown} & PropsWithChildren &
+  }: { error: unknown } & PropsWithChildren &
     HTMLAttributes<HTMLDivElement> &
     HTMLAttributes<MasonryInfiniteGrid>,
   ref: Ref<MasonryInfiniteGrid> & Ref<HTMLDivElement>,
 ) {
-  const {config} = useConfigStore()
+  const { config } = useConfigStore()
 
   if (error) {
     return (

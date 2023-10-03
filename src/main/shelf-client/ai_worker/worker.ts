@@ -8,7 +8,7 @@ import {
   threadId,
   workerData as _workerData,
 } from 'node:worker_threads'
-import { Contents, DB, Paths } from '../../db/kysely-types'
+import { DB } from '../../db/kysely-types'
 import { Kysely, SqliteDialect } from 'kysely'
 import SQLite from 'better-sqlite3'
 import { AsyncBatchQueue } from './AsyncQueue'
@@ -33,7 +33,7 @@ const createShelfKyselyDB = (dbPath: string) => {
       switch (event.level) {
         // case 'query':
         case 'error':
-          WORKER_LOGGER.error(event.error)
+          WORKER_LOGGER.error(`QUERY: ${event.query}\n${event.error}`)
           break
       }
     },
@@ -124,7 +124,9 @@ async function main() {
   type ClassifyInput = Extract<AiWorkerInvoke, { type: 'new_file' }>['data']
 
   async function classifyImage(classifyData: ClassifyInput) {
-    WORKER_LOGGER.info(`STARTING CLASSIFICATION OF ${classifyData.path}`)
+    WORKER_LOGGER.info(
+      `STARTING CLASSIFICATION OF ${classifyData.path} contentID: ${classifyData.id}`,
+    )
 
     const image = await sharp(classifyData.path!).toBuffer()
 
@@ -158,7 +160,6 @@ async function main() {
           .insertInto('Tags')
           .values({
             name: normalized,
-            colorId: 1,
             updatedAt: new Date().toISOString(),
             createdAt: new Date().toISOString(),
           })
@@ -177,7 +178,7 @@ async function main() {
         .insertInto('ContentTags')
         .values({
           tagId: id,
-          contentId: classifyData.id as unknown as number,
+          contentId: classifyData.id,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         })

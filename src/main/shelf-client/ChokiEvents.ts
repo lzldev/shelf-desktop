@@ -1,16 +1,18 @@
-import {parse} from 'path'
-import {createHash} from 'crypto'
-import {FileTuple, filterDirectoryTree} from '../utils/chokiUtils'
-import {updateProgress as sendUpdateProgressEvent} from '..'
-import {ShelfClient} from './ShelfClient'
-import {Content, Path} from '../db/models'
-import {normalize} from 'path'
-import {dialog} from 'electron'
-import {SHELF_LOGGER} from '../utils/Loggers'
-import {AiWorkerInvoke} from './ai_worker/types'
+import { parse } from 'path'
+import { createHash } from 'crypto'
+import { FileTuple, filterDirectoryTree } from '../utils/chokiUtils'
+import { updateProgress as sendUpdateProgressEvent } from '..'
+import { ShelfClient } from './ShelfClient'
+import { Content, Path, TagColor } from '../db/models'
+import { normalize } from 'path'
+import { dialog } from 'electron'
+import { SHELF_LOGGER } from '../utils/Loggers'
+import { AiWorkerInvoke } from './ai_worker/types'
 
-import {canClassify} from '../../renderer/src/utils/formats'
-import {createReadStream, statSync} from 'fs'
+import { canClassify } from '../../renderer/src/utils/formats'
+import { Effect } from 'effect'
+import { createReadStream, statSync } from 'fs'
+import { defaultColors } from '../utils/defaultColors'
 
 const ConfirmationDialog = (path: string) =>
   dialog.showMessageBoxSync({
@@ -24,12 +26,16 @@ export const addChokiEvents = (
   shelfClient: ShelfClient,
   onReadyCallback: (...args: any[]) => void,
 ) => {
-  const {sequelize} = shelfClient.ShelfDB
+  const { sequelize } = shelfClient.ShelfDB
   const choki = shelfClient.choki
 
   choki.on('error', shelfOnError)
 
-  choki.on('ready', shelfOnReady)
+  choki.on('ready', () =>
+    shelfOnReady().catch((e) => {
+      console.error(e)
+    }),
+  )
   choki.on('add', shelfOnAdd)
   choki.on('unlink', shelfOnUnlink)
   choki.on('change', shelfOnChange)
@@ -95,7 +101,7 @@ export const addChokiEvents = (
         throw e
       })
 
-      const {mtimeMs} = statSync(filePath)
+      const { mtimeMs } = statSync(filePath)
 
       const [content] = await Content.findOrCreate({
         where: {
@@ -127,6 +133,7 @@ export const addChokiEvents = (
       }
 
       if (canClassify(content.extension)) {
+        console.log('THIS IS RUNNIGN ?!?!AS FDASPOF MAOPFSM OA{S FM}')
         shelfClient.AIWorker.postMessage({
           type: 'new_file',
           data: {
@@ -169,20 +176,17 @@ export const addChokiEvents = (
   }
 
   async function shelfOnReady() {
-    shelfClient.config.save()
+    shelfClient.config.save() // FIXME:why im doing this here ?
 
-    // const ContentsTransaction = await sequelize.transaction()
-    const ContentHashToIDMap = new Map<string, number>()
-    const PathToContentIDMap = new Map<string, number>()
-
-    const newFiles = filterDirectoryTree(choki.getWatched())
+    const isDBNew = shelfClient.config.isNew
+    const watchedFiles = filterDirectoryTree(choki.getWatched())
 
     const progressRecord = {
-      AI: newFiles.length,
-      SHELF: newFiles.length,
+      AI: watchedFiles.length,
+      SHELF: watchedFiles.length,
     }
 
-    const {sendProgress, addToKey} = createProgressUpdater(progressRecord)
+    const { addToKey } = createProgressUpdater(progressRecord)
 
     shelfClient.AIWorker.on('message', (message) => {
       if (message.type !== 'tagged_file') {
@@ -191,103 +195,77 @@ export const addChokiEvents = (
       addToKey('AI', `[AI] File Tagged ${message?.data?.path}`)
     })
 
-    if (!shelfClient.config.isNew) {
-      console.time('DB CLEANUP ->')
-      await CleanupShelfDB(newFiles)
-      console.timeEnd('DB CLEANUP ->')
-    }
-
     console.time('DB ->')
 
-    for (let i = 0; i < newFiles.length; i++) {
-      const [filePath, mTimeMs] = newFiles[i]
-      const fileHash = await hashFileAsync(filePath)
-      const tempContentID = ContentHashToIDMap.get(fileHash)
-
-      sendProgress('SHELF', i + 1, filePath)
-
-      const foundPath = await Path.findOne({
-        where: {
-          path: filePath,
-        },
-        // transaction: ContentsTransaction,
-      })
-
-      const foundContent = await Content.findOne({
-        where: {
-          hash: fileHash,
-        },
-        attributes: ['id'],
-        // transaction: ContentsTransaction,
-      })
-
-      //This Content is completely new.
-      if (foundContent === null && !tempContentID && foundPath === null) {
-        const newContent = await Content.create(
-          {
-            hash: fileHash,
-            extension: parse(filePath).ext,
-            paths: [
-              {
-                path: filePath,
-                mTimeMs: mTimeMs,
-              } as Path,
-            ],
-          },
-          {
-            include: [Path],
-          },
-        ).catch((e) => {
-          SHELF_LOGGER.error(`ERROR ON CONTENT INSERT ${filePath} \n${e}`)
-        })
-
-        if (!newContent) {
-          continue
-        }
-
-        if (newContent && canClassify(newContent.extension)) {
-          const sentMessage = {
-            type: 'new_file',
-            data: {
-              id: newContent.id,
-              path: filePath,
-            },
-          } satisfies AiWorkerInvoke
-
-          shelfClient.AIWorker.postMessage(sentMessage)
-        } else {
-          progressRecord.AI--
-        }
-
-        ContentHashToIDMap.set(fileHash, newContent.id)
-        PathToContentIDMap.set(filePath, newContent.paths?.at(0)?.id ?? -1)
-
-        continue
-      }
-
-      //FIXME: I think this should be !tempContentID
-      if (tempContentID && foundContent !== null) {
-        ContentHashToIDMap.set(fileHash, foundContent.id)
-      }
-
-      //Content is found but path isn't
-      if (foundPath === null && !PathToContentIDMap.get(filePath)) {
-        await Path.create(
-          {
-            path: filePath,
-            mTimeMs: mTimeMs,
-            contentId: foundContent?.id || tempContentID,
-          },
-          {
-            // transaction: ContentsTransaction,
-          },
-        )
-        continue
-      }
+    if (!isDBNew) {
+      console.time('DB CLEANUP ->')
+      await CleanupShelfDB(watchedFiles)
+      console.timeEnd('DB CLEANUP ->')
+    } else {
+      await TagColor.bulkCreate(defaultColors)
     }
 
+    const hashToPathRecord: Record<string, number[]> = {}
+
+    await Effect.runPromise(
+      Effect.all(
+        watchedFiles.map((v, watchedFileIndex) =>
+          Effect.promise(async () => {
+            const hash = await hashFileAsync(v[0]).catch((e) => {
+              console.error(e)
+              throw e
+            })
+
+            addToKey('SHELF', v[0])
+
+            if (!hashToPathRecord[hash]) {
+              hashToPathRecord[hash] = []
+            }
+            hashToPathRecord[hash].push(watchedFileIndex)
+            return
+          }),
+        ),
+        {
+          concurrency: 'unbounded',
+        },
+      ),
+    )
+
+    await Content.bulkCreate(
+      Object.entries(hashToPathRecord).map(([hash, paths]) => ({
+        hash: hash,
+        extension: watchedFiles[paths[0]][2],
+        paths: paths.map(
+          (fileIdx) =>
+          ({
+            path: watchedFiles[fileIdx][0],
+            mTimeMs: watchedFiles[fileIdx][1],
+          } as Path),
+        ),
+      })),
+      {
+        include: [{ model: Path, as: 'paths' }],
+      },
+    )
+      ; (
+        await Content.findAll({
+          where: {
+            hash: Object.keys(hashToPathRecord),
+          },
+        })
+      )
+        .filter((content) => canClassify(content.extension))
+        .forEach((content) => {
+          shelfClient.AIWorker.postMessage({
+            type: 'new_file',
+            data: {
+              id: content.id,
+              path: watchedFiles[hashToPathRecord[content.hash][0]][0],
+            },
+          })
+        })
+
     SHELF_LOGGER.info('Wainting for AI Tagging...')
-    // await ContentsTransaction.commit()
 
     console.timeEnd('DB ->')
     console.time('Waiting for AIWORKER...')
@@ -408,7 +386,7 @@ function createProgressUpdater<TParts extends Record<string, number>>(
     }
   }
 
-  return {sendProgress, addToKey}
+  return { sendProgress, addToKey }
 }
 
 async function CleanupShelfDB(watchedFiles: FileTuple[]) {
@@ -448,8 +426,7 @@ async function CleanupShelfDB(watchedFiles: FileTuple[]) {
       )
 
       SHELF_LOGGER.info(
-        `${
-          updatedContent[0] !== 0 ? 'SUCESS' : 'FAIL'
+        `${updatedContent[0] !== 0 ? 'SUCESS' : 'FAIL'
         } ON UPDATING CONTENT ON CLEANUP | Path: ${pathValues.path}`,
       )
 
@@ -458,4 +435,27 @@ async function CleanupShelfDB(watchedFiles: FileTuple[]) {
       })
     }
   }
+
+  const orphanedContents = await Content.findAll({
+    attributes: ['id'],
+    include: [
+      {
+        model: Path,
+        required: false,
+      },
+    ],
+    where: {
+      '$Paths.contentId$': null,
+    },
+    subQuery: false,
+  })
+
+  const cleaned = await Content.destroy({
+    where: {
+      id: orphanedContents.map((v) => v.id),
+    },
+  })
+
+  console.log('[Content] Found : ', orphanedContents.length)
+  console.log('[Content] Cleaned : ', cleaned)
 }
