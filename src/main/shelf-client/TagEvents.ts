@@ -14,7 +14,6 @@ export function defaultHandler(func: (...any: any[]) => any) {
     const client = requestClient()
 
     if (!client || !client.ready) {
-      //TODO: Handle this.
       throw 'Client not Ready'
     }
     return await JSON.parse(JSON.stringify(await func(...args)))
@@ -77,7 +76,6 @@ async function editTags(operations: IpcMainEvents['editTags']['args'][0]) {
     for (const op of operations) {
       switch (op.operation) {
         case 'CREATE': {
-          //TODO: Check if operation is being Spread here
           await Tag.build({...op})
             .save({
               transaction: editTagsTransaction,

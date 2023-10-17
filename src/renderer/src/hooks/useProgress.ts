@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react'
-//@ts-ignore
+
 import {IpcRendererEvents} from 'src/preload/ipcRendererTypes'
 
 type ProgressValueType = IpcRendererEvents['updateProgress']['args']

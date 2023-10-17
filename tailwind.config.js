@@ -1,7 +1,6 @@
-/** @type {import('tailwindcss').Config} */
-
 const colors = require('tailwindcss/colors')
 
+/** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     './src/renderer/index.html',
@@ -17,11 +16,11 @@ module.exports = {
       colors: {
         background: colors.gray['50'],
         accent: colors.pink['500'],
-        'red-tag': '#ef4444',
-        'green-tag': '#22c55e',
-        'blue-tag': '#06b6d4',
         surface: colors.gray['200'],
         surface2: colors.gray['500'],
+        'red-brand': '#ef4444',
+        'green-brand': '#22c55e',
+        'blue-brand': '#06b6d4',
       },
       animation: {
         rubberBand: 'rubberBand 1s infinite',

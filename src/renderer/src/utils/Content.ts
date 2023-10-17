@@ -29,13 +29,6 @@ export const encodeContentPathIntoURI = (content: Content) => {
   return encodePathIntoURI(path)
 }
 
-// export const encodePath = (path: string) =>
-//   path
-//     ?.replaceAll('\\', '/')
-//     .split('/')
-//     .map((v) => encodeURIComponent(v))
-//     .join('/')
-
 export const encodePathIntoURI = (path: string) => {
   const parsed_path = path
     ?.replaceAll('\\', '/')

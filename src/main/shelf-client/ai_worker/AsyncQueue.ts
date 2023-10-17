@@ -1,4 +1,4 @@
-import { createWorkerLogger } from '../../utils/Loggers'
+import {createWorkerLogger} from '../../utils/Loggers'
 
 type AsyncFunc = (...any: any[]) => Promise<any>
 
@@ -103,7 +103,7 @@ export class AsyncBatchQueue {
   constructor(concurrent: number, onClear?: Function, onBatch?: Function) {
     this.concurrent = concurrent
     this.onClear = onClear ?? this.defaultClear
-    this.onBatch = onBatch ?? (async () => { })
+    this.onBatch = onBatch ?? (async () => {})
   }
 
   private async internalBatchEnqueue() {
@@ -148,7 +148,6 @@ export class AsyncBatchQueue {
           return res
         })
       },
-      //Ignores Batch Timeout if queue is too long.
       this.queue.length >= this.concurrent ? 0 : this.batchtimeout,
     )
   }

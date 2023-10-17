@@ -5,6 +5,7 @@ export function createWorkerLogger(
   workerName = 'AI WORKER',
   backgroundOffset = 4,
 ) {
+  // hello
   return winston.createLogger({
     // silent: true,
     format: winston.format.combine(

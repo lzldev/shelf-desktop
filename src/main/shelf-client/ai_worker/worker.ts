@@ -1,6 +1,6 @@
 import * as os from 'os'
-import { AIWorkerDataParser, AiWorkerInvoke, AiWorkerReceive } from './types'
-import ts, { Tensor3D } from '@tensorflow/tfjs-node'
+import {AIWorkerDataParser, AiWorkerInvoke, AiWorkerReceive} from './types'
+import ts, {Tensor3D} from '@tensorflow/tfjs-node'
 import mnet from '@tensorflow-models/mobilenet'
 import {
   isMainThread,
@@ -8,11 +8,11 @@ import {
   threadId,
   workerData as _workerData,
 } from 'node:worker_threads'
-import { DB } from '../../db/kysely-types'
-import { Kysely, SqliteDialect } from 'kysely'
+import {DB} from '../../db/kysely-types'
+import {Kysely, SqliteDialect} from 'kysely'
 import SQLite from 'better-sqlite3'
-import { AsyncBatchQueue } from './AsyncQueue'
-import { createWorkerLogger } from '../../utils/Loggers'
+import {AsyncBatchQueue} from './AsyncQueue'
+import {createWorkerLogger} from '../../utils/Loggers'
 import sharp from 'sharp'
 
 const workerData = AIWorkerDataParser.parse(_workerData)
@@ -31,7 +31,6 @@ const createShelfKyselyDB = (dbPath: string) => {
   return new Kysely<DB>({
     log(event) {
       switch (event.level) {
-        // case 'query':
         case 'error':
           WORKER_LOGGER.error(`QUERY: ${event.query}\n${event.error}`)
           break
@@ -50,7 +49,7 @@ async function main() {
   ts.enableProdMode()
   await ts.ready()
 
-  const model = await mnet.load({ version: 2, alpha: 1.0 }).catch(() => {
+  const model = await mnet.load({version: 2, alpha: 1.0}).catch(() => {
     throw new Error("Couldn't load MOBILENET model")
   })
 
@@ -121,7 +120,7 @@ async function main() {
     }
   })
 
-  type ClassifyInput = Extract<AiWorkerInvoke, { type: 'new_file' }>['data']
+  type ClassifyInput = Extract<AiWorkerInvoke, {type: 'new_file'}>['data']
 
   async function classifyImage(classifyData: ClassifyInput) {
     WORKER_LOGGER.info(
@@ -191,7 +190,7 @@ async function main() {
 
     WORKER_LOGGER.info(`Finished`)
 
-    return { classification: classify, path: classifyData.path }
+    return {classification: classify, path: classifyData.path}
   }
 }
 

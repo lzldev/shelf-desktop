@@ -3,6 +3,11 @@ import {join} from 'path'
 import {z} from 'zod'
 import {zJsonSchemaInfer, zJsonValues} from './zJson'
 
+export const SHELF_THUMB_CACHE_PATH = join(
+  app.getPath('userData'),
+  '/thumbnail/',
+)
+
 export const SHELF_CONFIG_PATH = join(app.getPath('userData'), 'config.json')
 export const SHELF_CONFIG_SCHEMA = {
   recentFiles: z.array(z.string()),

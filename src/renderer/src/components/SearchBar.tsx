@@ -59,11 +59,9 @@ export const SearchBar = ({
             'ringThingClip relative z-20 flex w-full place-content-stretch rounded-full bg-white pl-2'
           }
         >
-          {/* -- Gradient Border -- */}
-          <div className='absolute inset-0 h-full w-full rounded-full ring-2 ring-blue-tag' />
-          <div className='ringThingFirstLayer absolute inset-0 h-full w-full rounded-full ring-2 ring-green-tag' />
-          <div className='ringThingSecondLayer absolute inset-0 h-full w-full rounded-full ring-2 ring-red-tag' />
-          {/* -- Gradient Border -- */}
+          <div className='absolute inset-0 h-full w-full rounded-full ring-2 ring-blue-brand' />
+          <div className='ringThingFirstLayer absolute inset-0 h-full w-full rounded-full ring-2 ring-green-brand' />
+          <div className='ringThingSecondLayer absolute inset-0 h-full w-full rounded-full ring-2 ring-red-brand' />
           <input
             className={
               'z-20 w-full bg-transparent p-2 text-pink-500 outline-none selection:bg-pink-200 hover:border-none active:border-none'
@@ -87,7 +85,7 @@ export const SearchBar = ({
           />
           <button
             className={
-              'z-20 bg-red-tag bg-clip-text px-11 font-bold text-gray-700 text-transparent ring-gray-300 transition-all hover:bg-clip-border hover:text-white hover:ring-0'
+              'bg-red-tag z-20 bg-clip-text px-11 font-bold text-gray-700 text-transparent ring-gray-300 transition-all hover:bg-clip-border hover:text-white hover:ring-0'
             }
             onClick={onQuery}
           >

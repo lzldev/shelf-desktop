@@ -57,7 +57,6 @@ function ContentDetails({
       return result
     },
     {
-      //TODO: This is fixing the weird bug when opening the modal , look for a more elegant fix
       initialData: contentProp,
       cacheTime: 0,
       staleTime: 0,

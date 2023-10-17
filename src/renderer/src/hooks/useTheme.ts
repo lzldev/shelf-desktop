@@ -6,7 +6,6 @@ const useTheme = () => {
   //TODO: Implement
   const setTheme = (theme: unknown) => {
     _setTheme(theme)
-    //config.set ....
   }
 
   useEffect(() => {

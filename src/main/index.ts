@@ -23,7 +23,6 @@ import {
 } from '../preload/ipcRendererTypes'
 import {SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA} from './ShelfConfig'
 
-//Imports event Handlers.
 import './shelf-client'
 
 import {CLIENT_CONFIG_FILE_NAME} from './ShelfConfig'
@@ -34,10 +33,11 @@ import {SHELF_LOGGER} from './utils/Loggers'
 
 app.commandLine.appendSwitch('--trace-warnings')
 
-//TODO: Change name and location
-export function requestClient(): ShelfClient | false {
+export function requestClient(): ShelfClient | null {
   if (!Client || !Client.ready) {
-    //TODO:SEND LOGS
+    SHELF_LOGGER.info('Client not ready.')
+
+    return null
   }
   return Client
 }
@@ -50,7 +50,6 @@ export const ShelfConfig = new zJson(SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA, {
   layoutMode: 'grid',
 })
 
-//TODO: Move files
 const WindowOptions: Record<
   string,
   {
@@ -96,13 +95,13 @@ function createWindow(route: keyof typeof WindowOptions): void {
   if (Windows.has(route)) return
 
   const windowOptions = WindowOptions[route]!
-
   const primaryDisplay = screen.getPrimaryDisplay().bounds
   const positionX = Math.max(
     primaryDisplay.width / 2 +
       (primaryDisplay.x - windowOptions.startOptions.width! / 2),
     0,
   )
+
   const positionY = Math.max(
     primaryDisplay.height / 2 +
       primaryDisplay.y -

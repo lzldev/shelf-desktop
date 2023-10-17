@@ -1,15 +1,16 @@
-import {type HTMLAttributes, useRef, useMemo} from 'react'
+import { type HTMLAttributes, useRef, useMemo } from 'react'
+
 import clsx from 'clsx'
-import {InlineButton} from './components/InlineButton'
-import {Updater, useImmer} from 'use-immer'
-import {CREATETagOP, TagOperation, UpdateTagOP} from 'src/types/Operations'
-import {Tag} from '@models'
-import {useColors} from './hooks/useColors'
-import {useTagQuery} from './hooks/useTagQuery'
-import {useHotkeys} from './hooks/useHotkeys'
-import {SidePanelModal} from './components/SidebarPanelModal'
-import {TagCreation} from '@models'
-import {PencilSquareIcon, PlusIcon} from '@heroicons/react/24/solid'
+import { InlineButton } from './components/InlineButton'
+import { Updater, useImmer } from 'use-immer'
+import { CREATETagOP, TagOperation, UpdateTagOP } from 'src/types/Operations'
+import { Tag } from '@models'
+import { useColors } from './hooks/useColors'
+import { useTagQuery } from './hooks/useTagQuery'
+import { useHotkeys } from './hooks/useHotkeys'
+import { SidePanelModal } from './components/SidebarPanelModal'
+import { TagCreation } from '@models'
+import { PencilSquareIcon, PlusIcon } from '@heroicons/react/24/solid'
 
 const TagColorBody = clsx(
   'relative text-white z-10 m-1 flex group flex-row items-center justify-between rounded-full bg-[--bgColor] py-3 px-6 outline ring-2 ring-inset ring-white ring-opacity-50',
@@ -21,8 +22,8 @@ function EditTags({
   onClose: (...any: any[]) => any
 } & HTMLAttributes<HTMLDivElement>): JSX.Element {
   const modalRef = useRef<HTMLDivElement>(null)
-  const {query, setQuery, foundTags: tags} = useTagQuery()
-  const {colors} = useColors()
+  const { query, setQuery, foundTags: tags } = useTagQuery()
+  const { colors } = useColors()
   const [operations, setOperations] = useImmer<Map<number, TagOperation>>(
     new Map(),
   )
@@ -128,7 +129,7 @@ function EditTags({
   )
 }
 
-export {EditTags}
+export { EditTags }
 
 const EditTagItem = ({
   tag,
@@ -141,7 +142,7 @@ const EditTagItem = ({
   options: JSX.Element[]
   setOperations: Updater<Map<number, TagOperation>>
 } & HTMLAttributes<HTMLDivElement>) => {
-  const {colors} = useColors()
+  const { colors } = useColors()
 
   const body = useMemo(
     () =>
@@ -158,7 +159,6 @@ const EditTagItem = ({
   )
 
   const bgColor =
-    //@ts-expect-error ayo
     colors.get(operation?.colorId || tag.colorId)?.color || '#ffffff'
 
   return (
@@ -188,11 +188,11 @@ function NewTagItem({
     name: string
   }
   setNewTagOperations: Updater<
-    {operation: 'CREATE'; colorId: number; name: string}[]
+    { operation: 'CREATE'; colorId: number; name: string }[]
   >
   ColorOptions: JSX.Element[]
 }): JSX.Element {
-  const {colors} = useColors()
+  const { colors } = useColors()
   const bgColor = colors.get(newTag.colorId)?.color || '#f0f0f0'
   return (
     <div
@@ -286,7 +286,7 @@ function UpdateOperation(
             onChange={(evt) => {
               evt.target.dataset.value = evt.target.value
               setOperations((ops) => {
-                ;(ops.get(tag.id) as UpdateTagOP).name = evt.target.value
+                ; (ops.get(tag.id) as UpdateTagOP).name = evt.target.value
               })
             }}
           />
@@ -312,7 +312,7 @@ function UpdateOperation(
             onChange={(evt) => {
               evt.target.dataset.value = evt.target.value
               setOperations((ops) => {
-                ;(ops.get(tag.id) as UpdateTagOP).colorId = parseInt(
+                ; (ops.get(tag.id) as UpdateTagOP).colorId = parseInt(
                   evt.target.value || '-1',
                 )
               })

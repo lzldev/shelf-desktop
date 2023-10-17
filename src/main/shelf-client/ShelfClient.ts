@@ -32,7 +32,6 @@ class ShelfClient {
     options: IpcMainEvents['startShelfClient']['args'][0],
     callback: () => void,
   ) {
-    console.log('[CLIENT] OPTIONS ->', options)
     const ShelfDB = await createShelfDB(options.basePath)
 
     const config = new zJson(
@@ -59,7 +58,6 @@ class ShelfClient {
       },
     )
 
-    //TODO: Add option to turn this off
     const aiWorker = CreateAIWorker({
       workerData: {dbPath: options.basePath},
     }) as AIWORKERTYPE

@@ -1,10 +1,5 @@
-//@ts-ignore Outside this tsconfig Scope
 import * as DB from '../../../main/db/models'
 import {InferAttributes, InferCreationAttributes} from 'sequelize'
-
-/*
-    Re-Exporting Types without Functions
-*/
 
 export type Content = InferAttributes<DB.Content>
 export type ContentCreation = InferCreationAttributes<DB.Content>

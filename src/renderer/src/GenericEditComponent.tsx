@@ -10,7 +10,6 @@ const TagColorBody = clsx(
   'relative text-white z-10 m-1 flex group flex-row items-center justify-between rounded-full bg-[--bgColor] py-3 px-6 outline ring-2 ring-inset ring-white ring-opacity-50',
 )
 
-//Input for the component
 type GenericProps<
   TPositions extends string[],
   TActive extends keyof TPositions,
@@ -29,12 +28,6 @@ type Props = {
   options: JSX.Element[]
   setOperations: Updater<Map<number, TagOperation>>
 } & HTMLAttributes<HTMLDivElement>
-
-/* TODO:Current Type Inference is kinda scuffed . you have to know th e inner workings of the component for th types to work correcly
-    the types work correctly but typing without knowing how the component works is kinda hard.
-
-    make another one of those with the switch state inside the component would be more type-safe.
-*/
 
 export const SwitchComponent = <
   TGenericProps,

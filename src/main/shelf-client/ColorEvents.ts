@@ -18,14 +18,13 @@ async function getColors() {
 }
 
 async function editColors(operations: IpcMainEvents['editColors']['args'][0]) {
-  const client = (await requestClient()) as ShelfClient
+  const client = requestClient() as ShelfClient
   const editColorsTransaction = await client.ShelfDB.sequelize.transaction()
 
   try {
     for (const op of operations) {
       switch (op.operation) {
         case 'CREATE': {
-          //TODO: Check if operation is being Spread here
           await TagColor.build({...op})
             .save({
               transaction: editColorsTransaction,

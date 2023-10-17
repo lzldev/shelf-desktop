@@ -12,7 +12,7 @@ export type ThumbWorkerReceive = {
 }
 
 export const ThumbWorkerDataParser = z.object({
-  previewsPath: z.string({
+  thumbnailPath: z.string({
     description: 'Path to previews folder',
   }),
 })

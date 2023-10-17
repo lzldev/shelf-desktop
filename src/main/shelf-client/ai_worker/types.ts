@@ -1,33 +1,30 @@
-import { z } from 'zod'
-import { CustomWorker } from '../../utils/workertypes'
+import {z} from 'zod'
+import {CustomWorker} from '../../utils/workertypes'
+type ContentIdWithPath = {id: number; path: string}
 
-type ContentIdWithPath = { id: number; path: string }
-
-// MAIN -> WORKER
 export type AiWorkerInvoke =
   | {
-    type: 'new_file'
-    data: ContentIdWithPath
-  }
+      type: 'new_file'
+      data: ContentIdWithPath
+    }
   | {
-    type: 'emit_batch'
-    data: void
-  }
+      type: 'emit_batch'
+      data: void
+    }
 
-// MAIN <- WORKER
 export type AiWorkerReceive =
   | {
-    type: 'ready'
-    data: null
-  }
+      type: 'ready'
+      data: null
+    }
   | {
-    type: 'tagged_file'
-    data: { path: string }
-  }
+      type: 'tagged_file'
+      data: {path: string}
+    }
   | {
-    type: 'batch_done'
-    data: boolean
-  }
+      type: 'batch_done'
+      data: boolean
+    }
 
 export const AIWorkerDataParser = z.object({
   dbPath: z.string({
@@ -36,5 +33,4 @@ export const AIWorkerDataParser = z.object({
 })
 
 export type AIWorkerData = z.infer<typeof AIWorkerDataParser>
-
 export type AIWORKERTYPE = CustomWorker<AiWorkerInvoke, AiWorkerReceive>
