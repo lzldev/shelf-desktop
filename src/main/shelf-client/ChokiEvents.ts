@@ -1,31 +1,23 @@
-import {parse} from 'path'
-import {createHash} from 'crypto'
-import {FileTuple, filterDirectoryTree} from '../utils/chokiUtils'
-import {updateProgress as sendUpdateProgressEvent} from '..'
-import {ShelfClient} from './ShelfClient'
-import {Content, Path, TagColor} from '../db/models'
-import {normalize} from 'path'
-import {dialog} from 'electron'
-import {SHELF_LOGGER} from '../utils/Loggers'
+import { parse } from 'path'
+import { createHash } from 'crypto'
+import { FileTuple, filterDirectoryTree } from '../utils/chokiUtils'
+import { updateProgress as sendUpdateProgressEvent } from '..'
+import { ShelfClient } from './ShelfClient'
+import { Content, Path, TagColor } from '../db/models'
+import { normalize } from 'path'
+import { dialog } from 'electron'
+import { SHELF_LOGGER } from '../utils/Loggers'
 
-import {canClassify} from '../../renderer/src/utils/formats'
-import {Effect} from 'effect'
-import {createReadStream, statSync} from 'fs'
-import {defaultColors} from '../utils/defaultColors'
+import { canClassify } from '../../renderer/src/utils/formats'
+import { createReadStream, statSync } from 'fs'
+import { defaultColors } from '../utils/defaultColors'
 
-const ConfirmationDialog = (path: string) =>
-  dialog.showMessageBoxSync({
-    message: `${path}\nthis folder is too big it may break the program`,
-    buttons: ['Ignore Dir', 'Scan dir'],
-    noLink: false,
-    title: 'Warning',
-  })
+import { Effect } from 'effect'
 
 export const addChokiEvents = (
   shelfClient: ShelfClient,
   onReadyCallback: (...args: any[]) => void,
 ) => {
-  const {sequelize} = shelfClient.ShelfDB
   const choki = shelfClient.choki
 
   choki.on('error', shelfOnError)
@@ -100,7 +92,7 @@ export const addChokiEvents = (
         throw e
       })
 
-      const {mtimeMs} = statSync(filePath)
+      const { mtimeMs } = statSync(filePath)
 
       const [content] = await Content.findOrCreate({
         where: {
@@ -133,7 +125,7 @@ export const addChokiEvents = (
 
       if (canClassify(content.extension)) {
         console.log('THIS IS RUNNIGN ?!?!AS FDASPOF MAOPFSM OA{S FM}')
-        shelfClient.AIWorker.postMessage({
+        shelfClient.AiWorker.postMessage({
           type: 'new_file',
           data: {
             id: content.id,
@@ -184,9 +176,9 @@ export const addChokiEvents = (
       SHELF: watchedFiles.length,
     }
 
-    const {addToKey} = createProgressUpdater(progressRecord)
+    const { addToKey } = createProgressUpdater(progressRecord)
 
-    shelfClient.AIWorker.on('message', (message) => {
+    shelfClient.AiWorker.on('message', (message) => {
       if (message.type !== 'tagged_file') {
         return
       }
@@ -235,33 +227,33 @@ export const addChokiEvents = (
         extension: watchedFiles[paths[0]][2],
         paths: paths.map(
           (fileIdx) =>
-            ({
-              path: watchedFiles[fileIdx][0],
-              mTimeMs: watchedFiles[fileIdx][1],
-            } as Path),
+          ({
+            path: watchedFiles[fileIdx][0],
+            mTimeMs: watchedFiles[fileIdx][1],
+          } as Path),
         ),
       })),
       {
-        include: [{model: Path, as: 'paths'}],
+        include: [{ model: Path, as: 'paths' }],
       },
     )
-    ;(
-      await Content.findAll({
-        where: {
-          hash: Object.keys(hashToPathRecord),
-        },
-      })
-    )
-      .filter((content) => canClassify(content.extension))
-      .forEach((content) => {
-        shelfClient.AIWorker.postMessage({
-          type: 'new_file',
-          data: {
-            id: content.id,
-            path: watchedFiles[hashToPathRecord[content.hash][0]][0],
+      ; (
+        await Content.findAll({
+          where: {
+            hash: Object.keys(hashToPathRecord),
           },
         })
-      })
+      )
+        .filter((content) => canClassify(content.extension))
+        .forEach((content) => {
+          shelfClient.AiWorker.postMessage({
+            type: 'new_file',
+            data: {
+              id: content.id,
+              path: watchedFiles[hashToPathRecord[content.hash][0]][0],
+            },
+          })
+        })
 
     SHELF_LOGGER.info('Wainting for AI Tagging...')
 
@@ -270,12 +262,12 @@ export const addChokiEvents = (
 
     const WaitForAIWork = async () => {
       return new Promise((resolve, reject) => {
-        shelfClient.AIWorker.postMessage({
+        shelfClient.AiWorker.postMessage({
           type: 'emit_batch',
           data: undefined,
         })
 
-        shelfClient.AIWorker.on('message', (data) => {
+        shelfClient.AiWorker.on('message', (data) => {
           if (data.type !== 'batch_done') {
             return
           }
@@ -384,7 +376,7 @@ function createProgressUpdater<TParts extends Record<string, number>>(
     }
   }
 
-  return {sendProgress, addToKey}
+  return { sendProgress, addToKey }
 }
 
 async function CleanupShelfDB(watchedFiles: FileTuple[]) {
@@ -424,8 +416,7 @@ async function CleanupShelfDB(watchedFiles: FileTuple[]) {
       )
 
       SHELF_LOGGER.info(
-        `${
-          updatedContent[0] !== 0 ? 'SUCESS' : 'FAIL'
+        `${updatedContent[0] !== 0 ? 'SUCESS' : 'FAIL'
         } ON UPDATING CONTENT ON CLEANUP | Path: ${pathValues.path}`,
       )
 

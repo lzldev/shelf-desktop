@@ -1,4 +1,5 @@
 /// <reference types="electron-vite/node" />
+/// <reference types="electron/types" />
 
 interface ImportMetaEnv {
   readonly MAIN_VITE_SOME_KEY: string

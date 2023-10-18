@@ -1,26 +1,32 @@
 import * as chokidar from 'chokidar'
-import {__DBEXTENSION, createShelfDB, ShelfDBModels} from '../db/ShelfDB'
-import {addChokiEvents} from './ChokiEvents'
-import {FSWatcher} from 'chokidar'
-import {zJson} from '../zJson'
-import {join} from 'path'
+import { __DBEXTENSION, createShelfDB, ShelfDBModels } from '../db/ShelfDB'
+import { addChokiEvents } from './ChokiEvents'
+import { FSWatcher } from 'chokidar'
+import { zJson } from '../zJson'
+import { join } from 'path'
 
 import {
   CLIENT_CONFIG_FILE_NAME,
   SHELF_CLIENT_CONFIG_SCHEMA,
+  SHELF_THUMB_CACHE_PATH,
   ShelfClientConfigValues,
 } from '../ShelfConfig'
 
-import {globSupportedFormats} from '../../renderer/src/utils/formats'
-import {IpcMainEvents} from '../../preload/ipcMainTypes'
+import { globSupportedFormats } from '../../renderer/src/utils/formats'
+import { IpcMainEvents } from '../../preload/ipcMainTypes'
 
 import CreateAIWorker from './ai_worker/worker?nodeWorker'
-import type {AIWORKERTYPE} from './ai_worker/types'
+import type { AIWORKERTYPE as AiWorkerType } from './ai_worker/types'
+
+import CreateThumbWorker from './thumbworker/worker?nodeWorker'
+import { ThumbWorkerData, ThumbWorkerType } from './thumbworker/types'
 
 class ShelfClient {
   public choki: FSWatcher
   public ShelfDB: ShelfDBModels
-  public AIWorker: AIWORKERTYPE
+  public AiWorker: AiWorkerType
+  public ThumbWorker: ThumbWorkerType
+
   public ready = false
 
   public config: zJson<
@@ -59,11 +65,19 @@ class ShelfClient {
     )
 
     const aiWorker = CreateAIWorker({
-      workerData: {dbPath: options.basePath},
-    }) as AIWORKERTYPE
+      workerData: { dbPath: options.basePath },
+    }) as AiWorkerType
+
+
+    const thumbWorker = CreateThumbWorker({
+      workerData: {
+        thumbnailPath: SHELF_THUMB_CACHE_PATH
+      } as ThumbWorkerData
+    })
 
     return new ShelfClient({
       aiWorker,
+      thumbWorker,
       choki,
       ShelfDB,
       callback,
@@ -72,13 +86,15 @@ class ShelfClient {
   }
 
   protected constructor(newInstance: {
-    aiWorker: AIWORKERTYPE
+    aiWorker: AiWorkerType
+    thumbWorker: ThumbWorkerType
     choki: FSWatcher
     ShelfDB: ShelfDBModels
     config: zJson<typeof SHELF_CLIENT_CONFIG_SCHEMA, ShelfClientConfigValues>
     callback: () => void
   }) {
-    this.AIWorker = newInstance.aiWorker
+    this.AiWorker = newInstance.aiWorker
+    this.ThumbWorker = newInstance.thumbWorker
     this.ShelfDB = newInstance.ShelfDB
     this.choki = newInstance.choki
     this.config = newInstance.config
@@ -98,4 +114,4 @@ class ShelfClient {
   }
 }
 
-export {ShelfClient}
+export { ShelfClient }

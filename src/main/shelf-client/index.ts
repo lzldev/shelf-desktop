@@ -3,8 +3,9 @@ import './ContentEvents'
 import './ColorEvents'
 import './LayoutEvents'
 
-import {IpcRendererEvents} from '../../preload/ipcRendererTypes'
-import {sendEventToAllWindows} from '..'
+import { IpcRendererEvents } from '../../preload/ipcRendererTypes'
+import { sendEventToAllWindows } from '..'
+
 export function sendEventAfter(
   events: (keyof IpcRendererEvents)[],
   func: (...any: any[]) => any,

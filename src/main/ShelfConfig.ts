@@ -1,12 +1,23 @@
-import {app} from 'electron'
-import {join} from 'path'
-import {z} from 'zod'
-import {zJsonSchemaInfer, zJsonValues} from './zJson'
+import { app } from 'electron'
+import { join } from 'path'
+import { z } from 'zod'
+import { zJsonSchemaInfer, zJsonValues } from './zJson'
+import { existsSync, mkdirSync } from 'fs'
 
 export const SHELF_THUMB_CACHE_PATH = join(
   app.getPath('userData'),
   '/thumbnail/',
 )
+
+
+if (!existsSync(SHELF_THUMB_CACHE_PATH)) {
+  mkdirSync(SHELF_THUMB_CACHE_PATH, {
+    recursive: true
+  })
+}
+
+//REMOVEME
+console.log("config", SHELF_THUMB_CACHE_PATH)
 
 export const SHELF_CONFIG_PATH = join(app.getPath('userData'), 'config.json')
 export const SHELF_CONFIG_SCHEMA = {
