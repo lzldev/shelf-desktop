@@ -1,6 +1,6 @@
-import { FSWatcher } from 'chokidar'
-import { statSync } from 'fs'
-import path, { normalize } from 'path'
+import {FSWatcher} from 'chokidar'
+import {statSync} from 'fs'
+import path, {normalize} from 'path'
 
 export type FileTuple = [
   filePath: string,
@@ -41,7 +41,7 @@ export const toFileTuple = (filePaths: string[]) => {
 export const toFileMap = (filePaths: string[]) => {
   const newSet = new Map<string, number>()
   filePaths.forEach((path) => {
-    const { mtimeMs } = statSync(path)
+    const {mtimeMs} = statSync(path)
     newSet.set(path, mtimeMs)
   })
   return newSet
