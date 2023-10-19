@@ -31,8 +31,6 @@ import {__DBFILENAME} from './db/ShelfDB'
 import {Content, Path, Tag} from './db/models'
 import {SHELF_LOGGER} from './utils/Loggers'
 
-app.commandLine.appendSwitch('--trace-warnings')
-
 export function requestClient(): ShelfClient | null {
   if (!Client || !Client.ready) {
     SHELF_LOGGER.info('Client not ready.')

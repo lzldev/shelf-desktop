@@ -1,5 +1,8 @@
 import * as winston from 'winston'
 
+const MAIN_ENABLE_LOGGING = !!import.meta.env.MAIN_VITE_MAIN_LOGGING
+const WORKER_ENABLE_LOGGING = !!import.meta.env.MAIN_VITE_WORKER_LOGGING
+
 export function createWorkerLogger(
   threadId: number,
   workerName = 'AI WORKER',
@@ -7,7 +10,7 @@ export function createWorkerLogger(
 ) {
   // hello
   return winston.createLogger({
-    // silent: true,
+    silent: WORKER_ENABLE_LOGGING,
     format: winston.format.combine(
       winston.format.colorize({
         all: true,
@@ -38,6 +41,7 @@ export function createWorkerLogger(
 }
 
 export const SHELF_LOGGER = winston.createLogger({
+  silent: MAIN_ENABLE_LOGGING,
   format: winston.format.combine(
     winston.format.colorize({
       all: true,
