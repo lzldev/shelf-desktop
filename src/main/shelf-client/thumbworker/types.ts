@@ -1,14 +1,14 @@
-import { z } from 'zod'
-import { CustomWorker } from '../utils/workertypes'
+import {z} from 'zod'
+import {CustomWorker} from '../../utils/workertypes'
 
 export type ThumbWorkerInvoke = {
   type: 'resize_image'
-  data: { filePath: string; hash: string }
+  data: {filePath: string; hash: string}
 }
 
 export type ThumbWorkerReceive = {
   type: 'image_ready'
-  data: { path: string }
+  data: {path: string}
 }
 
 export const ThumbWorkerDataParser = z.object({
@@ -17,6 +17,8 @@ export const ThumbWorkerDataParser = z.object({
   }),
 })
 
-
-export type ThumbWorkerType = CustomWorker<ThumbWorkerInvoke, ThumbWorkerReceive>
+export type ThumbWorkerType = CustomWorker<
+  ThumbWorkerInvoke,
+  ThumbWorkerReceive
+>
 export type ThumbWorkerData = z.infer<typeof ThumbWorkerDataParser>
