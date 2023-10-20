@@ -1,13 +1,13 @@
-import { useColors } from '../hooks/useColors'
+import {useColors} from '../hooks/useColors'
 import clsx from 'clsx'
-import { HTMLAttributes } from 'react'
-import { Tag } from '@models'
+import {HTMLAttributes} from 'react'
+import {Tag} from '@models'
 
 function TagColorThing({
   tags,
   ...props
-}: { tags: Tag[] } & HTMLAttributes<HTMLDivElement>) {
-  const { colors } = useColors()
+}: {tags: Tag[]} & HTMLAttributes<HTMLDivElement>) {
+  const {colors} = useColors()
 
   if (tags.length === 0) {
     return <></>
@@ -32,4 +32,4 @@ function TagColorThing({
   )
 }
 
-export { TagColorThing }
+export {TagColorThing}

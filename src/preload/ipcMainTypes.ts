@@ -1,7 +1,7 @@
-import { Content, Tag, TagColor } from '../main/db/models'
-import { TagFields } from '../main/db/models/Tag'
-import { TagColorFields } from '../main/db/models/TagColor'
-import { SomeRequired, TypeRecord } from '../types/utils'
+import {Content, Tag, TagColor} from '../main/db/models'
+import {TagFields} from '../main/db/models/Tag'
+import {TagColorFields} from '../main/db/models/TagColor'
+import {SomeRequired, TypeRecord} from '../types/utils'
 import {
   ColorOperation,
   TagOperation,
@@ -11,7 +11,7 @@ import {
   ShelfClientConfig,
   ShelfConfigType as ShelfConfigType,
 } from '../main/ShelfConfig'
-import { OpenDialogReturnValue } from 'electron/main'
+import {OpenDialogReturnValue} from 'electron/main'
 
 type IpcMainEventShape = {
   args: unknown | unknown[]
@@ -41,7 +41,7 @@ export type IpcMainEvents = TypeRecord<
     openDirectory: {
       args: []
       return: OpenDialogReturnValue &
-      ({ canceled: false; isNew: boolean } | { canceled: true })
+        ({canceled: false; isNew: boolean} | {canceled: true})
     }
     getRecent: {
       args: []
@@ -65,28 +65,28 @@ export type IpcMainEvents = TypeRecord<
     }
     getShelfContent: {
       args: {
-        pagination?: { offset: number; limit: number }
+        pagination?: {offset: number; limit: number}
         order?: [string, 'ASC' | 'DESC']
-        paths?: { value: string }[]
+        paths?: {value: string}[]
         tags?: TagFields[]
       }
-      return: { content: Content[]; nextCursor?: { offset: number; limit: number } }
+      return: {content: Content[]; nextCursor?: {offset: number; limit: number}}
     }
     createTag: {
       args:
-      | SomeRequired<TagFields, 'colorId'>
-      | (Omit<TagFields, 'colorId'> & {
-        newColor: Pick<TagColorFields, 'color' | 'name'>
-      })
+        | SomeRequired<TagFields, 'colorId'>
+        | (Omit<TagFields, 'colorId'> & {
+            newColor: Pick<TagColorFields, 'color' | 'name'>
+          })
 
       return: boolean
     }
     addTagToContent: {
-      args: { contentId: number; tagId: number }
+      args: {contentId: number; tagId: number}
       return: boolean
     }
     removeTagfromContent: {
-      args: { contentId: number; tagId: number }
+      args: {contentId: number; tagId: number}
       return: boolean
     }
     getDetailedImage: {
@@ -114,8 +114,8 @@ export type IpcMainEvents = TypeRecord<
       return: boolean
     }
     preview_content: {
-      args: [{ hash: string; filePath: string }]
-      return: { instaError: boolean }
+      args: [{hash: string; filePath: string}]
+      return: {instaError: boolean}
     }
   }
 >

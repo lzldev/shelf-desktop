@@ -1,9 +1,9 @@
 import clsx from 'clsx'
-import { HTMLAttributes } from 'react'
-import { Tag } from '@models'
-import { InlineButton } from './InlineButton'
-import { InlineTag } from './InlineTag'
-import { useTagQuery } from '../hooks/useTagQuery'
+import {HTMLAttributes} from 'react'
+import {Tag} from '@models'
+import {InlineButton} from './InlineButton'
+import {InlineTag} from './InlineTag'
+import {useTagQuery} from '../hooks/useTagQuery'
 
 export type pathQuery = {
   value: string
@@ -102,7 +102,7 @@ export const SearchBar = ({
             tabIndex={1}
             className='w-full select-all overflow-hidden text-ellipsis bg-gray-400 p-2 text-white transition-colors hover:bg-gray-50 hover:text-black focus:bg-gray-50 focus:text-black'
             onClick={() => {
-              addPathQuery({ value: query })
+              addPathQuery({value: query})
               setQuery('')
             }}
           >

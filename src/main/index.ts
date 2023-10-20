@@ -14,9 +14,9 @@ import * as readline from 'readline'
 
 import * as fs from 'fs'
 import * as path from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { ShelfClient } from './shelf-client/ShelfClient'
-import { zJson } from './zJson'
+import {electronApp, optimizer, is} from '@electron-toolkit/utils'
+import {ShelfClient} from './shelf-client/ShelfClient'
+import {zJson} from './zJson'
 import {
   IpcRendererEvents,
   ShelfWebContentsSend,
@@ -29,11 +29,11 @@ import {
 
 import './shelf-client'
 
-import { CLIENT_CONFIG_FILE_NAME } from './ShelfConfig'
-import { OpenDialogReturnValue } from 'electron/main'
-import { __DBFILENAME } from './db/ShelfDB'
-import { Content, Path, Tag } from './db/models'
-import { SHELF_LOGGER } from './utils/Loggers'
+import {CLIENT_CONFIG_FILE_NAME} from './ShelfConfig'
+import {OpenDialogReturnValue} from 'electron/main'
+import {__DBFILENAME} from './db/ShelfDB'
+import {Content, Path, Tag} from './db/models'
+import {SHELF_LOGGER} from './utils/Loggers'
 
 export function requestClient(): ShelfClient | null {
   if (!Client || !Client.ready) {
@@ -101,14 +101,14 @@ function createWindow(route: keyof typeof WindowOptions): void {
   const primaryDisplay = screen.getPrimaryDisplay().bounds
   const positionX = Math.max(
     primaryDisplay.width / 2 +
-    (primaryDisplay.x - windowOptions.startOptions.width! / 2),
+      (primaryDisplay.x - windowOptions.startOptions.width! / 2),
     0,
   )
 
   const positionY = Math.max(
     primaryDisplay.height / 2 +
-    primaryDisplay.y -
-    windowOptions.startOptions.height! / 2,
+      primaryDisplay.y -
+      windowOptions.startOptions.height! / 2,
     0,
   )
 
@@ -123,8 +123,8 @@ function createWindow(route: keyof typeof WindowOptions): void {
     autoHideMenuBar: true,
     ...(process.platform !== 'darwin'
       ? {
-        icon: nativeImage.createFromPath('build/icon.png'),
-      }
+          icon: nativeImage.createFromPath('build/icon.png'),
+        }
       : {}),
     webPreferences: {
       webSecurity: false,
@@ -140,7 +140,7 @@ function createWindow(route: keyof typeof WindowOptions): void {
 
   newWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
-    return { action: 'deny' }
+    return {action: 'deny'}
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -175,7 +175,7 @@ app.whenReady().then(async () => {
           ignoredPaths: ['./examples/ignored/*'],
         },
       },
-      () => { },
+      () => {},
     )
 
     const rl = readline.createInterface({
@@ -194,7 +194,7 @@ app.whenReady().then(async () => {
           break
         case 'c': {
           const content = await Content.findAll({
-            include: [{ model: Tag }, { model: Path }],
+            include: [{model: Tag}, {model: Path}],
           })
 
           SHELF_LOGGER.info(content)
@@ -238,7 +238,7 @@ app.whenReady().then(async () => {
   appTray.setContextMenu(menu)
 
   createWindow('start')
-  app.on('activate', function() {
+  app.on('activate', function () {
     if (!BrowserWindow.getAllWindows().length) createWindow('start')
   })
 })
@@ -276,11 +276,11 @@ ipcMain.handle('openDirectory', async () => {
   const directory = await openDirDialog()
 
   if (directory.canceled) {
-    return { ...directory, canceled: true }
+    return {...directory, canceled: true}
   }
 
   const isNew = checkDirectory(directory.filePaths[0])
-  return { ...directory, isNew }
+  return {...directory, isNew}
 })
 
 ipcMain.handle('startShelfClient', async (_, options) => {

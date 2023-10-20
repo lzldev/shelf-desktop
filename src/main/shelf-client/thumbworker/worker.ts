@@ -7,10 +7,10 @@ import {
   workerData as _workerData,
 } from 'node:worker_threads'
 
-import { createWorkerLogger } from '../../utils/Loggers'
-import { ThumbWorkerDataParser, ThumbWorkerInvoke } from './types'
-import { handleWorkerMessage } from '../ai_worker/types'
-import { join } from 'node:path'
+import {createWorkerLogger} from '../../utils/Loggers'
+import {ThumbWorkerDataParser, ThumbWorkerInvoke} from './types'
+import {handleWorkerMessage} from '../ai_worker/types'
+import {join} from 'node:path'
 
 const workerData = ThumbWorkerDataParser.parse(_workerData)
 
@@ -31,7 +31,7 @@ async function main() {
   }, 5000)
 
   handleWorkerMessage<ThumbWorkerInvoke>(port, {
-    resize_image: async ({ data }) => {
+    resize_image: async ({data}) => {
       LOGGER.info(`resizing ${data.filePath}`)
 
       let image

@@ -1,8 +1,8 @@
-import { DocumentIcon } from '@heroicons/react/24/solid'
-import { checkExtension } from '../utils/Extensions'
+import {DocumentIcon} from '@heroicons/react/24/solid'
+import {checkExtension} from '../utils/Extensions'
 import clsx from 'clsx'
-import { HTMLAttributes, useMemo, useRef, useState } from 'react'
-import { Content } from '@models'
+import {HTMLAttributes, useMemo, useRef, useState} from 'react'
+import {Content} from '@models'
 
 function ShelfContent({
   content,
@@ -13,7 +13,7 @@ function ShelfContent({
   content: Content
   controls?: boolean
   contentProps?: HTMLAttributes<HTMLDivElement> &
-  HTMLAttributes<HTMLVideoElement>
+    HTMLAttributes<HTMLVideoElement>
 } & HTMLAttributes<HTMLDivElement>) {
   const containerRef = useRef<HTMLDivElement>(null)
   const format = checkExtension(content.extension)
@@ -117,4 +117,4 @@ function ShelfContent({
   )
 }
 
-export { ShelfContent }
+export {ShelfContent}

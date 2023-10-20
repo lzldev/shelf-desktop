@@ -1,15 +1,15 @@
-import { DocumentIcon } from '@heroicons/react/24/solid'
-import { useConfigStore } from '../hooks/useConfig'
-import { Content } from '@models'
-import { checkExtension } from '../utils/Extensions'
+import {DocumentIcon} from '@heroicons/react/24/solid'
+import {useConfigStore} from '../hooks/useConfig'
+import {Content} from '@models'
+import {checkExtension} from '../utils/Extensions'
 import clsx from 'clsx'
-import { HTMLAttributes, useEffect, useRef, useState } from 'react'
+import {HTMLAttributes, useEffect, useRef, useState} from 'react'
 
 type ContentPreviewProps = {
   content: Content
   controls?: boolean
   contentProps?: HTMLAttributes<HTMLDivElement> &
-  HTMLAttributes<HTMLVideoElement>
+    HTMLAttributes<HTMLVideoElement>
 } & HTMLAttributes<HTMLDivElement>
 
 function ContentPreview({
@@ -37,7 +37,7 @@ function ContentPreview({
       filePath: path,
     })
 
-    return () => { }
+    return () => {}
   }, [error])
 
   const thumbnailPath = useConfigStore((s) => s.config!.thumbnailPath)
@@ -83,7 +83,7 @@ function ContentPreview({
           />
         </>
       ) : format === 'video' && !error ? (
-        <div className='flex relative w-full h-full'>
+        <div className='relative flex h-full w-full'>
           <video
             className={
               'absolute inset-auto -z-10 h-full w-full scale-150 object-contain opacity-75 blur-2xl saturate-200'
@@ -106,18 +106,18 @@ function ContentPreview({
           />
         </div>
       ) : (
-        <div className='flex flex-col justify-center items-center h-full overflow-clip'>
-          <DocumentIcon className='w-8 h-8 fill-gray-300' />
+        <div className='flex h-full flex-col items-center justify-center overflow-clip'>
+          <DocumentIcon className='h-8 w-8 fill-gray-300' />
           <span
             dir={!content.extension ? 'rtl' : undefined}
-            className='mt-1 w-2/3 font-mono text-center text-gray-100 truncate'
+            className='mt-1 w-2/3 truncate text-center font-mono text-gray-100'
           >
             {content.extension || uri}
           </span>
           {error && (
             <span
               dir={!content.extension ? 'rtl' : undefined}
-              className='mt-1 w-2/3 font-mono text-center text-gray-100 truncate'
+              className='mt-1 w-2/3 truncate text-center font-mono text-gray-100'
             >
               {error}
             </span>
@@ -128,4 +128,4 @@ function ContentPreview({
     </div>
   )
 }
-export { ContentPreview }
+export {ContentPreview}

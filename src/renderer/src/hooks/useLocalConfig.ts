@@ -1,4 +1,3 @@
-//@ts-ignore Moodule Scope
 import {ShelfClientConfig} from 'src/main/ShelfConfig'
 
 import {create} from 'zustand'

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-namespace */
-import type { IpcRendererEvent } from 'electron'
-import { TypeRecord } from '../types/utils'
+import type {IpcRendererEvent} from 'electron'
+import {TypeRecord} from '../types/utils'
 
 type IpcRendererEventShape = {
   args: unknown | unknown[]
@@ -10,7 +10,7 @@ export type IpcRendererEvents = TypeRecord<
   IpcRendererEventShape,
   {
     updateProgress: {
-      args: { total: number; messages: string[] }
+      args: {total: number; messages: string[]}
     }
     clientReady: {
       args: []

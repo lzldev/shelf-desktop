@@ -1,4 +1,4 @@
-import { requestClient } from '..'
+import {requestClient} from '..'
 
 export function setupWorkerHandlers() {
   const client = requestClient()
@@ -6,7 +6,7 @@ export function setupWorkerHandlers() {
     throw 'error setting up worker handlers'
   }
 
-  const { ThumbWorker, AiWorker } = client
+  const {ThumbWorker, AiWorker} = client
 
   ThumbWorker.on('message', (message) => {
     message.type

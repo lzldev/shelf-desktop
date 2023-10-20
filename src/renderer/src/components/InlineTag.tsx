@@ -1,13 +1,13 @@
 import clsx from 'clsx'
-import type { HTMLAttributes } from 'react'
-import type { Tag } from '@models'
-import { useConfigStore } from '../hooks/useConfig'
-import { useColors } from '../hooks/useColors'
+import type {HTMLAttributes} from 'react'
+import type {Tag} from '@models'
+import {useConfigStore} from '../hooks/useConfig'
+import {useColors} from '../hooks/useColors'
 
 export const InlineTag = (
-  props: { tag: Tag } & HTMLAttributes<HTMLDivElement>,
+  props: {tag: Tag} & HTMLAttributes<HTMLDivElement>,
 ) => {
-  const { colors } = useColors()
+  const {colors} = useColors()
   const defaultColor = useConfigStore((s) => s.config!.defaultColor)
 
   const color = colors?.get(props.tag.colorId!)?.color || defaultColor

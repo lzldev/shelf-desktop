@@ -1,5 +1,5 @@
-//@ts-ignore Moodule Scope
-import {ShelfConfigType} from 'src/main/ShelfConfig'
+//@ts-ignore tsconfig scope
+import type {ShelfConfigType} from 'src/main/ShelfConfig'
 
 import {create} from 'zustand'
 
