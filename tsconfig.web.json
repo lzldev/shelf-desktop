@@ -15,11 +15,8 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@renderer/*": [
-        "src/renderer/src/*"
-      ],
       "@models": [
-        "src/renderer/src/types/db"
+        "src/types/db"
       ]
     }
   }

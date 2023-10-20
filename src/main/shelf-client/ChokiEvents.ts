@@ -344,6 +344,7 @@ function createProgressUpdater<TParts extends Record<string, number>>(
     idxToKeyMap[key as keyof TParts] = i
     return 0
   })
+
   const lastMessages: string[] = []
   let lastProgress = 0
 

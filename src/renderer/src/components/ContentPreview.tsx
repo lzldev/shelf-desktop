@@ -1,7 +1,7 @@
 import { DocumentIcon } from '@heroicons/react/24/solid'
-import { useConfigStore } from '@renderer/hooks/useConfig'
-import { Content } from '@renderer/types/db'
-import { checkFormat } from '@renderer/utils/formats'
+import { useConfigStore } from '../hooks/useConfig'
+import { Content } from '@models'
+import { checkExtension } from '../utils/Extensions'
 import clsx from 'clsx'
 import { HTMLAttributes, useEffect, useRef, useState } from 'react'
 
@@ -22,7 +22,7 @@ function ContentPreview({
   const [error, setError] = useState<string | null>(null)
   const previewRef = useRef<HTMLImageElement>(null)
 
-  const format = checkFormat(content.extension)
+  const format = checkExtension(content.extension)
   const [hidden, setHidden] = useState(format === 'image')
 
   useEffect(() => {

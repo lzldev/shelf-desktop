@@ -1,8 +1,8 @@
-import { useColors } from '@renderer/hooks/useColors'
 import clsx from 'clsx'
 import type { HTMLAttributes } from 'react'
 import type { Tag } from '@models'
-import { useConfigStore } from '@renderer/hooks/useConfig'
+import { useConfigStore } from '../hooks/useConfig'
+import { useColors } from '../hooks/useColors'
 
 export const InlineTag = (
   props: { tag: Tag } & HTMLAttributes<HTMLDivElement>,

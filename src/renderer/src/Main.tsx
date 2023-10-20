@@ -12,7 +12,6 @@ import {
 import { useTags } from './hooks/useTags'
 import { Content, Tag } from '@models'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { ShelfContent } from './components/ShelfContent'
 import { createPortal } from 'react-dom'
 import { ContentDetails } from './ContentDetails'
 import { useToggle } from './hooks/useToggle'
@@ -245,7 +244,7 @@ function Main(): JSX.Element {
           openOptionsModal={openOptionsModal}
         />
         <a
-          className='text-end font-mono text-gray-400'
+          className='font-mono text-gray-400 text-end'
           onClick={() => {
             toggleDirection()
             refetch()
@@ -254,11 +253,11 @@ function Main(): JSX.Element {
           ORDER:
           {`${orderField}-${orderDirection}`}
         </a>
-        <a className='text-end font-mono text-gray-400'>
+        <a className='font-mono text-gray-400 text-end'>
           TAGS:
           {tags.length}
         </a>
-        <a className='text-end font-mono text-gray-400'>
+        <a className='font-mono text-gray-400 text-end'>
           SHOWING:
           {contentQuery
             .pages!.map((page) => {
@@ -267,7 +266,7 @@ function Main(): JSX.Element {
             .reduce((total, n) => (total += n))}
         </a>
         {markedContent.size !== 0 && (
-          <a className='text-end font-mono text-gray-400'>
+          <a className='font-mono text-gray-400 text-end'>
             SELECTED:
             {markedContent.size}
           </a>
@@ -301,7 +300,7 @@ function Main(): JSX.Element {
                 }}
               >
                 <TagColorThing
-                  className='absolute inset-x-0 top-0 flex h-1 w-full flex-row overflow-hidden transition-all duration-50 group-hover/content:h-1.5'
+                  className='flex overflow-hidden absolute inset-x-0 top-0 flex-row w-full h-1 transition-all duration-50 group-hover/content:h-1.5'
                   tags={content.tags!}
                 />
                 <input
@@ -348,8 +347,8 @@ function Main(): JSX.Element {
         </ContentGrid>
       </div>
       {isFetching && (
-        <div className='flex items-center justify-center py-10'>
-          <ArrowPathIcon className='h-6 w-6 animate-spin' />
+        <div className='flex justify-center items-center py-10'>
+          <ArrowPathIcon className='w-6 h-6 animate-spin' />
         </div>
       )}
     </div>
@@ -402,7 +401,7 @@ const ContentGrid = forwardRef(function Body(
         <div
           {...props}
           ref={ref}
-          className='grid grid-flow-dense grid-cols-6 gap-2'
+          className='grid grid-cols-6 gap-2 grid-flow-dense'
         >
           {children}
         </div>
@@ -435,23 +434,23 @@ function OptionsDropdown(props: {
   return (
     <Dropdown
       triggerRender={() => (
-        <Cog8ToothIcon className='mb-1 ml-1 h-6 w-6  fill-gray-100 stroke-gray-600 transition-colors hover:fill-gray-300 hover:stroke-white' />
+        <Cog8ToothIcon className='mb-1 ml-1 w-6 h-6 transition-colors fill-gray-100 stroke-gray-600 hover:fill-gray-300 hover:stroke-white' />
       )}
     >
       <div
-        className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
+        className='flex p-2 transition-colors hover:text-white hover:bg-gray-500'
         onClick={props.openEditTagsModal}
       >
         <span>EDIT TAGS</span>
       </div>
       <div
-        className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
+        className='flex p-2 transition-colors hover:text-white hover:bg-gray-500'
         onClick={props.openEditColorsModal}
       >
         <span>EDIT COLORS</span>
       </div>
       <div
-        className='flex p-2 transition-colors hover:bg-gray-500 hover:text-white'
+        className='flex p-2 transition-colors hover:text-white hover:bg-gray-500'
         onClick={props.openOptionsModal}
       >
         <span>OPTIONS</span>

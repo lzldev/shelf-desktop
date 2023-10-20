@@ -1,5 +1,5 @@
 import { DocumentIcon } from '@heroicons/react/24/solid'
-import { checkFormat } from '@renderer/utils/formats'
+import { checkExtension } from '../utils/Extensions'
 import clsx from 'clsx'
 import { HTMLAttributes, useMemo, useRef, useState } from 'react'
 import { Content } from '@models'
@@ -16,7 +16,7 @@ function ShelfContent({
   HTMLAttributes<HTMLVideoElement>
 } & HTMLAttributes<HTMLDivElement>) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const format = checkFormat(content.extension)
+  const format = checkExtension(content.extension)
   const [hidden, setHidden] = useState(format === 'image')
   const [error, setError] = useState<string | null>(null)
 
