@@ -1,4 +1,4 @@
-const videoFormats = [
+const videoExtensions = [
   '.3gp',
   '.3g2',
   '.asf',
@@ -19,7 +19,7 @@ const videoFormats = [
   '.wmv',
 ]
 
-const imgFormats = [
+const imgExtensions = [
   '.jpg',
   '.jpeg',
   '.jfif',
@@ -39,19 +39,19 @@ const imgFormats = [
 ]
 
 export const globSupportedFormats = `**/*.!(${[
-  ...videoFormats.map((v) => v.slice(1)),
-  ...imgFormats.map((v) => v.slice(1)),
+  ...videoExtensions.map((v) => v.slice(1)),
+  ...imgExtensions.map((v) => v.slice(1)),
 ].join('|')})`
 
-const imgFormatsSet = new Set(imgFormats)
-const videoFormatsSet = new Set(videoFormats)
+const imgExtensionsSet = new Set(imgExtensions)
+const videoExtensionsSet = new Set(videoExtensions)
 
-export const checkFormat = (extension: string) => {
-  if (imgFormatsSet.has(extension)) {
+export const checkExtension = (extension: string) => {
+  if (imgExtensionsSet.has(extension)) {
     return 'image'
   }
 
-  if (videoFormatsSet.has(extension)) {
+  if (videoExtensionsSet.has(extension)) {
     return 'video'
   }
 
@@ -64,7 +64,7 @@ export const checkFormat = (extension: string) => {
  * */
 export const canClassify = (fileExtension: string) => {
   if (fileExtension !== '.webp') {
-    return checkFormat(fileExtension) === 'image'
+    return checkExtension(fileExtension) === 'image'
   }
 
   return false

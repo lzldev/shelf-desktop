@@ -6,7 +6,6 @@
     "src/renderer/**/*",
     "src/preload/*.d.ts",
     "src/types/**/*",
-    "src/main/src/db/**/*"
   ],
   "compilerOptions": {
     "composite": true,

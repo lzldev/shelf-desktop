@@ -14,22 +14,26 @@ import * as readline from 'readline'
 
 import * as fs from 'fs'
 import * as path from 'path'
-import {electronApp, optimizer, is} from '@electron-toolkit/utils'
-import {ShelfClient} from './shelf-client/ShelfClient'
-import {zJson} from './zJson'
+import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { ShelfClient } from './shelf-client/ShelfClient'
+import { zJson } from './zJson'
 import {
   IpcRendererEvents,
   ShelfWebContentsSend,
 } from '../preload/ipcRendererTypes'
-import {SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA} from './ShelfConfig'
+import {
+  SHELF_CONFIG_PATH,
+  SHELF_CONFIG_SCHEMA,
+  SHELF_THUMB_DEFFAULT_PATH,
+} from './ShelfConfig'
 
 import './shelf-client'
 
-import {CLIENT_CONFIG_FILE_NAME} from './ShelfConfig'
-import {OpenDialogReturnValue} from 'electron/main'
-import {__DBFILENAME} from './db/ShelfDB'
-import {Content, Path, Tag} from './db/models'
-import {SHELF_LOGGER} from './utils/Loggers'
+import { CLIENT_CONFIG_FILE_NAME } from './ShelfConfig'
+import { OpenDialogReturnValue } from 'electron/main'
+import { __DBFILENAME } from './db/ShelfDB'
+import { Content, Path, Tag } from './db/models'
+import { SHELF_LOGGER } from './utils/Loggers'
 
 export function requestClient(): ShelfClient | null {
   if (!Client || !Client.ready) {
@@ -40,12 +44,13 @@ export function requestClient(): ShelfClient | null {
   return Client
 }
 
-export const ShelfConfig = new zJson(SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA, {
+export const AppConfig = new zJson(SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA, {
   recentFiles: [],
-  defaultColor: '#ef4444',
+  defaultColor: '#fcb5c6',
   ignorePaths: [],
   pageSize: 50,
   layoutMode: 'grid',
+  thumbnailPath: SHELF_THUMB_DEFFAULT_PATH,
 })
 
 const WindowOptions: Record<
@@ -96,14 +101,14 @@ function createWindow(route: keyof typeof WindowOptions): void {
   const primaryDisplay = screen.getPrimaryDisplay().bounds
   const positionX = Math.max(
     primaryDisplay.width / 2 +
-      (primaryDisplay.x - windowOptions.startOptions.width! / 2),
+    (primaryDisplay.x - windowOptions.startOptions.width! / 2),
     0,
   )
 
   const positionY = Math.max(
     primaryDisplay.height / 2 +
-      primaryDisplay.y -
-      windowOptions.startOptions.height! / 2,
+    primaryDisplay.y -
+    windowOptions.startOptions.height! / 2,
     0,
   )
 
@@ -118,8 +123,8 @@ function createWindow(route: keyof typeof WindowOptions): void {
     autoHideMenuBar: true,
     ...(process.platform !== 'darwin'
       ? {
-          icon: nativeImage.createFromPath('build/icon.png'),
-        }
+        icon: nativeImage.createFromPath('build/icon.png'),
+      }
       : {}),
     webPreferences: {
       webSecurity: false,
@@ -135,7 +140,7 @@ function createWindow(route: keyof typeof WindowOptions): void {
 
   newWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
-    return {action: 'deny'}
+    return { action: 'deny' }
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -170,7 +175,7 @@ app.whenReady().then(async () => {
           ignoredPaths: ['./examples/ignored/*'],
         },
       },
-      () => {},
+      () => { },
     )
 
     const rl = readline.createInterface({
@@ -189,7 +194,7 @@ app.whenReady().then(async () => {
           break
         case 'c': {
           const content = await Content.findAll({
-            include: [{model: Tag}, {model: Path}],
+            include: [{ model: Tag }, { model: Path }],
           })
 
           SHELF_LOGGER.info(content)
@@ -233,7 +238,7 @@ app.whenReady().then(async () => {
   appTray.setContextMenu(menu)
 
   createWindow('start')
-  app.on('activate', function () {
+  app.on('activate', function() {
     if (!BrowserWindow.getAllWindows().length) createWindow('start')
   })
 })
@@ -271,22 +276,22 @@ ipcMain.handle('openDirectory', async () => {
   const directory = await openDirDialog()
 
   if (directory.canceled) {
-    return {...directory, canceled: true}
+    return { ...directory, canceled: true }
   }
 
   const isNew = checkDirectory(directory.filePaths[0])
-  return {...directory, isNew}
+  return { ...directory, isNew }
 })
 
 ipcMain.handle('startShelfClient', async (_, options) => {
-  const recentFiles = ShelfConfig.get('recentFiles')
+  const recentFiles = AppConfig.get('recentFiles')
   if (recentFiles.findIndex((p) => p == options.basePath)) {
     recentFiles.push(options.basePath)
   }
   if (recentFiles.length >= 8) {
     recentFiles.shift()
   }
-  ShelfConfig.set('recentFiles', recentFiles)
+  AppConfig.set('recentFiles', recentFiles)
 
   Windows.get('start')?.close()
 
@@ -303,9 +308,9 @@ ipcMain.handle('startShelfClient', async (_, options) => {
   })
 })
 
-ipcMain.handle('getConfig', async () => ShelfConfig.getAll())
+ipcMain.handle('getConfig', async () => AppConfig.getAll())
 ipcMain.handle('saveConfig', async (_, config) => {
-  ShelfConfig.setAll(config)
+  AppConfig.setAll(config)
   sendEventToAllWindows('updateConfig')
   return true
 })

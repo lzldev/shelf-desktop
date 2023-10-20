@@ -1,25 +1,25 @@
 import * as chokidar from 'chokidar'
-import {__DBEXTENSION, createShelfDB, ShelfDBModels} from '../db/ShelfDB'
-import {addChokiEvents} from './ChokiEvents'
-import {FSWatcher} from 'chokidar'
-import {zJson} from '../zJson'
-import {join} from 'path'
+import { __DBEXTENSION, createShelfDB, ShelfDBModels } from '../db/ShelfDB'
+import { addChokiEvents } from './ChokiEvents'
+import { FSWatcher } from 'chokidar'
+import { zJson } from '../zJson'
+import { join } from 'path'
 
 import {
   CLIENT_CONFIG_FILE_NAME,
   SHELF_CLIENT_CONFIG_SCHEMA,
-  SHELF_THUMB_CACHE_PATH,
+  SHELF_THUMB_DEFFAULT_PATH,
   ShelfClientConfigValues,
 } from '../ShelfConfig'
 
-import {globSupportedFormats} from '../../renderer/src/utils/formats'
-import {IpcMainEvents} from '../../preload/ipcMainTypes'
+import { globSupportedFormats } from '../../renderer/src/utils/Extensions'
+import { IpcMainEvents } from '../../preload/ipcMainTypes'
 
 import CreateAIWorker from './ai_worker/worker?nodeWorker'
-import type {AIWORKERTYPE as AiWorkerType} from './ai_worker/types'
+import type { AIWORKERTYPE as AiWorkerType } from './ai_worker/types'
 
 import CreateThumbWorker from './thumbworker/worker?nodeWorker'
-import {ThumbWorkerData, ThumbWorkerType} from './thumbworker/types'
+import { ThumbWorkerData, ThumbWorkerType } from './thumbworker/types'
 
 class ShelfClient {
   public choki: FSWatcher
@@ -65,12 +65,12 @@ class ShelfClient {
     )
 
     const aiWorker = CreateAIWorker({
-      workerData: {dbPath: options.basePath},
+      workerData: { dbPath: options.basePath },
     }) as AiWorkerType
 
     const thumbWorker = CreateThumbWorker({
       workerData: {
-        thumbnailPath: SHELF_THUMB_CACHE_PATH,
+        thumbnailPath: SHELF_THUMB_DEFFAULT_PATH,
       } as ThumbWorkerData,
     }) as ThumbWorkerType
 
@@ -113,4 +113,4 @@ class ShelfClient {
   }
 }
 
-export {ShelfClient}
+export { ShelfClient }

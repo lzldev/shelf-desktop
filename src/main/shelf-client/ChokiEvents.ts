@@ -1,18 +1,18 @@
-import {parse} from 'path'
-import {createHash} from 'crypto'
-import {FileTuple, filterDirectoryTree} from '../utils/chokiUtils'
-import {updateProgress as sendUpdateProgressEvent} from '..'
-import {ShelfClient} from './ShelfClient'
-import {Content, Path, TagColor} from '../db/models'
-import {normalize} from 'path'
-import {dialog} from 'electron'
-import {SHELF_LOGGER} from '../utils/Loggers'
+import { parse } from 'path'
+import { createHash } from 'crypto'
+import { FileTuple, filterDirectoryTree } from '../utils/choki'
+import { updateProgress as sendUpdateProgressEvent } from '..'
+import { ShelfClient } from './ShelfClient'
+import { Content, Path, TagColor } from '../db/models'
+import { normalize } from 'path'
+import { dialog } from 'electron'
+import { SHELF_LOGGER } from '../utils/Loggers'
 
-import {canClassify} from '../../renderer/src/utils/formats'
-import {createReadStream, statSync} from 'fs'
-import {defaultColors} from '../utils/defaultColors'
+import { canClassify } from '../../renderer/src/utils/Extensions'
+import { createReadStream, statSync } from 'fs'
+import { defaultColors } from '../utils/DefaultColors'
 
-import {Effect} from 'effect'
+import { Effect } from 'effect'
 
 export const addChokiEvents = (
   shelfClient: ShelfClient,
@@ -92,7 +92,7 @@ export const addChokiEvents = (
         throw e
       })
 
-      const {mtimeMs} = statSync(filePath)
+      const { mtimeMs } = statSync(filePath)
 
       const [content] = await Content.findOrCreate({
         where: {
@@ -130,15 +130,6 @@ export const addChokiEvents = (
           data: {
             id: content.id,
             path: filePath,
-          },
-        })
-        //REMOVEME:
-        //TODO:
-        shelfClient.ThumbWorker.postMessage({
-          type: 'resize_image',
-          data: {
-            filePath: filePath,
-            hash: content.hash,
           },
         })
       }
@@ -185,7 +176,7 @@ export const addChokiEvents = (
       SHELF: watchedFiles.length,
     }
 
-    const {addToKey} = createProgressUpdater(progressRecord)
+    const { addToKey } = createProgressUpdater(progressRecord)
 
     shelfClient.AiWorker.on('message', (message) => {
       if (message.type !== 'tagged_file') {
@@ -236,33 +227,45 @@ export const addChokiEvents = (
         extension: watchedFiles[paths[0]][2],
         paths: paths.map(
           (fileIdx) =>
-            ({
-              path: watchedFiles[fileIdx][0],
-              mTimeMs: watchedFiles[fileIdx][1],
-            } as Path),
+          ({
+            path: watchedFiles[fileIdx][0],
+            mTimeMs: watchedFiles[fileIdx][1],
+          } as Path),
         ),
       })),
       {
-        include: [{model: Path, as: 'paths'}],
+        include: [{ model: Path, as: 'paths' }],
       },
     )
-    ;(
-      await Content.findAll({
-        where: {
-          hash: Object.keys(hashToPathRecord),
-        },
-      })
-    )
-      .filter((content) => canClassify(content.extension))
-      .forEach((content) => {
-        shelfClient.AiWorker.postMessage({
-          type: 'new_file',
-          data: {
-            id: content.id,
-            path: watchedFiles[hashToPathRecord[content.hash][0]][0],
+      ; (
+        await Content.findAll({
+          where: {
+            hash: Object.keys(hashToPathRecord),
           },
         })
-      })
+      )
+        .filter((content) => canClassify(content.extension))
+        .forEach((content) => {
+          // shelfClient.AiWorker.postMessage({
+          //   type: 'new_file',
+          //   data: {
+          //     id: content.id,
+          //     path: watchedFiles[hashToPathRecord[content.hash][0]][0],
+          //   },
+          // })
+
+          //REMOVEME:
+          //TODO:
+          if (content.extension !== '.jfif') {
+            shelfClient.ThumbWorker.postMessage({
+              type: 'resize_image',
+              data: {
+                filePath: watchedFiles[hashToPathRecord[content.hash][0]][0],
+                hash: content.hash,
+              },
+            })
+          }
+        })
 
     SHELF_LOGGER.info('Wainting for AI Tagging...')
 
@@ -337,7 +340,7 @@ function createProgressUpdater<TParts extends Record<string, number>>(
     number
   >
 
-  const progress = Object.entries(parts).map(([key, _], i) => {
+  const progress = Object.entries(parts).map(([key], i) => {
     idxToKeyMap[key as keyof TParts] = i
     return 0
   })
@@ -385,7 +388,7 @@ function createProgressUpdater<TParts extends Record<string, number>>(
     }
   }
 
-  return {sendProgress, addToKey}
+  return { sendProgress, addToKey }
 }
 
 async function CleanupShelfDB(watchedFiles: FileTuple[]) {
@@ -425,8 +428,7 @@ async function CleanupShelfDB(watchedFiles: FileTuple[]) {
       )
 
       SHELF_LOGGER.info(
-        `${
-          updatedContent[0] !== 0 ? 'SUCESS' : 'FAIL'
+        `${updatedContent[0] !== 0 ? 'SUCESS' : 'FAIL'
         } ON UPDATING CONTENT ON CLEANUP | Path: ${pathValues.path}`,
       )
 

@@ -16,7 +16,7 @@ import {
 import { DB } from '../../db/kysely-types'
 import { Kysely, SqliteDialect } from 'kysely'
 import SQLite from 'better-sqlite3'
-import { AsyncBatchQueue } from './AsyncQueue'
+import { AsyncBatchQueue } from '../../utils/AsyncQueue'
 import { createWorkerLogger } from '../../utils/Loggers'
 import sharp from 'sharp'
 
