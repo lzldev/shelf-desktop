@@ -1,10 +1,6 @@
 import * as os from 'os'
-import {
-  AIWorkerDataParser,
-  AiWorkerInvoke,
-  AiWorkerReceive,
-  handleWorkerMessage,
-} from './types'
+import {AIWorkerDataParser, AiWorkerInvoke, AiWorkerReceive} from './types'
+
 import ts, {Tensor3D} from '@tensorflow/tfjs-node'
 import mnet from '@tensorflow-models/mobilenet'
 import {
@@ -19,6 +15,7 @@ import SQLite from 'better-sqlite3'
 import {AsyncBatchQueue} from '../../utils/AsyncQueue'
 import {createWorkerLogger} from '../../utils/Loggers'
 import sharp from 'sharp'
+import {handleWorkerMessage} from '../../utils/Worker'
 
 const workerData = AIWorkerDataParser.parse(_workerData)
 
