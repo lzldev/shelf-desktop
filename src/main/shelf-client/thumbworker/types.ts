@@ -6,10 +6,15 @@ export type ThumbWorkerInvoke = {
   data: {filePath: string; hash: string}
 }
 
-export type ThumbWorkerReceive = {
-  type: 'image_ready'
-  data: {path: string}
-}
+export type ThumbWorkerReceive =
+  | {
+      type: 'image_ready'
+      data: {hash: string}
+    }
+  | {
+      type: 'image_error'
+      data: {hash: string}
+    }
 
 export const ThumbWorkerDataParser = z.object({
   thumbnailPath: z.string({

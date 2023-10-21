@@ -255,7 +255,8 @@ export const addChokiEvents = (
         // })
 
         //REMOVEME:
-        //TODO:
+        //TODO:Implement
+
         if (content.extension !== '.jfif') {
           shelfClient.ThumbWorker.postMessage({
             type: 'resize_image',

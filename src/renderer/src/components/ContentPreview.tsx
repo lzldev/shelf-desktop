@@ -1,9 +1,10 @@
-import {DocumentIcon} from '@heroicons/react/24/solid'
 import {useConfigStore} from '../hooks/useConfig'
 import {Content} from '@models'
 import {checkExtension} from '../utils/Extensions'
 import clsx from 'clsx'
 import {HTMLAttributes, useEffect, useRef, useState} from 'react'
+import {ShelfIpcRendererListener} from 'src/preload/ipcRendererTypes'
+import {DocumentIcon} from '@heroicons/react/24/solid'
 
 type ContentPreviewProps = {
   content: Content
@@ -26,22 +27,64 @@ function ContentPreview({
   const [hidden, setHidden] = useState(format === 'image')
 
   useEffect(() => {
-    console.log(`Preview Effect`)
-    const path = content?.paths?.at(0)?.path
-    if (!path) {
+    if (!error) {
       return
     }
 
-    const response = await window.api.invokeOnMain('preview_content', {
-      hash: content.hash,
-      filePath: path,
-    })
+    const listener: ShelfIpcRendererListener<'preview_response'> = (
+      _,
+      args,
+    ) => {
+      if (!args.success && args.hash === content.hash) {
+        //REMOVEME: debug stuff
+        console.log(`Preview failed removing listener for ${content.hash}`)
+        window.electron.ipcRenderer.removeListener('preview_response', listener)
+        return
+      } else if (!args.success) {
+        //REMOVEME: debug stuff
+        console.log(`preview failed but it aint me lmao`)
+        return
+      }
+
+      if (args.hash === content.hash) {
+        console.log(`im previewable ${content.hash}`)
+        setError(null)
+      }
+    }
+
+    const async = async () => {
+      //REMOVEME: debug stuff
+      console.log(`Preview Effect`)
+      const path = content?.paths?.at(0)?.path
+      if (!path) {
+        return
+      }
+
+      const response = await window.api.invokeOnMain('preview_content', {
+        hash: content.hash,
+        filePath: path,
+      })
+
+      if (response.instaError) {
+        return
+      }
+
+      window.api.ipcRendererHandle('preview_response', listener)
+
+      return () => {
+        window.electron.ipcRenderer.removeListener('preview_response', listener)
+      }
+    }
+
+    async()
 
     return () => {}
   }, [error])
 
   const thumbnailPath = useConfigStore((s) => s.config!.thumbnailPath)
-  const uri = 'file://' + thumbnailPath + content.hash
+
+  //TODO:MAKE THE FORMAT A CONST
+  const uri = 'file://' + thumbnailPath + content.hash + '.jpg'
 
   return (
     <div
