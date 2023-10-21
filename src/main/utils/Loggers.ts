@@ -10,7 +10,7 @@ export function createWorkerLogger(
 ) {
   // hello
   return winston.createLogger({
-    silent: WORKER_ENABLE_LOGGING,
+    silent: !WORKER_ENABLE_LOGGING,
     format: winston.format.combine(
       winston.format.colorize({
         all: true,
@@ -41,7 +41,7 @@ export function createWorkerLogger(
 }
 
 export const SHELF_LOGGER = winston.createLogger({
-  silent: MAIN_ENABLE_LOGGING,
+  silent: !MAIN_ENABLE_LOGGING,
   format: winston.format.combine(
     winston.format.colorize({
       all: true,
