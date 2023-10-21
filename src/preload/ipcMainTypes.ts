@@ -132,6 +132,15 @@ export type ShelfIpcMainHandler = <
   ) => Promise<TReturn>,
 ) => void
 
+export type SherfIpcMainListener<
+  TKey extends keyof IpcMainEvents,
+  TArgs extends IpcMainEvents[TKey]['args'] = IpcMainEvents[TKey]['args'],
+  TReturn extends IpcMainEvents[TKey]['return'] = IpcMainEvents[TKey]['return'],
+> = (
+  event: Electron.IpcMainInvokeEvent,
+  ...args: TArgs extends Array<any> ? TArgs : [TArgs]
+) => Promise<TReturn>
+
 export type ShelfIpcRendererInvoke = <
   TKey extends keyof IpcMainEvents,
   TArgs extends IpcMainEvents[TKey]['args'],

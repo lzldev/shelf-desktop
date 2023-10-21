@@ -28,7 +28,7 @@ export type IpcRendererEvents = TypeRecord<
       args: [
         response: {
           hash: string
-          succoss: boolean
+          success: boolean
         },
       ]
     }
@@ -52,4 +52,12 @@ export type ShelfIpcRendererHandler = <
     evt: IpcRendererEvent,
     ...args: TArgs extends Array<any> ? TArgs : [TArgs]
   ) => void,
+) => void
+
+export type ShelfIpcRendererListener<
+  TKey extends keyof IpcRendererEvents,
+  TArgs extends IpcRendererEvents[TKey]['args'] = IpcRendererEvents[TKey]['args'],
+> = (
+  evt: IpcRendererEvent,
+  ...args: TArgs extends Array<any> ? TArgs : [TArgs]
 ) => void
