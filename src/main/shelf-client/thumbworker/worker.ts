@@ -1,5 +1,3 @@
-import sharp from 'sharp'
-
 import {
   isMainThread,
   parentPort,
@@ -7,13 +5,18 @@ import {
   workerData as _workerData,
 } from 'node:worker_threads'
 
+import sharp from 'sharp'
+
 import {createWorkerLogger} from '../../utils/Loggers'
+
 import {
   ThumbWorkerDataParser,
   ThumbWorkerInvoke,
   ThumbWorkerReceive,
 } from './types'
+
 import {join} from 'node:path'
+
 import {createPortWrapper, handleWorkerMessage} from '../../utils/Worker'
 
 const workerData = ThumbWorkerDataParser.parse(_workerData)
@@ -32,10 +35,6 @@ const LOGGER = createWorkerLogger(threadId, 'THUMBWORKER', 5)
 LOGGER.info('Starting')
 
 async function main() {
-  setInterval(() => {
-    LOGGER.info('Miau')
-  }, 5000)
-
   handleWorkerMessage<ThumbWorkerInvoke>(port, {
     resize_image: async ({data}) => {
       LOGGER.info(`resizing ${data.filePath}`)

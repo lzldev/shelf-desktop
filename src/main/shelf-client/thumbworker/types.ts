@@ -17,6 +17,7 @@ export type ThumbWorkerReceive =
     }
 
 export const ThumbWorkerDataParser = z.object({
+  max_threads: z.number(),
   thumbnailPath: z.string({
     description: 'Path to previews folder',
   }),

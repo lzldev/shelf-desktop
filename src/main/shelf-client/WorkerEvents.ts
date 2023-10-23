@@ -1,5 +1,4 @@
-import {requestClient} from '..'
-import {SHELF_LOGGER} from '../utils/Loggers'
+import {requestClient, sendEventToAllWindows} from '..'
 import {receiveWorkerMessage} from '../utils/Worker'
 import {AiWorkerReceive} from './ai_worker/types'
 import {ThumbWorkerReceive} from './thumbworker/types'
@@ -14,12 +13,16 @@ export function setupWorkerHandlers() {
 
   receiveWorkerMessage<ThumbWorkerReceive>(ThumbWorker, {
     image_ready: (message) => {
-      //TODO:Implement
-      SHELF_LOGGER.info(`image previewerwd ${message.data.hash}`)
+      sendEventToAllWindows('preview_response', {
+        hash: message.data.hash,
+        success: true,
+      })
     },
     image_error: (message) => {
-      //TODO:Implement
-      SHELF_LOGGER.error(`error :c ${message.data.hash}`)
+      sendEventToAllWindows('preview_response', {
+        hash: message.data.hash,
+        success: false,
+      })
     },
   })
 

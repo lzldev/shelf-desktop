@@ -3,8 +3,8 @@ import {Content} from '@models'
 import {checkExtension} from '../utils/Extensions'
 import clsx from 'clsx'
 import {HTMLAttributes, useEffect, useRef, useState} from 'react'
-import {ShelfIpcRendererListener} from 'src/preload/ipcRendererTypes'
 import {DocumentIcon} from '@heroicons/react/24/solid'
+import {usePreviewListener, PREVIEW_LISTENER} from '../hooks/usePreviewStore'
 
 type ContentPreviewProps = {
   content: Content
@@ -26,35 +26,27 @@ function ContentPreview({
   const format = checkExtension(content.extension)
   const [hidden, setHidden] = useState(format === 'image')
 
+  const {register, unregister} = usePreviewListener()
+
   useEffect(() => {
     if (!error) {
       return
     }
 
-    const listener: ShelfIpcRendererListener<'preview_response'> = (
-      _,
-      args,
-    ) => {
-      if (!args.success && args.hash === content.hash) {
-        //REMOVEME: debug stuff
-        console.log(`Preview failed removing listener for ${content.hash}`)
-        window.electron.ipcRenderer.removeListener('preview_response', listener)
-        return
-      } else if (!args.success) {
-        //REMOVEME: debug stuff
-        console.log(`preview failed but it aint me lmao`)
+    const listener: PREVIEW_LISTENER = (data) => {
+      if (!data.success && data.hash === content.hash) {
+        unregister(content.hash)
         return
       }
 
-      if (args.hash === content.hash) {
-        console.log(`im previewable ${content.hash}`)
+      if (data.hash === content.hash) {
         setError(null)
       }
+
+      unregister(content.hash)
     }
 
     const async = async () => {
-      //REMOVEME: debug stuff
-      console.log(`Preview Effect`)
       const path = content?.paths?.at(0)?.path
       if (!path) {
         return
@@ -69,10 +61,10 @@ function ContentPreview({
         return
       }
 
-      window.api.ipcRendererHandle('preview_response', listener)
+      register(content.hash, listener)
 
       return () => {
-        window.electron.ipcRenderer.removeListener('preview_response', listener)
+        unregister(content.hash)
       }
     }
 
@@ -101,12 +93,12 @@ function ContentPreview({
     >
       {format === 'image' && !error ? (
         <>
-          {/* <img */}
-          {/*   className={ */}
-          {/*     'absolute inset-0 -z-10 h-full w-full scale-150 object-contain opacity-25 blur-2xl saturate-200' */}
-          {/*   } */}
-          {/*   src={uri} */}
-          {/* /> */}
+          <img
+            className={
+              'absolute inset-0 -z-10 h-full w-full scale-150 object-contain opacity-25 blur-2xl saturate-200'
+            }
+            src={uri}
+          />
           <img
             {...contentProps}
             src={uri}
@@ -171,4 +163,5 @@ function ContentPreview({
     </div>
   )
 }
+
 export {ContentPreview}

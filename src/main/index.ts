@@ -10,9 +10,11 @@ import {
 } from 'electron'
 import '../preload/ipcTypes'
 
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { ShelfClient } from './shelf-client/ShelfClient'
-import { zJson } from './zJson'
+import sharp from 'sharp'
+
+import {electronApp, optimizer, is} from '@electron-toolkit/utils'
+import {ShelfClient} from './shelf-client/ShelfClient'
+import {zJson} from './zJson'
 import {
   IpcRendererEvents,
   ShelfWebContentsSend,
@@ -26,11 +28,11 @@ import {
 
 import './shelf-client'
 
-import { SHELF_LOGGER } from './utils/Loggers'
-import { setupWorkerHandlers } from './shelf-client/WorkerEvents'
-import { join } from 'path'
-import { ShelfWindowID, WindowOptions } from './windows'
-import { noUIMode } from './noui'
+import {SHELF_LOGGER} from './utils/Loggers'
+import {setupWorkerHandlers} from './shelf-client/WorkerEvents'
+import {join} from 'path'
+import {ShelfWindowID, WindowOptions} from './windows'
+import {noUIMode} from './noui'
 
 export const AppConfig = new zJson(SHELF_CONFIG_PATH, SHELF_CONFIG_SCHEMA, {
   recentFiles: [],
@@ -62,13 +64,13 @@ function createWindow(windowId: ShelfWindowID): void {
 
   const positionX = Math.max(
     primaryDisplay.width / 2 +
-    (primaryDisplay.x - windowOptions.startOptions.width / 2),
+      (primaryDisplay.x - windowOptions.startOptions.width / 2),
     0,
   )
   const positionY = Math.max(
     primaryDisplay.height / 2 +
-    primaryDisplay.y -
-    windowOptions.startOptions.height / 2,
+      primaryDisplay.y -
+      windowOptions.startOptions.height / 2,
     0,
   )
 
@@ -83,8 +85,8 @@ function createWindow(windowId: ShelfWindowID): void {
     autoHideMenuBar: true,
     ...(process.platform !== 'darwin'
       ? {
-        icon: nativeImage.createFromPath('build/icon.png'),
-      }
+          icon: nativeImage.createFromPath('build/icon.png'),
+        }
       : {}),
     webPreferences: {
       webSecurity: false,
@@ -95,18 +97,17 @@ function createWindow(windowId: ShelfWindowID): void {
 
   newWindow.on('ready-to-show', () => {
     newWindow.show()
-    newWindow.webContents.openDevTools()
   })
 
   newWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
-    return { action: 'deny' }
+    return {action: 'deny'}
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     newWindow.loadURL(
       process.env['ELECTRON_RENDERER_URL'] +
-      `?#/${WindowOptions[windowId].route}`,
+        `?#/${WindowOptions[windowId].route}`,
     )
   } else {
     newWindow.loadFile(join(__dirname, '../renderer/index.html'), {
@@ -165,7 +166,7 @@ app.whenReady().then(async () => {
   )
 
   createWindow('start')
-  app.on('activate', function() {
+  app.on('activate', function () {
     if (!BrowserWindow.getAllWindows().length) createWindow('start')
   })
 })

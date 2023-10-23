@@ -20,6 +20,9 @@ import type {AIWORKERTYPE as AiWorkerType} from './ai_worker/types'
 
 import CreateThumbWorker from './thumbworker/worker?nodeWorker'
 import {ThumbWorkerData, ThumbWorkerType} from './thumbworker/types'
+import * as os from 'node:os'
+import {SHELF_LOGGER} from '../utils/Loggers'
+import {SHARE_ENV} from 'worker_threads'
 
 class ShelfClient {
   public choki: FSWatcher
@@ -65,11 +68,19 @@ class ShelfClient {
     )
 
     const aiWorker = CreateAIWorker({
+      name: 'aiworker',
+      env: SHARE_ENV,
       workerData: {dbPath: options.basePath},
     }) as AiWorkerType
 
+    const max_threads = os.cpus().length
+    SHELF_LOGGER.info(`max_threads ${max_threads}`)
+
     const thumbWorker = CreateThumbWorker({
+      name: 'thumbworker',
+      env: SHARE_ENV,
       workerData: {
+        max_threads: max_threads <= 0 ? 2 : max_threads,
         thumbnailPath: SHELF_THUMB_DEFFAULT_PATH,
       } as ThumbWorkerData,
     }) as ThumbWorkerType
@@ -97,6 +108,8 @@ class ShelfClient {
     this.ShelfDB = newInstance.ShelfDB
     this.choki = newInstance.choki
     this.config = newInstance.config
+
+    this.config.save()
 
     addChokiEvents(this, newInstance.callback)
 

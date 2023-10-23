@@ -124,7 +124,6 @@ export const addChokiEvents = (
       }
 
       if (canClassify(content.extension)) {
-        console.log('THIS IS RUNNIGN ?!?!AS FDASPOF MAOPFSM OA{S FM}')
         shelfClient.AiWorker.postMessage({
           type: 'new_file',
           data: {
@@ -166,8 +165,6 @@ export const addChokiEvents = (
   }
 
   async function shelfOnReady() {
-    shelfClient.config.save() // FIXME:why im doing this here ?
-
     const isDBNew = shelfClient.config.isNew
     const watchedFiles = filterDirectoryTree(choki.getWatched())
 
@@ -246,26 +243,13 @@ export const addChokiEvents = (
     )
       .filter((content) => canClassify(content.extension))
       .forEach((content) => {
-        // shelfClient.AiWorker.postMessage({
-        //   type: 'new_file',
-        //   data: {
-        //     id: content.id,
-        //     path: watchedFiles[hashToPathRecord[content.hash][0]][0],
-        //   },
-        // })
-
-        //REMOVEME:
-        //TODO:Implement
-
-        if (content.extension !== '.jfif') {
-          shelfClient.ThumbWorker.postMessage({
-            type: 'resize_image',
-            data: {
-              filePath: watchedFiles[hashToPathRecord[content.hash][0]][0],
-              hash: content.hash,
-            },
-          })
-        }
+        shelfClient.AiWorker.postMessage({
+          type: 'new_file',
+          data: {
+            id: content.id,
+            path: watchedFiles[hashToPathRecord[content.hash][0]][0],
+          },
+        })
       })
 
     SHELF_LOGGER.info('Wainting for AI Tagging...')
@@ -460,7 +444,4 @@ async function CleanupShelfDB(watchedFiles: FileTuple[]) {
       id: orphanedContents.map((v) => v.id),
     },
   })
-
-  console.log('[Content] Found : ', orphanedContents.length)
-  console.log('[Content] Cleaned : ', cleaned)
 }
