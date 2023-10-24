@@ -61,8 +61,16 @@ function Main(): JSX.Element {
     ['content'],
     async (context) => {
       const {orderDirection, orderField} = useOrderStore.getState()
-      const {pageParam = {offset: 0, limit: config!.pageSize}} = context
-      const pagination = pageParam || {offset: 0, limit: config!.pageSize}
+      const {
+        pageParam = {
+          offset: 0,
+          limit: config!.pageSize,
+        },
+      } = context
+      const pagination = pageParam || {
+        offset: 0,
+        limit: config!.pageSize,
+      }
       const tags =
         selectedTags.size > 0 ? Array.from(selectedTags.values()) : undefined
 
@@ -363,7 +371,9 @@ const ContentGrid = forwardRef(function Body(
     error,
     children,
     ...props
-  }: {error: unknown} & PropsWithChildren &
+  }: {
+    error: unknown
+  } & PropsWithChildren &
     HTMLAttributes<HTMLDivElement> &
     HTMLAttributes<MasonryInfiniteGrid>,
   ref: Ref<MasonryInfiniteGrid> & Ref<HTMLDivElement>,

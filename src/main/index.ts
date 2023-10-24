@@ -67,6 +67,7 @@ function createWindow(windowId: ShelfWindowID): void {
       (primaryDisplay.x - windowOptions.startOptions.width / 2),
     0,
   )
+
   const positionY = Math.max(
     primaryDisplay.height / 2 +
       primaryDisplay.y -

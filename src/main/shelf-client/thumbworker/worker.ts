@@ -78,4 +78,5 @@ async function resizeImage(filePath: string, hash: string) {
 
   return image.toFile(out)
 }
+
 main()
