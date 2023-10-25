@@ -63,9 +63,9 @@ export const checkExtension = (extension: string) => {
  * Checks if file extension is able to be classified by Mobilenet
  * */
 export const canClassify = (fileExtension: string) => {
-  if (fileExtension !== '.webp') {
-    return checkExtension(fileExtension) === 'image'
+  if (fileExtension === '.webp') {
+    return false
   }
 
-  return false
+  return checkExtension(fileExtension) === 'image'
 }
