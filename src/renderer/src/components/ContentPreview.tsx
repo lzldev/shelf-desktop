@@ -44,14 +44,14 @@ function ContentPreview({
 
     const async = async () => {
       const path = content?.paths?.at(0)?.path
-      if (!path) {
+      if (!path || format === 'unrecognized') {
         return
       }
 
       const response = await window.api.invokeOnMain('preview_content', {
         hash: content.hash,
         filePath: path,
-      })
+      },format)
 
       if (response.instaError) {
         return
@@ -85,7 +85,7 @@ function ContentPreview({
         props.className,
       )}
     >
-      {format === 'image' && !error ? (
+      {(format === 'image' || format === 'video') && !error ? (
         <ContentThumbnail
           {...{format, uri, error, hidden, setError, setHidden}}
         />
