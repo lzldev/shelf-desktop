@@ -12,13 +12,13 @@ export function setupWorkerHandlers() {
   const {ThumbWorker, AiWorker} = client
 
   receiveWorkerMessage<ThumbWorkerReceive>(ThumbWorker, {
-    image_ready: (message) => {
+    preview_ready: (message) => {
       sendEventToAllWindows('preview_response', {
         hash: message.data.hash,
         success: true,
       })
     },
-    image_error: (message) => {
+    preview_error: (message) => {
       sendEventToAllWindows('preview_response', {
         hash: message.data.hash,
         success: false,

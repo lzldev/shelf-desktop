@@ -114,7 +114,7 @@ export type IpcMainEvents = TypeRecord<
       return: boolean
     }
     preview_content: {
-      args: [{hash: string; filePath: string}]
+      args: [data:{hash: string; filePath: string}, preview_type : 'video' | 'image']
       return: {instaError: boolean}
     }
   }

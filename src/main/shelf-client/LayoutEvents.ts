@@ -7,19 +7,34 @@ import {CLIENT_CONFIG_FILE_NAME} from '../ShelfConfig'
 import {__DBFILENAME} from '../db/ShelfDB'
 import {join} from 'path'
 import {OpenDialogReturnValue} from 'electron/main'
+import { exec } from 'node:child_process'
+import { SHELF_LOGGER } from '../utils/Loggers'
 
 ipcMain.handle('preview_content', createPreviewContentHandler())
 function createPreviewContentHandler() {
   const errorSet = new Set<string>()
 
-  const handler: SherfIpcMainListener<'preview_content'> = async (_, data) => {
-    const client = requestClient()
-
+  const handler: SherfIpcMainListener<'preview_content'> = async (
+    _,
+    data,
+    type,
+  ) => {
     if (errorSet.has(data.hash)) {
       return {instaError: true}
     }
 
-    client?.ThumbWorker.postMessage({type: 'resize_image', data})
+    const client = requestClient()
+
+    switch (type) {
+      case 'video':
+        client?.ThumbWorker.postMessage({type: 'resize_video', data})
+        break
+      case 'image':
+        client?.ThumbWorker.postMessage({type: 'resize_image', data})
+        break
+      default:
+        return {instaError: true}
+    }
 
     return {instaError: false}
   }

@@ -36,14 +36,16 @@ LOGGER.info('Starting')
 
 async function main() {
   handleWorkerMessage<ThumbWorkerInvoke>(port, {
-    resize_image: async ({data}) => {
-      LOGGER.info(`resizing ${data.filePath}`)
+    resize_video: async ({data}) => {
+      LOGGER.info('Video preview')
 
+    },
+    resize_image: async ({data}) => {
       const out = await resizeImage(data.filePath, data.hash).catch((e) => {
         LOGGER.error(`error in ${data.filePath} ${JSON.stringify(e)}`)
 
-        postMessage('image_error', {
-          type: 'image_error',
+        postMessage('preview_error', {
+          type: 'preview_error',
           data: {
             hash: data.hash,
           },
@@ -54,8 +56,8 @@ async function main() {
         return
       }
 
-      postMessage('image_ready', {
-        type: 'image_ready',
+      postMessage('preview_ready', {
+        type: 'preview_ready',
         data: {
           hash: data.hash,
         },
@@ -63,6 +65,8 @@ async function main() {
     },
   })
 }
+
+main()
 
 async function resizeImage(filePath: string, hash: string) {
   const image = sharp(filePath, {
@@ -79,4 +83,3 @@ async function resizeImage(filePath: string, hash: string) {
   return image.toFile(out)
 }
 
-main()

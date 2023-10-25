@@ -4,15 +4,18 @@ import {CustomWorker} from '../../../types/Workers'
 export type ThumbWorkerInvoke = {
   type: 'resize_image'
   data: {filePath: string; hash: string}
+} | {
+  type: 'resize_video'
+  data: {filePath: string; hash: string}
 }
 
 export type ThumbWorkerReceive =
   | {
-      type: 'image_ready'
+      type: 'preview_ready'
       data: {hash: string}
     }
   | {
-      type: 'image_error'
+      type: 'preview_error'
       data: {hash: string}
     }
 
