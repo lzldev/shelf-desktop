@@ -29,7 +29,7 @@ function ShelfContent({
       .map((v) => encodeURIComponent(v))
       .join('/')
 
-    return 'file://' + parsedPath
+    return 'file://' + (parsedPath?.at(0) === '/' ? '' : '/') + parsedPath
   }, [])
 
   return (
