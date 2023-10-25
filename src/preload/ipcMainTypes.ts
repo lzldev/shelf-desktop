@@ -40,8 +40,9 @@ export type IpcMainEvents = TypeRecord<
     }
     openDirectory: {
       args: []
-      return: OpenDialogReturnValue &
-        ({canceled: false; isNew: boolean} | {canceled: true})
+      return:
+        | {canceled: true}
+        | (OpenDialogReturnValue & {canceled: false; isNew: boolean})
     }
     getRecent: {
       args: []

@@ -1,5 +1,3 @@
-console.log('[SHELFDB] DIR ', import.meta.url)
-
 import {Sequelize} from 'sequelize-typescript'
 import {Content, ContentTag, Path, Tag, TagColor} from './models'
 

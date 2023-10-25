@@ -59,6 +59,10 @@ async function main() {
         })
       })
 
+      if (!video_preview) {
+        return
+      }
+
       LOGGER.info(`Video preview success ${video_preview}`)
 
       postMessage('preview_ready', {
@@ -117,10 +121,9 @@ function videoOutPath(fileName: string) {
 
 async function videoPreviewExec(inputFilePath: string, outputHash: string) {
   return new Promise((res, rej) => {
-    // const command = 'ffmpeg ' + ffmpegArgs(inputFilePath, outputHash).join(' ')
-    const command = `${ffmpegStatic} -nostdin -y -i ${inputFilePath} -vf thumbnail=160,scale=-1:300 -vframes 1 ${videoOutPath(
+    const command = `${ffmpegStatic} -nostdin -y -i "${inputFilePath}" -vf thumbnail=160,scale=-1:300 -vframes 1 "${videoOutPath(
       outputHash,
-    )}`
+    )}"`
 
     try {
       exec(
@@ -141,7 +144,7 @@ async function videoPreviewExec(inputFilePath: string, outputHash: string) {
         },
       )
     } catch (e) {
-      rej(e)
+      rej(false)
     }
   })
 }
