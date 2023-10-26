@@ -1,5 +1,5 @@
 import {z} from 'zod'
-import {CustomWorker} from '../../utils/workertypes'
+import {CustomWorker} from '../../../types/Workers'
 type ContentIdWithPath = {id: number; path: string}
 
 export type AiWorkerInvoke =

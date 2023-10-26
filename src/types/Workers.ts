@@ -1,8 +1,4 @@
-import {
-  TransferListItem,
-  Worker,
-  WorkerOptions as DefaultWorkerOptions,
-} from 'node:worker_threads'
+import {TransferListItem, Worker} from 'node:worker_threads'
 
 type keptEvents = {
   addListener(event: 'error', listener: (err: Error) => void): Worker

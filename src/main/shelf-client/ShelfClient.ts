@@ -8,19 +8,28 @@ import {join} from 'path'
 import {
   CLIENT_CONFIG_FILE_NAME,
   SHELF_CLIENT_CONFIG_SCHEMA,
+  SHELF_THUMB_DEFFAULT_PATH,
   ShelfClientConfigValues,
 } from '../ShelfConfig'
 
-import {globSupportedFormats} from '../../renderer/src/utils/formats'
+import {globSupportedFormats} from '../../renderer/src/utils/Extensions'
 import {IpcMainEvents} from '../../preload/ipcMainTypes'
 
 import CreateAIWorker from './ai_worker/worker?nodeWorker'
-import type {AIWORKERTYPE} from './ai_worker/types'
+import type {AIWORKERTYPE as AiWorkerType} from './ai_worker/types'
+
+import CreateThumbWorker from './thumbworker/worker?nodeWorker'
+import {ThumbWorkerData, ThumbWorkerType} from './thumbworker/types'
+import * as os from 'node:os'
+import {SHELF_LOGGER} from '../utils/Loggers'
+import {SHARE_ENV} from 'worker_threads'
 
 class ShelfClient {
   public choki: FSWatcher
   public ShelfDB: ShelfDBModels
-  public AIWorker: AIWORKERTYPE
+  public AiWorker: AiWorkerType
+  public ThumbWorker: ThumbWorkerType
+
   public ready = false
 
   public config: zJson<
@@ -59,11 +68,26 @@ class ShelfClient {
     )
 
     const aiWorker = CreateAIWorker({
+      name: 'aiworker',
+      env: SHARE_ENV,
       workerData: {dbPath: options.basePath},
-    }) as AIWORKERTYPE
+    }) as AiWorkerType
+
+    const max_threads = os.cpus().length
+    SHELF_LOGGER.info(`max_threads ${max_threads}`)
+
+    const thumbWorker = CreateThumbWorker({
+      name: 'thumbworker',
+      env: SHARE_ENV,
+      workerData: {
+        max_threads: max_threads <= 0 ? 2 : max_threads,
+        thumbnailPath: SHELF_THUMB_DEFFAULT_PATH,
+      } as ThumbWorkerData,
+    }) as ThumbWorkerType
 
     return new ShelfClient({
       aiWorker,
+      thumbWorker,
       choki,
       ShelfDB,
       callback,
@@ -72,16 +96,20 @@ class ShelfClient {
   }
 
   protected constructor(newInstance: {
-    aiWorker: AIWORKERTYPE
+    aiWorker: AiWorkerType
+    thumbWorker: ThumbWorkerType
     choki: FSWatcher
     ShelfDB: ShelfDBModels
     config: zJson<typeof SHELF_CLIENT_CONFIG_SCHEMA, ShelfClientConfigValues>
     callback: () => void
   }) {
-    this.AIWorker = newInstance.aiWorker
+    this.AiWorker = newInstance.aiWorker
+    this.ThumbWorker = newInstance.thumbWorker
     this.ShelfDB = newInstance.ShelfDB
     this.choki = newInstance.choki
     this.config = newInstance.config
+
+    this.config.save()
 
     addChokiEvents(this, newInstance.callback)
 

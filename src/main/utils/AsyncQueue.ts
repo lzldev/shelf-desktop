@@ -1,4 +1,4 @@
-import {createWorkerLogger} from '../../utils/Loggers'
+import {createWorkerLogger} from './Loggers'
 
 type AsyncFunc = (...any: any[]) => Promise<any>
 

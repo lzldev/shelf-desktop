@@ -1,4 +1,4 @@
-export type TypeLevelRecord<
+export type TypeRecord<
   TShape extends object,
   TRecord extends {[key: string]: TShape},
 > = TRecord

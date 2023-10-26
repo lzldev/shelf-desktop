@@ -3,7 +3,7 @@ import {HTMLAttributes} from 'react'
 import {Tag} from '@models'
 import {InlineButton} from './InlineButton'
 import {InlineTag} from './InlineTag'
-import {useTagQuery} from '@renderer/hooks/useTagQuery'
+import {useTagQuery} from '../hooks/useTagQuery'
 
 export type pathQuery = {
   value: string
@@ -85,7 +85,7 @@ export const SearchBar = ({
           />
           <button
             className={
-              'bg-red-tag z-20 bg-clip-text px-11 font-bold text-gray-700 text-transparent ring-gray-300 transition-all hover:bg-clip-border hover:text-white hover:ring-0'
+              'z-20 bg-red-brand bg-clip-text px-11 font-bold text-gray-700 text-transparent ring-gray-300 transition-all hover:bg-clip-border hover:text-white hover:ring-0'
             }
             onClick={onQuery}
           >

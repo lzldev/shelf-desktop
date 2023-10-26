@@ -4,7 +4,6 @@ dist
 out
 *.log*
 
-
 examples/*
 !examples/ignored
 examples/ignored/*

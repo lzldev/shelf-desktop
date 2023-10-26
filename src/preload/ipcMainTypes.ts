@@ -1,7 +1,7 @@
 import {Content, Tag, TagColor} from '../main/db/models'
 import {TagFields} from '../main/db/models/Tag'
 import {TagColorFields} from '../main/db/models/TagColor'
-import {SomeRequired, TypeLevelRecord} from '../types/utils'
+import {SomeRequired, TypeRecord} from '../types/utils'
 import {
   ColorOperation,
   TagOperation,
@@ -18,7 +18,7 @@ type IpcMainEventShape = {
   return: unknown
 }
 
-export type IpcMainEvents = TypeLevelRecord<
+export type IpcMainEvents = TypeRecord<
   IpcMainEventShape,
   {
     toggleFullscreen: {
@@ -40,8 +40,9 @@ export type IpcMainEvents = TypeLevelRecord<
     }
     openDirectory: {
       args: []
-      return: OpenDialogReturnValue &
-        ({canceled: false; isNew: boolean} | {canceled: true})
+      return:
+        | {canceled: true}
+        | (OpenDialogReturnValue & {canceled: false; isNew: boolean})
     }
     getRecent: {
       args: []
@@ -113,6 +114,10 @@ export type IpcMainEvents = TypeLevelRecord<
       args: [BatchTagging]
       return: boolean
     }
+    preview_content: {
+      args: [data:{hash: string; filePath: string}, preview_type : 'video' | 'image']
+      return: {instaError: boolean}
+    }
   }
 >
 
@@ -127,6 +132,15 @@ export type ShelfIpcMainHandler = <
     ...args: TArgs extends Array<any> ? TArgs : [TArgs]
   ) => Promise<TReturn>,
 ) => void
+
+export type SherfIpcMainListener<
+  TKey extends keyof IpcMainEvents,
+  TArgs extends IpcMainEvents[TKey]['args'] = IpcMainEvents[TKey]['args'],
+  TReturn extends IpcMainEvents[TKey]['return'] = IpcMainEvents[TKey]['return'],
+> = (
+  event: Electron.IpcMainInvokeEvent,
+  ...args: TArgs extends Array<any> ? TArgs : [TArgs]
+) => Promise<TReturn>
 
 export type ShelfIpcRendererInvoke = <
   TKey extends keyof IpcMainEvents,

@@ -8,10 +8,10 @@ import {
   useRef,
   useState,
 } from 'react'
+
 import {useTags} from './hooks/useTags'
 import {Content, Tag} from '@models'
 import {useInfiniteQuery} from '@tanstack/react-query'
-import {ShelfContent} from './components/ShelfContent'
 import {createPortal} from 'react-dom'
 import {ContentDetails} from './ContentDetails'
 import {useToggle} from './hooks/useToggle'
@@ -28,6 +28,7 @@ import {MasonryInfiniteGrid} from '@egjs/react-infinitegrid'
 import {OptionsModal} from './OptionsModal'
 import {ArrowPathIcon, Cog8ToothIcon} from '@heroicons/react/24/solid'
 import {MarkContent} from './utils/Main'
+import {ContentPreview} from './components/ContentPreview'
 
 function Main(): JSX.Element {
   const {config} = useConfigStore()
@@ -60,8 +61,16 @@ function Main(): JSX.Element {
     ['content'],
     async (context) => {
       const {orderDirection, orderField} = useOrderStore.getState()
-      const {pageParam = {offset: 0, limit: config!.pageSize}} = context
-      const pagination = pageParam || {offset: 0, limit: config!.pageSize}
+      const {
+        pageParam = {
+          offset: 0,
+          limit: config!.pageSize,
+        },
+      } = context
+      const pagination = pageParam || {
+        offset: 0,
+        limit: config!.pageSize,
+      }
       const tags =
         selectedTags.size > 0 ? Array.from(selectedTags.values()) : undefined
 
@@ -282,7 +291,7 @@ function Main(): JSX.Element {
             }
 
             return page.content.map((content, contentIdx) => (
-              <ShelfContent
+              <ContentPreview
                 data-grid-groupkey={pageIdx}
                 key={content.id}
                 className={clsx(
@@ -340,7 +349,7 @@ function Main(): JSX.Element {
                     evt.stopPropagation()
                   }}
                 />
-              </ShelfContent>
+              </ContentPreview>
             ))
           })}
         </ContentGrid>
@@ -362,7 +371,9 @@ const ContentGrid = forwardRef(function Body(
     error,
     children,
     ...props
-  }: {error: unknown} & PropsWithChildren &
+  }: {
+    error: unknown
+  } & PropsWithChildren &
     HTMLAttributes<HTMLDivElement> &
     HTMLAttributes<MasonryInfiniteGrid>,
   ref: Ref<MasonryInfiniteGrid> & Ref<HTMLDivElement>,
@@ -433,7 +444,7 @@ function OptionsDropdown(props: {
   return (
     <Dropdown
       triggerRender={() => (
-        <Cog8ToothIcon className='mb-1 ml-1 h-6 w-6  fill-gray-100 stroke-gray-600 transition-colors hover:fill-gray-300 hover:stroke-white' />
+        <Cog8ToothIcon className='mb-1 ml-1 h-6 w-6 fill-gray-100 stroke-gray-600 transition-colors hover:fill-gray-300 hover:stroke-white' />
       )}
     >
       <div

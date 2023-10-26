@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import type {IpcRendererEvent} from 'electron'
-import {TypeLevelRecord} from '../types/utils'
+import {TypeRecord} from '../types/utils'
 
 type IpcRendererEventShape = {
   args: unknown | unknown[]
 }
 
-export type IpcRendererEvents = TypeLevelRecord<
+export type IpcRendererEvents = TypeRecord<
   IpcRendererEventShape,
   {
     updateProgress: {
@@ -23,6 +23,14 @@ export type IpcRendererEvents = TypeLevelRecord<
     }
     updateColors: {
       args: []
+    }
+    preview_response: {
+      args: [
+        response: {
+          hash: string
+          success: boolean
+        },
+      ]
     }
   }
 >
@@ -44,4 +52,12 @@ export type ShelfIpcRendererHandler = <
     evt: IpcRendererEvent,
     ...args: TArgs extends Array<any> ? TArgs : [TArgs]
   ) => void,
+) => void
+
+export type ShelfIpcRendererListener<
+  TKey extends keyof IpcRendererEvents,
+  TArgs extends IpcRendererEvents[TKey]['args'] = IpcRendererEvents[TKey]['args'],
+> = (
+  evt: IpcRendererEvent,
+  ...args: TArgs extends Array<any> ? TArgs : [TArgs]
 ) => void

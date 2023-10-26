@@ -1,4 +1,4 @@
-import * as DB from '../../../main/db/models'
+import * as DB from '../main/db/models'
 import {InferAttributes, InferCreationAttributes} from 'sequelize'
 
 export type Content = InferAttributes<DB.Content>

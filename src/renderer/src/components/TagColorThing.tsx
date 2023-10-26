@@ -1,4 +1,4 @@
-import {useColors} from '@renderer/hooks/useColors'
+import {useColors} from '../hooks/useColors'
 import clsx from 'clsx'
 import {HTMLAttributes} from 'react'
 import {Tag} from '@models'

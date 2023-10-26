@@ -1,27 +1,31 @@
 import * as os from 'os'
 import {AIWorkerDataParser, AiWorkerInvoke, AiWorkerReceive} from './types'
+
 import ts, {Tensor3D} from '@tensorflow/tfjs-node'
 import mnet from '@tensorflow-models/mobilenet'
 import {
   isMainThread,
-  parentPort as pp,
+  parentPort,
   threadId,
   workerData as _workerData,
 } from 'node:worker_threads'
 import {DB} from '../../db/kysely-types'
 import {Kysely, SqliteDialect} from 'kysely'
 import SQLite from 'better-sqlite3'
-import {AsyncBatchQueue} from './AsyncQueue'
+import {AsyncBatchQueue} from '../../utils/AsyncQueue'
 import {createWorkerLogger} from '../../utils/Loggers'
 import sharp from 'sharp'
+import {handleWorkerMessage} from '../../utils/Worker'
 
 const workerData = AIWorkerDataParser.parse(_workerData)
 
 if (isMainThread) {
   throw new Error('Worker called in main thread')
-} else if (!pp) {
+} else if (!parentPort) {
   throw new Error('Worker Parent port missing')
 }
+
+const port = parentPort!
 
 const WORKER_LOGGER = createWorkerLogger(threadId)
 export const __DBEXTENSION = '.shelf'
@@ -69,7 +73,7 @@ async function main() {
     }
   })()
 
-  pp!.postMessage({
+  port.postMessage({
     type: 'ready',
     data: null,
   } satisfies AiWorkerReceive)
@@ -82,7 +86,7 @@ async function main() {
   const onFile = (data: ClassifyInput) => {
     asyncQueue.enqueue(async () => {
       return classifyImage(data).then((res) => {
-        pp!.postMessage({
+        port.postMessage({
           type: 'tagged_file',
           data: {
             path: res.path,
@@ -92,32 +96,27 @@ async function main() {
     })
   }
 
-  pp!.on('message', async (value) => {
-    const message = value satisfies AiWorkerInvoke
+  handleWorkerMessage<AiWorkerInvoke>(port, {
+    new_file: async (message) => {
+      onFile(message.data)
+    },
+    emit_batch: async () => {
+      const listener = () => {
+        WORKER_LOGGER.info('SENDING BATCH_DONE')
 
-    switch (message.type) {
-      case 'new_file': {
-        onFile(message.data)
-        break
+        port.postMessage({
+          type: 'batch_done',
+          data: true,
+        } as AiWorkerReceive)
       }
-      case 'emit_batch': {
-        const listener = () => {
-          WORKER_LOGGER.info('SENDING BATCH_DONE')
 
-          pp!.postMessage({
-            type: 'batch_done',
-            data: true,
-          } as AiWorkerReceive)
-        }
-
-        if (!asyncQueue.getRunning()) {
-          listener()
-          return
-        }
-        asyncQueue.onClearOnce(listener)
-        break
+      if (!asyncQueue.getRunning()) {
+        listener()
+        return
       }
-    }
+
+      asyncQueue.onClearOnce(listener)
+    },
   })
 
   type ClassifyInput = Extract<AiWorkerInvoke, {type: 'new_file'}>['data']
