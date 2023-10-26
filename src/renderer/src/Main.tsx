@@ -29,17 +29,21 @@ import {OptionsModal} from './OptionsModal'
 import {ArrowPathIcon, Cog8ToothIcon} from '@heroicons/react/24/solid'
 import {MarkContent} from './utils/Main'
 import {ContentPreview} from './components/ContentPreview'
+import { useContentQueryStore } from './hooks/useQueryStore'
 
 function Main(): JSX.Element {
   const config = useConfigStore((s) => s.config)
   const {tags} = useTags()
+
+  const CONTENTQUERY = useContentQueryStore((s) => s.query)
+
   const [modalContent, setModalContent] = useState<Content | undefined>()
-  const [selectedTags, setSelectedTags] = useImmer<Set<Tag>>(new Set())
-  const [pathQueries, setPathQueries] = useImmer<Set<pathQuery>>(new Set())
   const [markedContent, setMarkedContent] = useImmer<Set<number>>(new Set())
+
   const {orderDirection, orderField, toggleDirection} = useOrderStore()
   const contentList = useRef<HTMLDivElement & MasonryInfiniteGrid>(null)
   const markerIdx = useRef<[pageNumber: number, contentNumber: number]>()
+
   const {keys} = useHotkeysRef({
     Shift: {
       down: () => {},
@@ -61,27 +65,28 @@ function Main(): JSX.Element {
     ['content'],
     async (context) => {
       const {orderDirection, orderField} = useOrderStore.getState()
+
       const {
         pageParam = {
           offset: 0,
           limit: config!.pageSize,
         },
       } = context
+
       const pagination = pageParam || {
         offset: 0,
         limit: config!.pageSize,
       }
-      const tags =
-        selectedTags.size > 0 ? Array.from(selectedTags.values()) : undefined
+
+      const query = Array.from(CONTENTQUERY.values())
 
       const files = await window.api.invokeOnMain('getShelfContent', {
         pagination: {
           offset: pagination.offset,
           limit: pagination.limit,
         },
-        paths: Array.from(pathQueries),
+        query: query,
         order: [orderField, orderDirection],
-        tags,
       })
 
       return files
@@ -189,7 +194,6 @@ function Main(): JSX.Element {
           document.body,
         )}
       <SearchBar
-        selected={selectedTags}
         markedContent={markedContent}
         onBatchAdd={() => {
           const tagIds: number[] = []
@@ -207,6 +211,7 @@ function Main(): JSX.Element {
         }}
         onBatchRemove={() => {
           const tagIds: number[] = []
+
           selectedTags.forEach((tag) => {
             tagIds.push(tag.id)
           })
@@ -221,27 +226,6 @@ function Main(): JSX.Element {
         }}
         onQuery={() => {
           refetch()
-        }}
-        addPathQuery={(query) => {
-          setPathQueries((queries) => {
-            queries.add(query)
-          })
-        }}
-        removePathQuery={(query) => {
-          setPathQueries((queries) => {
-            queries.delete(query)
-          })
-        }}
-        pathQueries={pathQueries}
-        addSelected={(tag) => {
-          setSelectedTags((tags) => {
-            tags.add(tag)
-          })
-        }}
-        removeSelected={(tag: Tag) => {
-          setSelectedTags((tags) => {
-            tags.delete(tag)
-          })
         }}
         onClear={() => {
           setMarkedContent(new Set())

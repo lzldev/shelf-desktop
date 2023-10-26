@@ -10,10 +10,20 @@ ipcMain.handle('getDetailedImage', defaultHandler(getDetailedContent))
 async function getContent(options: IpcMainEvents['getShelfContent']['args']) {
   const order = options?.order ? [options?.order] : undefined
 
-  const TagIdArray =
-    options?.tags && options?.tags?.length !== 0
-      ? options.tags.map((tag) => tag.id)
-      : undefined
+  const {paths, tagIds} = options.query.reduce(
+    (prev, current) => {
+      switch (current.type) {
+        case 'tag':
+          prev.tagIds.push(current.tag.id)
+          break
+        case 'path':
+          prev.paths.push(current.path)
+          break
+      }
+      return prev
+    },
+    {paths: [], tagIds: []} as {paths: string[]; tagIds: number[]},
+  )
 
   const {offset, limit} = options?.pagination || {}
 
@@ -26,8 +36,8 @@ async function getContent(options: IpcMainEvents['getShelfContent']['args']) {
         model: Path,
         where: {
           path: {
-            [Op.or]: options.paths?.map((p) => {
-              return {[Op.like]: `%${p.value}%`}
+            [Op.or]: paths.map((p) => {
+              return {[Op.like]: `%${p}%`}
             }),
           },
         },
@@ -35,9 +45,9 @@ async function getContent(options: IpcMainEvents['getShelfContent']['args']) {
       {
         model: Tag,
         attributes: ['id', 'colorId'],
-        where: TagIdArray
+        where: tagIds.length !== 0
           ? {
-              id: TagIdArray,
+              id: tagIds,
             }
           : undefined,
       },

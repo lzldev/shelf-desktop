@@ -4,32 +4,21 @@ import {Tag} from '@models'
 import {InlineButton} from './InlineButton'
 import {InlineTag} from './InlineTag'
 import {useTagQuery} from '../hooks/useTagQuery'
+import {useContentQueryStore, ContentQuery} from '../hooks/useQueryStore'
 
 export type pathQuery = {
   value: string
 }
 
 export const SearchBar = ({
-  selected,
   markedContent,
-  pathQueries,
   onQuery,
-  addPathQuery,
-  removePathQuery,
-  addSelected,
-  removeSelected,
   onBatchAdd,
   onBatchRemove,
   onClear,
 }: {
-  selected: Set<Tag>
-  pathQueries: Set<pathQuery>
   markedContent: Set<number>
   onQuery: (...any: any[]) => any
-  addPathQuery: (query: pathQuery) => any
-  removePathQuery: (query: pathQuery) => any
-  addSelected: (tag: Tag) => any
-  removeSelected: (tag: Tag) => any
   onBatchAdd: (...any: any[]) => any
   onBatchRemove: (...any: any[]) => any
   onClear: (...any: any[]) => any
@@ -40,12 +29,40 @@ export const SearchBar = ({
     foundTags: DropDownTags,
     SplitQuery: TransformedQuery,
   } = useTagQuery()
-
   const hideDropdown =
     !TransformedQuery[TransformedQuery.length - 1] &&
     TransformedQuery.length === 1
 
-  const hideSelected = selected.size === 0 && pathQueries.size === 0
+
+  const {
+    query: ContentQuery,
+    addQuery,
+    removeQuery,
+  } = useContentQueryStore()
+
+  const hideSelected = ContentQuery.size === 0
+
+  const {paths: pathQ, tags: tagQ} = Array.from(ContentQuery.values()).reduce(
+    (previous, current) => {
+      switch (current.type) {
+        case 'tag':
+          previous.tags.push(current)
+          break
+        case 'path':
+          previous.paths.push(current)
+          break
+      }
+
+      return previous
+    },
+    {tags: [], paths: []} as {
+      tags: Extract<ContentQuery, {type: 'tag'}>[]
+      paths: Extract<ContentQuery, {type: 'path'}>[]
+    },
+  )
+
+  console.log('pts')
+  console.log(pathQ, tagQ)
 
   return (
     <div
@@ -102,7 +119,7 @@ export const SearchBar = ({
               tabIndex={1}
               className='w-full select-all overflow-hidden text-ellipsis bg-gray-400 p-2 text-white transition-colors hover:bg-gray-50 hover:text-black focus:bg-gray-50 focus:text-black'
               onClick={() => {
-                addPathQuery({value: query})
+                addQuery({type:'path',path: query})
                 setQuery('')
               }}
             >
@@ -117,11 +134,19 @@ export const SearchBar = ({
                     tag={tag}
                     onClick={() => {
                       setQuery('')
-                      addSelected(tag)
+                      addQuery({
+                        type: 'tag',
+                        tag: tag,
+                        operation: 'include',
+                      })
                     }}
                     onSubmit={() => {
                       setQuery('')
-                      addSelected(tag)
+                      addQuery({
+                        type: 'tag',
+                        tag: tag,
+                        operation: 'include',
+                      })
                     }}
                   />
                 )
@@ -135,21 +160,21 @@ export const SearchBar = ({
             hideSelected ? 'hidden' : '',
           )}
         >
-          {Array.from(pathQueries).map((query, idx) => (
+          {pathQ.map((query, idx) => (
             <InlineButton
               key={idx}
               onClick={() => {
-                removePathQuery(query)
+                removeQuery(query)
               }}
             >
-              {query.value}
+              {query.path}
             </InlineButton>
           ))}
-          {Array.from(selected).map((tag) => (
+          {tagQ.map((tag) => (
             <InlineTag
-              key={tag.id}
-              tag={tag}
-              onClick={() => removeSelected(tag)}
+              key={tag.tag.id}
+              tag={tag.tag}
+              onClick={() => removeQuery(tag)}
             />
           ))}
         </div>

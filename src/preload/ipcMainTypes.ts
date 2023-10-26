@@ -12,6 +12,7 @@ import {
   ShelfConfigType as ShelfConfigType,
 } from '../main/ShelfConfig'
 import {OpenDialogReturnValue} from 'electron/main'
+import {ContentQuery} from '../renderer/src/hooks/useQueryStore'
 
 type IpcMainEventShape = {
   args: unknown | unknown[]
@@ -68,8 +69,7 @@ export type IpcMainEvents = TypeRecord<
       args: {
         pagination?: {offset: number; limit: number}
         order?: [string, 'ASC' | 'DESC']
-        paths?: {value: string}[]
-        tags?: TagFields[]
+        query:ContentQuery[]
       }
       return: {content: Content[]; nextCursor?: {offset: number; limit: number}}
     }
