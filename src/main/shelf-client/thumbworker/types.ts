@@ -1,13 +1,15 @@
 import {z} from 'zod'
 import {CustomWorker} from '../../../types/Workers'
 
-export type ThumbWorkerInvoke = {
-  type: 'resize_image'
-  data: {filePath: string; hash: string}
-} | {
-  type: 'resize_video'
-  data: {filePath: string; hash: string}
-}
+export type ThumbWorkerInvoke =
+  | {
+      type: 'resize_image'
+      data: {filePath: string; hash: string}
+    }
+  | {
+      type: 'resize_video'
+      data: {filePath: string; hash: string}
+    }
 
 export type ThumbWorkerReceive =
   | {

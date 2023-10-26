@@ -2,7 +2,7 @@ import {useConfigStore} from '../hooks/useConfig'
 import {Content} from '@models'
 import {checkExtension} from '../utils/Extensions'
 import clsx from 'clsx'
-import {HTMLAttributes, useEffect,  useState} from 'react'
+import {HTMLAttributes, useEffect, useState} from 'react'
 import {DocumentIcon} from '@heroicons/react/24/solid'
 import {usePreviewListener, PREVIEW_LISTENER} from '../hooks/usePreviewStore'
 
@@ -48,10 +48,14 @@ function ContentPreview({
         return
       }
 
-      const response = await window.api.invokeOnMain('preview_content', {
-        hash: content.hash,
-        filePath: path,
-      },format)
+      const response = await window.api.invokeOnMain(
+        'preview_content',
+        {
+          hash: content.hash,
+          filePath: path,
+        },
+        format,
+      )
 
       if (response.instaError) {
         return
@@ -70,7 +74,6 @@ function ContentPreview({
   }, [error])
 
   const thumbnailPath = useConfigStore((s) => s.config!.thumbnailPath)
-
   const uri = 'file://' + thumbnailPath + content.hash + '.jpg'
 
   return (
@@ -114,16 +117,11 @@ function ContentThumbnail({
   return (
     <>
       <img
-        className={
-          'absolute inset-0 -z-10 h-full w-full scale-150 object-contain opacity-25 blur-2xl saturate-200'
-        }
-        src={uri}
-      />
-      <img
         {...props}
         src={uri}
         hidden={hidden}
-        className={clsx('mx-auto h-full object-contain ', props?.className)}
+        height={300}
+        className={'absolute inset-0 h-full w-full object-contain'}
         onLoad={() => {
           setHidden(false)
         }}
@@ -131,6 +129,13 @@ function ContentThumbnail({
           setError(`ERROR LOADING PREVIEW ${evt.type} Loading Image`)
           setHidden(false)
         }}
+      />
+      <img
+        className={
+          'pointer-events-none absolute inset-0 -z-10 max-w-none scale-150 transform-gpu blur-3xl'
+        }
+        height={300}
+        src={uri}
       />
     </>
   )

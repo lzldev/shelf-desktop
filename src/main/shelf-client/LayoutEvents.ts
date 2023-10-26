@@ -7,8 +7,8 @@ import {CLIENT_CONFIG_FILE_NAME} from '../ShelfConfig'
 import {__DBFILENAME} from '../db/ShelfDB'
 import {join} from 'path'
 import {OpenDialogReturnValue} from 'electron/main'
-import { exec } from 'node:child_process'
-import { SHELF_LOGGER } from '../utils/Loggers'
+import {exec} from 'node:child_process'
+import {SHELF_LOGGER} from '../utils/Loggers'
 
 ipcMain.handle('preview_content', createPreviewContentHandler())
 function createPreviewContentHandler() {

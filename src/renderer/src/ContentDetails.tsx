@@ -5,6 +5,7 @@ import {
   PropsWithChildren,
   RefObject,
   useEffect,
+  useMemo,
   useRef,
 } from 'react'
 import {InlineTag} from './components/InlineTag'
@@ -23,6 +24,7 @@ import {
 import {useHotkeys} from './hooks/useHotkeys'
 import {ArrowLeftIcon} from '@heroicons/react/24/solid'
 import {openInAnotherProgram, openContentDirectory} from './utils/Content'
+import {checkExtension} from './utils/Extensions'
 
 const prevTitle = window.document.title
 
@@ -96,11 +98,12 @@ function ContentDetails({
     )
   }
 
-  if (fullscreen) {
+  const format = useMemo(() => checkExtension(content!.extension), [content])
+
+  if (fullscreen && format === 'image') {
     return (
       <div className={clsx(containerClass, 'bg-black bg-opacity-50')}>
         <ShelfContent
-          controls
           className={'h-full w-full bg-black bg-opacity-50 backdrop-blur-xl'}
           content={content}
           onClick={() => {
@@ -126,7 +129,6 @@ function ContentDetails({
       </div>
       <div onClick={() => toggleFullscreen()}>
         <ShelfContent
-          controls
           className={clsx('h-[60vh] bg-black bg-opacity-50')}
           content={content}
         />

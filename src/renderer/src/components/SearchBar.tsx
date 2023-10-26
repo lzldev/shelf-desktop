@@ -50,7 +50,7 @@ export const SearchBar = ({
   return (
     <div
       className={clsx(
-        'min-w-screen sticky top-0 z-20 -m-10 bg-surface px-10 pb-7 pt-7 shadow',
+        'min-w-screen sticky top-0 z-20 -m-10 bg-surface px-20 pb-7 pt-7',
       )}
     >
       <div className='relative'>
@@ -92,42 +92,43 @@ export const SearchBar = ({
             Search
           </button>
         </div>
-        <div
-          className={
-            'customGradientBorder absolute -left-0.5 -right-0.5 top-10 z-10 -mt-5 h-auto  origin-top border-x-2 border-b-2 bg-white pt-5 animate-in fill-mode-backwards'
-          }
-          hidden={hideDropdown}
-        >
+        {!hideDropdown && (
           <div
-            tabIndex={1}
-            className='w-full select-all overflow-hidden text-ellipsis bg-gray-400 p-2 text-white transition-colors hover:bg-gray-50 hover:text-black focus:bg-gray-50 focus:text-black'
-            onClick={() => {
-              addPathQuery({value: query})
-              setQuery('')
-            }}
+            className={
+              'customGradientBorder absolute -left-0.5 -right-0.5 top-10 z-10 -mt-5 h-auto  origin-top border-x-2 border-b-2 bg-white pt-5 animate-in fill-mode-backwards'
+            }
           >
-            Search By Path {query}
+            <div
+              tabIndex={1}
+              className='w-full select-all overflow-hidden text-ellipsis bg-gray-400 p-2 text-white transition-colors hover:bg-gray-50 hover:text-black focus:bg-gray-50 focus:text-black'
+              onClick={() => {
+                addPathQuery({value: query})
+                setQuery('')
+              }}
+            >
+              Search By Path {query}
+            </div>
+            <div className='max-h-[40vh] overflow-y-auto'>
+              {DropDownTags.map((tag, idx) => {
+                return (
+                  <InlineTag
+                    key={tag.id}
+                    tabIndex={idx + 2}
+                    tag={tag}
+                    onClick={() => {
+                      setQuery('')
+                      addSelected(tag)
+                    }}
+                    onSubmit={() => {
+                      setQuery('')
+                      addSelected(tag)
+                    }}
+                  />
+                )
+              })}
+            </div>
           </div>
-          <div className='max-h-[40vh] overflow-y-auto'>
-            {DropDownTags.map((tag, idx) => {
-              return (
-                <InlineTag
-                  key={tag.id}
-                  tabIndex={idx + 2}
-                  tag={tag}
-                  onClick={() => {
-                    setQuery('')
-                    addSelected(tag)
-                  }}
-                  onSubmit={() => {
-                    setQuery('')
-                    addSelected(tag)
-                  }}
-                />
-              )
-            })}
-          </div>
-        </div>
+        )}
         <div
           className={clsx(
             '-mx-10 mt-8 flex flex-wrap justify-center bg-gray-200 px-10 py-2',

@@ -3,15 +3,15 @@ import {checkExtension} from '../utils/Extensions'
 import clsx from 'clsx'
 import {HTMLAttributes, useMemo, useRef, useState} from 'react'
 import {Content} from '@models'
+import {useConfigStore} from '../hooks/useConfig'
+import {VideoPlayer} from './VideoPlayer'
 
 function ShelfContent({
   content,
   contentProps,
-  controls,
   ...props
 }: {
   content: Content
-  controls?: boolean
   contentProps?: HTMLAttributes<HTMLDivElement> &
     HTMLAttributes<HTMLVideoElement>
 } & HTMLAttributes<HTMLDivElement>) {
@@ -32,6 +32,9 @@ function ShelfContent({
     return 'file://' + (parsedPath?.at(0) === '/' ? '' : '/') + parsedPath
   }, [])
 
+  const thumbnailPath = useConfigStore((s) => s.config!.thumbnailPath)
+  const preview_uri = 'file://' + thumbnailPath + content.hash + '.jpg'
+
   return (
     <div
       {...props}
@@ -39,9 +42,6 @@ function ShelfContent({
       className={clsx(
         'relative overflow-clip',
         !hidden && format === 'video' ? '' : '',
-        hidden && format === 'image'
-          ? 'animate-gradient_x_fast bg-gradient-to-r from-gray-400 to-gray-800 opacity-50 duration-2500'
-          : '',
         props.className,
       )}
     >
@@ -49,7 +49,7 @@ function ShelfContent({
         <>
           <img
             className={
-              'absolute inset-0 -z-10 h-full w-full scale-150 object-contain opacity-25 blur-2xl saturate-200'
+              'absolute inset-0 -z-10 h-full w-full scale-150 transform-gpu object-contain opacity-25 blur-2xl saturate-200'
             }
             src={uri}
           />
@@ -60,11 +60,10 @@ function ShelfContent({
             }}
             onError={(evt) => {
               setError(`${evt.type} Loading Image`)
-              setHidden(false)
             }}
-            hidden={hidden}
             className={clsx(
-              'mx-auto h-full object-contain ',
+              hidden ? 'opacity-0' : '',
+              'mx-auto h-full object-contain transition-opacity',
               contentProps?.className,
             )}
             src={uri}
@@ -72,12 +71,12 @@ function ShelfContent({
         </>
       ) : format === 'video' && !error ? (
         <div className='relative flex h-full w-full'>
-          <video
+          <img
             className={
               'absolute inset-auto -z-10 h-full w-full scale-150 object-contain opacity-75 blur-2xl saturate-200'
             }
-            src={uri}
-            autoPlay={false}
+            height={300}
+            src={preview_uri}
           />
           <video
             {...contentProps}
@@ -86,11 +85,11 @@ function ShelfContent({
               'h-full w-full object-contain',
               contentProps?.className,
             )}
-            controls={controls && !hidden}
             onProgress={() => {
               setHidden(false)
             }}
-            muted={!controls}
+            controls
+            autoPlay
           />
         </div>
       ) : (

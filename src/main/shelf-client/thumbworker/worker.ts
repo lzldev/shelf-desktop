@@ -84,8 +84,6 @@ async function main() {
         })
       })
 
-      // LOGGER.info(`Image preview ${out}`)
-
       if (!out) {
         return
       }
@@ -148,4 +146,3 @@ async function videoPreviewExec(inputFilePath: string, outputHash: string) {
     }
   })
 }
-
