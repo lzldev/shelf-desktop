@@ -1,14 +1,16 @@
 import {create} from 'zustand'
-import { Tag } from '@models'
+import {Tag} from '@models'
 
-export type ContentQuery = {
-  type:'tag'
-  tag:Tag
-  operation:'include'|'exclude'
-} | {
-  type:'path',
-  path:string
-}
+export type ContentQuery =
+  | {
+      type: 'tag'
+      tag: Tag
+      operation: 'include' | 'exclude'
+    }
+  | {
+      type: 'path'
+      path: string
+    }
 
 interface queryStore {
   query: Set<ContentQuery>
@@ -17,23 +19,24 @@ interface queryStore {
   clearQuery: () => any
 }
 
-const useContentQueryStore = create<queryStore>()((set,get) => ({
+const useContentQueryStore = create<queryStore>()((set, get) => ({
   query: new Set<ContentQuery>(),
-  addQuery: (query:ContentQuery) => {
+  addQuery: (query: ContentQuery) => {
     const prevState = get()
     const newSet = new Set<ContentQuery>(prevState.query)
     newSet.add(query)
-    set((s) => ({...s,query:newSet}))
+    set((s) => ({...s, query: newSet}))
   },
-  removeQuery: (query:ContentQuery) => {
+  removeQuery: (query: ContentQuery) => {
     const prevState = get()
     const newSet = new Set<ContentQuery>(prevState.query)
+
     newSet.delete(query)
 
-    set((s) => ({...s,query:newSet}))
+    set((s) => ({...s, query: newSet}))
   },
   clearQuery: () => {
-    set((s) => ({...s,query:new Set<ContentQuery>()}))
+    set((s) => ({...s, query: new Set<ContentQuery>()}))
   },
 }))
 

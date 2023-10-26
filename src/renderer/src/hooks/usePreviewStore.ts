@@ -21,7 +21,7 @@ window.api.ipcRendererHandle('preview_response', (_, data) => {
   const listener = listeners.get(data.hash)
 
   if (!listener) {
-    console.log(`noone is listening to ${data.hash}`)
+    console.log(`none is listening to ${data.hash}`)
     return
   }
 

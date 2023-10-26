@@ -10,7 +10,7 @@ import {
 } from 'react'
 
 import {useTags} from './hooks/useTags'
-import {Content, Tag} from '@models'
+import {Content} from '@models'
 import {useInfiniteQuery} from '@tanstack/react-query'
 import {createPortal} from 'react-dom'
 import {ContentDetails} from './ContentDetails'
@@ -20,7 +20,7 @@ import {Dropdown} from './components/Dropdown'
 import {useConfigStore} from './hooks/useConfig'
 import {TagColorThing} from './components/TagColorThing'
 import {EditColors} from './EditColors'
-import {pathQuery, SearchBar} from './components/SearchBar'
+import {SearchBar} from './components/SearchBar'
 import {EditTags} from './EditTags'
 import {useImmer} from 'use-immer'
 import {useHotkeysRef} from './hooks/useHotkeys'
@@ -29,7 +29,7 @@ import {OptionsModal} from './OptionsModal'
 import {ArrowPathIcon, Cog8ToothIcon} from '@heroicons/react/24/solid'
 import {MarkContent} from './utils/Main'
 import {ContentPreview} from './components/ContentPreview'
-import { useContentQueryStore } from './hooks/useQueryStore'
+import {useContentQueryStore} from './hooks/useQueryStore'
 
 function Main(): JSX.Element {
   const config = useConfigStore((s) => s.config)
@@ -195,40 +195,8 @@ function Main(): JSX.Element {
         )}
       <SearchBar
         markedContent={markedContent}
-        onBatchAdd={() => {
-          const tagIds: number[] = []
-          selectedTags.forEach((tag) => {
-            tagIds.push(tag.id)
-          })
-
-          const contentIds: number[] = Array.from(markedContent.values())
-
-          window.api.invokeOnMain('batchTagging', {
-            operation: 'ADD',
-            contentIds,
-            tagIds,
-          })
-        }}
-        onBatchRemove={() => {
-          const tagIds: number[] = []
-
-          selectedTags.forEach((tag) => {
-            tagIds.push(tag.id)
-          })
-
-          const contentIds: number[] = Array.from(markedContent.values())
-
-          window.api.invokeOnMain('batchTagging', {
-            operation: 'REMOVE',
-            contentIds,
-            tagIds,
-          })
-        }}
         onQuery={() => {
           refetch()
-        }}
-        onClear={() => {
-          setMarkedContent(new Set())
         }}
       />
       <div

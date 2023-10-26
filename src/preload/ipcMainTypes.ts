@@ -69,7 +69,7 @@ export type IpcMainEvents = TypeRecord<
       args: {
         pagination?: {offset: number; limit: number}
         order?: [string, 'ASC' | 'DESC']
-        query:ContentQuery[]
+        query: ContentQuery[]
       }
       return: {content: Content[]; nextCursor?: {offset: number; limit: number}}
     }

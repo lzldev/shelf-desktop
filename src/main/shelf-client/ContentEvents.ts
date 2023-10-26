@@ -45,11 +45,12 @@ async function getContent(options: IpcMainEvents['getShelfContent']['args']) {
       {
         model: Tag,
         attributes: ['id', 'colorId'],
-        where: tagIds.length !== 0
-          ? {
-              id: tagIds,
-            }
-          : undefined,
+        where:
+          tagIds.length !== 0
+            ? {
+                id: tagIds,
+              }
+            : undefined,
       },
     ],
   })

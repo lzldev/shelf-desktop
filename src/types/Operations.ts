@@ -43,3 +43,4 @@ export type batchTagging = {
   tagIds: number[]
   contentIds: number[]
 }
+

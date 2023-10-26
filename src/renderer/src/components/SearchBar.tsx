@@ -1,27 +1,16 @@
 import clsx from 'clsx'
 import {HTMLAttributes} from 'react'
-import {Tag} from '@models'
 import {InlineButton} from './InlineButton'
 import {InlineTag} from './InlineTag'
 import {useTagQuery} from '../hooks/useTagQuery'
 import {useContentQueryStore, ContentQuery} from '../hooks/useQueryStore'
 
-export type pathQuery = {
-  value: string
-}
-
 export const SearchBar = ({
   markedContent,
   onQuery,
-  onBatchAdd,
-  onBatchRemove,
-  onClear,
 }: {
   markedContent: Set<number>
   onQuery: (...any: any[]) => any
-  onBatchAdd: (...any: any[]) => any
-  onBatchRemove: (...any: any[]) => any
-  onClear: (...any: any[]) => any
 } & HTMLAttributes<HTMLDivElement>) => {
   const {
     query,
@@ -29,15 +18,16 @@ export const SearchBar = ({
     foundTags: DropDownTags,
     SplitQuery: TransformedQuery,
   } = useTagQuery()
+
   const hideDropdown =
     !TransformedQuery[TransformedQuery.length - 1] &&
     TransformedQuery.length === 1
-
 
   const {
     query: ContentQuery,
     addQuery,
     removeQuery,
+    clearQuery,
   } = useContentQueryStore()
 
   const hideSelected = ContentQuery.size === 0
@@ -52,7 +42,6 @@ export const SearchBar = ({
           previous.paths.push(current)
           break
       }
-
       return previous
     },
     {tags: [], paths: []} as {
@@ -61,14 +50,11 @@ export const SearchBar = ({
     },
   )
 
-  console.log('pts')
-  console.log(pathQ, tagQ)
-
   return (
     <div
-      className={clsx(
-        'min-w-screen sticky top-0 z-20 -m-10 bg-surface px-20 pb-7 pt-7',
-      )}
+      className={
+        'min-w-screen sticky top-0 z-20 -m-10 bg-surface px-20 pb-7 pt-7'
+      }
     >
       <div className='relative'>
         <div
@@ -119,7 +105,7 @@ export const SearchBar = ({
               tabIndex={1}
               className='w-full select-all overflow-hidden text-ellipsis bg-gray-400 p-2 text-white transition-colors hover:bg-gray-50 hover:text-black focus:bg-gray-50 focus:text-black'
               onClick={() => {
-                addQuery({type:'path',path: query})
+                addQuery({type: 'path', path: query})
                 setQuery('')
               }}
             >
@@ -184,9 +170,53 @@ export const SearchBar = ({
             markedContent.size === 0 ? 'hidden' : '',
           )}
         >
-          <InlineButton onClick={onBatchAdd}>ADD</InlineButton>
-          <InlineButton onClick={onBatchRemove}>REMOVE</InlineButton>
-          <InlineButton onClick={onClear}>CLEAR</InlineButton>
+          <InlineButton
+            onClick={() => {
+              const tagIds = Array.from(ContentQuery.values()).reduce(
+                (prev, v) => {
+                  if (v.type === 'tag') {
+                    prev.push(v.tag.id)
+                  }
+                  return prev
+                },
+                [] as number[],
+              )
+
+              const contentIds: number[] = Array.from(markedContent.values())
+
+              window.api.invokeOnMain('batchTagging', {
+                operation: 'ADD',
+                contentIds,
+                tagIds,
+              })
+            }}
+          >
+            ADD
+          </InlineButton>
+          <InlineButton
+            onClick={() => {
+              const tagIds = Array.from(ContentQuery.values()).reduce(
+                (prev, v) => {
+                  if (v.type === 'tag') {
+                    prev.push(v.tag.id)
+                  }
+                  return prev
+                },
+                [] as number[],
+              )
+
+              const contentIds: number[] = Array.from(markedContent.values())
+
+              window.api.invokeOnMain('batchTagging', {
+                operation: 'REMOVE',
+                contentIds,
+                tagIds,
+              })
+            }}
+          >
+            REMOVE
+          </InlineButton>
+          <InlineButton onClick={clearQuery}>CLEAR</InlineButton>
         </div>
       </div>
     </div>

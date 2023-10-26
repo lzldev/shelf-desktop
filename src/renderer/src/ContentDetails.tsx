@@ -25,6 +25,7 @@ import {useHotkeys} from './hooks/useHotkeys'
 import {ArrowLeftIcon} from '@heroicons/react/24/solid'
 import {openInAnotherProgram, openContentDirectory} from './utils/Content'
 import {checkExtension} from './utils/Extensions'
+import { useContentQueryStore } from './hooks/useQueryStore'
 
 const prevTitle = window.document.title
 
@@ -56,6 +57,7 @@ function ContentDetails({
       if (!result) {
         return null
       }
+
       return result
     },
     {
@@ -155,6 +157,7 @@ function ContentDetails({
             return (
               <InlineTagDropdown
                 key={tag.id}
+                onClose={onClose}
                 modalRef={modalRef}
                 tag={tag}
                 removeTag={async (tag: Tag) => {
@@ -190,14 +193,19 @@ function ContentDetails({
 
 export const InlineTagDropdown = ({
   removeTag,
+  onClose,
   tag,
   modalRef,
   ...props
 }: {
   removeTag: (tag: Tag) => any
+  onClose: (...any:any[]) => any
   tag: Tag
   modalRef: RefObject<HTMLDivElement>
 } & DropdownMenuProps) => {
+
+  const addQuery = useContentQueryStore((s) => s.addQuery)
+
   return (
     <Dropdown
       {...props}
@@ -205,6 +213,15 @@ export const InlineTagDropdown = ({
       modalRef={modalRef}
     >
       <DropdownMenuArrow className='fill-white' />
+      <DropdownMenuItem
+        className='select-none p-4 outline-none transition-colors hover:bg-gray-500 hover:text-white'
+        onClick={() => {
+          addQuery({type:'tag',tag:tag,operation:'include'})
+          onClose()
+        }}
+      >
+        Search
+      </DropdownMenuItem>
       <DropdownMenuItem
         className='select-none p-4 outline-none transition-colors hover:bg-gray-500 hover:text-white'
         onClick={() => removeTag(tag)}
