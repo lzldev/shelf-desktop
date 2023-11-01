@@ -17,7 +17,20 @@ import {createWorkerLogger} from '../../utils/Loggers'
 import sharp from 'sharp'
 import {handleWorkerMessage} from '../../utils/Worker'
 
-const workerData = AIWorkerDataParser.parse(_workerData)
+import {z} from 'zod'
+
+const wd = AIWorkerDataParser.safeParse(_workerData)
+let workerData:z.infer<typeof AIWorkerDataParser>
+
+if(wd.success){
+  workerData = wd.data
+}else if(import.meta.env.VITEST){
+  workerData = {
+    dbPath:"./examples/"
+  }
+}else{
+  throw wd.error
+}
 
 if (isMainThread) {
   throw new Error('Worker called in main thread')
@@ -28,8 +41,10 @@ if (isMainThread) {
 const port = parentPort!
 
 const WORKER_LOGGER = createWorkerLogger(threadId)
+
 export const __DBEXTENSION = '.shelf'
 export const __DBFILENAME = `.shelfdb${__DBEXTENSION}`
+
 const createDbPath = (dbPath: string) => `${dbPath}/${__DBFILENAME}`
 const createShelfKyselyDB = (dbPath: string) => {
   return new Kysely<DB>({

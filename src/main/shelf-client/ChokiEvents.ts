@@ -255,7 +255,6 @@ export const addChokiEvents = (
     SHELF_LOGGER.info('Wainting for AI Tagging...')
 
     console.timeEnd('DB ->')
-    console.time('Waiting for AIWORKER...')
 
     const WaitForAIWork = async () => {
       return new Promise((resolve, reject) => {
@@ -277,15 +276,17 @@ export const addChokiEvents = (
       })
     }
 
-    await WaitForAIWork()
-      .then(() => {
-        SHELF_LOGGER.info('Batch FINISHED')
-      })
-      .catch(() => {
-        SHELF_LOGGER.info('AIWORKER TIMED OUT')
-      })
-
-    console.timeEnd('Waiting for AIWORKER...')
+    if (shelfClient.config.get('ai_worker')) {
+      console.time('Waiting for AIWORKER...')
+      await WaitForAIWork()
+        .then(() => {
+          SHELF_LOGGER.info('Batch FINISHED')
+        })
+        .catch(() => {
+          SHELF_LOGGER.info('AIWORKER TIMED OUT')
+        })
+      console.timeEnd('Waiting for AIWORKER...')
+    }
 
     shelfClient.ready = true
     onReadyCallback()

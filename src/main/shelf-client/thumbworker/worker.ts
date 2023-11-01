@@ -19,7 +19,20 @@ import ffmpegStatic from 'ffmpeg-static'
 import {exec} from 'node:child_process'
 import {join} from 'node:path'
 
-const workerData = ThumbWorkerDataParser.parse(_workerData)
+import {z} from 'zod'
+const wd = ThumbWorkerDataParser.safeParse(_workerData)
+let workerData:z.infer<typeof ThumbWorkerDataParser>
+
+if(wd.success){
+  workerData = wd.data
+}else if(import.meta.env.VITEST){
+  workerData = {
+    max_threads:2,
+    thumbnailPath:'./examples/app/'
+  }
+}else{
+  throw wd.error
+}
 
 if (isMainThread) {
   throw new Error('Worker called in main thread')

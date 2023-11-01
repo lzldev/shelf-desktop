@@ -37,6 +37,7 @@ export const SHELF_CLIENT_CONFIG_SCHEMA = {
   ignoredPaths: z.array(z.string()),
   ignoreHidden: z.boolean(),
   ignoreUnsupported: z.boolean(),
+  ai_worker:z.boolean(),
 } as const
 
 export type ShelfClientConfig = zJsonSchemaInfer<

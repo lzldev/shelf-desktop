@@ -20,6 +20,7 @@ import type {AIWORKERTYPE as AiWorkerType} from './ai_worker/types'
 
 import CreateThumbWorker from './thumbworker/worker?nodeWorker'
 import {ThumbWorkerData, ThumbWorkerType} from './thumbworker/types'
+
 import * as os from 'node:os'
 import {SHELF_LOGGER} from '../utils/Loggers'
 import {SHARE_ENV} from 'worker_threads'
@@ -51,6 +52,7 @@ class ShelfClient {
         ignoredPaths: [],
         ignoreHidden: true,
         ignoreUnsupported: true,
+        ai_worker: false,
         ...(options.config ? options.config : {}),
       },
     )
@@ -67,23 +69,39 @@ class ShelfClient {
       },
     )
 
-    const aiWorker = CreateAIWorker({
-      name: 'aiworker',
-      env: SHARE_ENV,
-      workerData: {dbPath: options.basePath},
-    }) as AiWorkerType
+    let aiWorker: AiWorkerType
+
+    if (!import.meta.env.VITEST && config.get('ai_worker')) {
+      aiWorker = CreateAIWorker({
+        env: SHARE_ENV,
+        workerData: {dbPath: options.basePath},
+      }) as AiWorkerType
+    } else {
+      aiWorker = {
+        postMessage: () => {},
+        on: () => {},
+      } as any as AiWorkerType
+    }
 
     const max_threads = os.cpus().length
     SHELF_LOGGER.info(`max_threads ${max_threads}`)
 
-    const thumbWorker = CreateThumbWorker({
-      name: 'thumbworker',
-      env: SHARE_ENV,
-      workerData: {
-        max_threads: max_threads <= 0 ? 2 : max_threads,
-        thumbnailPath: SHELF_THUMB_DEFFAULT_PATH,
-      } as ThumbWorkerData,
-    }) as ThumbWorkerType
+    let thumbWorker: ThumbWorkerType
+
+    if (!import.meta.env.VITEST) {
+      thumbWorker = CreateThumbWorker({
+        env: SHARE_ENV,
+        workerData: {
+          max_threads: max_threads <= 0 ? 2 : max_threads,
+          thumbnailPath: SHELF_THUMB_DEFFAULT_PATH,
+        } as ThumbWorkerData,
+      }) as ThumbWorkerType
+    }else {
+      thumbWorker = {
+        postMessage: () => {},
+        on: () => {},
+      } as any as ThumbWorkerType
+    }
 
     return new ShelfClient({
       aiWorker,
