@@ -2,9 +2,8 @@ import {TagColor} from '../db/models'
 import {IpcMainEvents} from '../../preload/ipcMainTypes'
 import {defaultHandler} from './TagEvents'
 import {dialog, ipcMain} from 'electron'
-import {requestClient} from '../'
+import {requestClient, sendEventAfter} from '../'
 import {ShelfClient} from './ShelfClient'
-import {sendEventAfter} from '.'
 
 ipcMain.handle('getShelfColors', defaultHandler(getColors))
 ipcMain.handle(

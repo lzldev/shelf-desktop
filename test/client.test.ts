@@ -1,23 +1,37 @@
 import * as mnet from '@tensorflow-models/mobilenet'
 import * as tsmain from '@tensorflow/tfjs-node'
 import {ShelfClient} from '../src/main/shelf-client/ShelfClient'
-import {vi, beforeAll, test, expect} from 'vitest'
+import {vi, beforeAll, test, expect, isFirstRun} from 'vitest'
+import {IpcRendererEvents} from '../src/preload/ipcRendererTypes'
+import '../src/main/index.ts'
+import '../src/main/shelf-client/index'
 
-vi.mock('../src/main/shelf-client/index.ts', () => {
-  return {
-    sendEventAfter: (event:string,func:Function) => {
-      console.log(`registering event_${event}`)
-    },
-  }
-})
+let TestClient: ShelfClient
 
 vi.mock('electron')
 vi.mock('@electron-toolkit/preload')
 vi.mock('@electron-toolkit/utils')
 
-let TestClient: ShelfClient
+vi.mock('../src/main/index.ts', () => ({
+  sendEventAfter: (
+    events: (keyof IpcRendererEvents)[],
+    func: (...any: any[]) => any,
+  ) => {
+    return (...args: any[]) => {
+      const result = func.call(undefined, ...args)
+      return result
+    }
+  },
+  requestClient: () => {
+    return TestClient;
+  }
+}))
 
 beforeAll(async () => {
+  if (!isFirstRun) {
+    return
+  }
+
   console.log(`VERSIONS`)
   console.log(`NODE: ${process.version}`)
   console.log(`NODE_MODULE:${process.versions.modules}`)
@@ -36,9 +50,19 @@ beforeAll(async () => {
   })
 })
 
-test('Shelf Client', () => {
+test('Shelf Client', async () => {
   expect(TestClient.ready, 'Is Client Ready').toBe(true)
-  expect(TestClient.getWatchedFiles(), 'Are the Watched Files Returning').toBeTypeOf(
-    'object'
-  )
+  expect(
+    TestClient.getWatchedFiles(),
+    'Are the Watched Files Returning',
+  ).toBeTypeOf('object')
+  const {ipcMain} = (await import('electron')) as any
+  ipcMain.invoke('getShelfContent', {
+    pagination: {
+      offset: 10,
+      limit: 10,
+    },
+    query: [],
+    order: ['id', 'DESC'],
+  })
 })

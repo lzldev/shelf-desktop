@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-namespace */
 import {ShelfIpcMainHandler, ShelfIpcRendererInvoke} from './ipcMainTypes'
 import {ShelfIpcRendererHandler, ShelfWebContentsSend} from './ipcRendererTypes'
 

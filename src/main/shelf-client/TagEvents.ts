@@ -1,12 +1,11 @@
 import {ipcMain} from 'electron'
 import {Tag} from '../db/models/Tag'
-import {requestClient} from '../'
+import {requestClient, sendEventAfter} from '../'
 import {IpcMainEvents} from '../../preload/ipcMainTypes'
 import {ContentTag} from '../db/models'
 import {ShelfClient} from './ShelfClient'
 import {Op} from 'sequelize'
 import {ContentTagFields} from '../db/models/ContentTag'
-import {sendEventAfter} from '.'
 import {dialog} from 'electron'
 
 export function defaultHandler(func: (...any: any[]) => any) {

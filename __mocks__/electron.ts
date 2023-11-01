@@ -1,3 +1,5 @@
+import type {ShelfIpcRendererInvoke} from '../src/preload/ipcMainTypes'
+
 class Tray {
   constructor(image: any) {
     console.log(`Creating Tray with ${image}`)
@@ -59,9 +61,22 @@ const app = {
 }
 
 const ipcMain = {
-  handle: (method: Function) => {
+  handlers: {},
+  handle: (event: string, handler: Function) => {
+    console.log(`${event} HANDLER REGISTRED -----------------`)
+    ipcMain.handlers[event] = handler
+  },
+  on: (event: string, method: Function) => {
     console.log(`FAKE ELECTRON Registered Handler for :${method.name}`)
   },
+  invoke: ((event, ...params) => {
+    if (event in ipcMain.handlers) {
+      console.log(`Invoking Mock Handler ${event}`)
+      ipcMain.handlers[event as any](...params)
+    } else {
+      console.log(`${event} not registered`)
+    }
+  }) as ShelfIpcRendererInvoke,
 }
 
 const nativeImage = {

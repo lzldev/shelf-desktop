@@ -41,7 +41,7 @@ export function createWorkerLogger(
 }
 
 export const SHELF_LOGGER = winston.createLogger({
-  silent: !MAIN_ENABLE_LOGGING,
+  silent: import.meta.env.VITEST || !MAIN_ENABLE_LOGGING,
   format: winston.format.combine(
     winston.format.colorize({
       all: true,
