@@ -15,6 +15,7 @@ export function defaultHandler(func: (...any: any[]) => any) {
     if (!client || !client.ready) {
       throw 'Client not Ready'
     }
+
     return await JSON.parse(JSON.stringify(await func(...args)))
   }
 }

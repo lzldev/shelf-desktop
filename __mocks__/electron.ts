@@ -70,14 +70,22 @@ const ipcMain = {
     console.log(`FAKE ELECTRON Registered Handler for :${method.name}`)
   },
   invoke: ((event, ...params) => {
-    if (event in ipcMain.handlers) {
-      console.log(`Invoking Mock Handler ${event}`)
-      ipcMain.handlers[event as any](...params)
-    } else {
+    if (!(event in ipcMain.handlers)) {
       console.log(`${event} not registered`)
     }
+
+    const handler = ipcMain.handlers[event as any]
+
+    if (Array.isArray(params)) {
+      return handler.call(undefined, event, ...params)
+    } else {
+      return handler.call(undefined, event, params)
+    }
   }) as ShelfIpcRendererInvoke,
-}
+} as {
+    handlers:any,
+    invoke:ShelfIpcRendererInvoke
+  }
 
 const nativeImage = {
   createFromPath: (path: string) => {
@@ -93,4 +101,16 @@ const screen = {
   },
 }
 
-export {app, ipcMain, Tray, nativeImage, Menu, screen, BrowserWindow}
+const __MOCK_ELECTRON = {
+  app,
+  ipcMain,
+  Tray,
+  nativeImage,
+  Menu,
+  screen,
+  BrowserWindow,
+}
+
+export type __MOCK_ELECTRON = typeof __MOCK_ELECTRON
+
+module.exports = {...__MOCK_ELECTRON}

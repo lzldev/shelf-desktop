@@ -123,6 +123,7 @@ export function sendEventAfter(
   events: (keyof IpcRendererEvents)[],
   func: (...any: any[]) => any,
 ) {
+
   return (...args: any[]) => {
     const result = func.call(undefined, ...args)
     if (result instanceof Promise) {

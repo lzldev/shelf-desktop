@@ -5,6 +5,7 @@ import {vi, beforeAll, test, expect, isFirstRun} from 'vitest'
 import {IpcRendererEvents} from '../src/preload/ipcRendererTypes'
 import '../src/main/index.ts'
 import '../src/main/shelf-client/index'
+import { __MOCK_ELECTRON } from '../__mocks__/electron'
 
 let TestClient: ShelfClient
 
@@ -17,14 +18,15 @@ vi.mock('../src/main/index.ts', () => ({
     events: (keyof IpcRendererEvents)[],
     func: (...any: any[]) => any,
   ) => {
+    return func;
     return (...args: any[]) => {
       const result = func.call(undefined, ...args)
       return result
     }
   },
   requestClient: () => {
-    return TestClient;
-  }
+    return TestClient
+  },
 }))
 
 beforeAll(async () => {
@@ -52,12 +54,15 @@ beforeAll(async () => {
 
 test('Shelf Client', async () => {
   expect(TestClient.ready, 'Is Client Ready').toBe(true)
+
   expect(
     TestClient.getWatchedFiles(),
     'Are the Watched Files Returning',
   ).toBeTypeOf('object')
-  const {ipcMain} = (await import('electron')) as any
-  ipcMain.invoke('getShelfContent', {
+
+  const {ipcMain} = (await import('electron')) as unknown as __MOCK_ELECTRON
+
+  const result = await ipcMain.invoke('getShelfContent', {
     pagination: {
       offset: 10,
       limit: 10,
@@ -65,4 +70,6 @@ test('Shelf Client', async () => {
     query: [],
     order: ['id', 'DESC'],
   })
+
+  expect(result.content,"Content Request").toBeInstanceOf(Array)
 })
