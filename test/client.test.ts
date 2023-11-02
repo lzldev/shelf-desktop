@@ -1,11 +1,19 @@
 import * as mnet from '@tensorflow-models/mobilenet'
 import * as tsmain from '@tensorflow/tfjs-node'
 import {ShelfClient} from '../src/main/shelf-client/ShelfClient'
-import {vi, beforeAll, test, expect, isFirstRun} from 'vitest'
+import {
+  vi,
+  beforeAll,
+  test,
+  expect,
+  isFirstRun,
+  describe,
+  expectTypeOf,
+} from 'vitest'
 import {IpcRendererEvents} from '../src/preload/ipcRendererTypes'
 import '../src/main/index.ts'
 import '../src/main/shelf-client/index'
-import { __MOCK_ELECTRON } from '../__mocks__/electron'
+import {__MOCK_ELECTRON} from '../__mocks__/electron'
 
 let TestClient: ShelfClient
 
@@ -18,7 +26,7 @@ vi.mock('../src/main/index.ts', () => ({
     events: (keyof IpcRendererEvents)[],
     func: (...any: any[]) => any,
   ) => {
-    return func;
+    return func
     return (...args: any[]) => {
       const result = func.call(undefined, ...args)
       return result
@@ -30,7 +38,7 @@ vi.mock('../src/main/index.ts', () => ({
 }))
 
 beforeAll(async () => {
-  if (!isFirstRun) {
+  if (!isFirstRun()) {
     return
   }
 
@@ -52,24 +60,64 @@ beforeAll(async () => {
   })
 })
 
-test('Shelf Client', async () => {
-  expect(TestClient.ready, 'Is Client Ready').toBe(true)
+const {ipcMain} = (await import('electron')) as unknown as __MOCK_ELECTRON
 
-  expect(
-    TestClient.getWatchedFiles(),
-    'Are the Watched Files Returning',
-  ).toBeTypeOf('object')
+describe('Shelf Client', () => {
+  test('Choki Watched Files', async () => {
+    expect(TestClient.ready, 'Is Client Ready').toBe(true)
 
-  const {ipcMain} = (await import('electron')) as unknown as __MOCK_ELECTRON
-
-  const result = await ipcMain.invoke('getShelfContent', {
-    pagination: {
-      offset: 10,
-      limit: 10,
-    },
-    query: [],
-    order: ['id', 'DESC'],
+    expect(
+      TestClient.getWatchedFiles(),
+      'Are the Watched Files Returning',
+    ).toBeTypeOf('object')
   })
 
-  expect(result.content,"Content Request").toBeInstanceOf(Array)
+  test('Content Handler', async () => {
+    const result = await ipcMain.invoke('getShelfContent', {
+      pagination: {
+        offset: 10,
+        limit: 10,
+      },
+      query: [],
+      order: ['id', 'DESC'],
+    })
+
+    expect(result.content, 'Content Request').toBeInstanceOf(Array)
+  })
+
+  test('Content Details Handler', async () => {
+    const result = await ipcMain.invoke('getDetailedImage', 1)
+
+    if (result === null) {
+      throw 'Content Not found'
+    }
+
+    expect(result).toBeTruthy()
+    expect(result).toBeTypeOf('object')
+    expect(result.paths).toBeInstanceOf(Array)
+
+    expect(result).toMatchObject({
+      id: expect.any(Number),
+      createdAt: expect.any(String),
+      hash: expect.any(String),
+      extension: expect.any(String),
+    })
+
+    expectTypeOf(result!).toMatchTypeOf<{
+      hash: string
+      extension: string
+      paths?: {path: string}[]
+      tags?: {name: string}[]
+    }>()
+  })
+
+  test('Tag Handler', async () => {
+    const tags = await ipcMain.invoke('getShelfTags')
+
+    expect(tags, 'Tag Request').toBeInstanceOf(Array)
+
+    expectTypeOf(tags.at(0)!).toMatchTypeOf<{
+      name:string
+    }>()
+  })
 })
