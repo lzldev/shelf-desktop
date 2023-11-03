@@ -7,28 +7,15 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:../examples/.shelfdb.shelf"
-}
-
-model ContentTags {
-  contentId Int
-  tagId     Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-  Tags      Tags     @relation(fields: [tagId], references: [id], onDelete: Cascade)
-  Contents  Contents @relation(fields: [contentId], references: [id], onDelete: Cascade)
-
-  @@id([contentId, tagId])
-  @@index([tagId], map: "content_tags_tag_id")
-  @@index([contentId], map: "content_tags_content_id")
+  url      = ":memory:"
 }
 
 model Contents {
   id          Int           @id @default(autoincrement())
   hash        String?
   extension   String?
-  createdAt   DateTime
-  updatedAt   DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now())
   deletedAt   DateTime?
   ContentTags ContentTags[]
   Paths       Paths[]
@@ -42,11 +29,35 @@ model Paths {
   mTimeMs   Float?
   contentId Int?
   createdAt DateTime  @default(now())
-  updatedAt DateTime
+  updatedAt DateTime  @default(now())
   Contents  Contents? @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
   @@index([contentId], map: "paths_content_id")
   @@index([path], map: "paths_path")
+}
+
+
+model Tags {
+  id          Int           @id @default(autoincrement())
+  name        String?
+  colorId     Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  ContentTags ContentTags[]
+  TagColors   TagColors?    @relation(fields: [colorId], references: [id])
+}
+
+model ContentTags {
+  contentId Int
+  tagId     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  Tags      Tags     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  Contents  Contents @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, tagId])
+  @@index([tagId], map: "content_tags_tag_id")
+  @@index([contentId], map: "content_tags_content_id")
 }
 
 model TagColors {
@@ -54,16 +65,6 @@ model TagColors {
   name      String?
   color     String?
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @default(now())
   Tags      Tags[]
-}
-
-model Tags {
-  id          Int           @id @default(autoincrement())
-  name        String?
-  colorId     Int?
-  createdAt   DateTime
-  updatedAt   DateTime
-  ContentTags ContentTags[]
-  TagColors   TagColors?    @relation(fields: [colorId], references: [id])
 }
