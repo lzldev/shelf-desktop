@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = ":memory:"
+  url      = "file:migrations/migrations.db.db"
 }
 
 model Contents {
