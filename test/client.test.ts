@@ -37,32 +37,32 @@ vi.mock('../src/main/index.ts', () => ({
   },
 }))
 
-beforeAll(async () => {
-  if (!isFirstRun()) {
-    return
-  }
-
-  console.log(`VERSIONS`)
-  console.log(`NODE: ${process.version}`)
-  console.log(`NODE_MODULE:${process.versions.modules}`)
-  console.log(`TENSORFLOW:${tsmain.version}`)
-  console.log(`MNET:${mnet.version}`)
-
-  return new Promise(async (resolve, rej) => {
-    TestClient = await ShelfClient.create(
-      {
-        basePath: './examples/',
-      },
-      () => {
-        resolve()
-      },
-    )
-  })
-})
-
-const {ipcMain} = (await import('electron')) as unknown as __MOCK_ELECTRON
+const electron = (await import('electron')) as unknown as __MOCK_ELECTRON
 
 describe('Shelf Client', () => {
+  beforeAll(async () => {
+    if (TestClient) {
+      return
+    }
+
+    console.log(`VERSIONS`)
+    console.log(`NODE: ${process.version}`)
+    console.log(`NODE_MODULE:${process.versions.modules}`)
+    console.log(`TENSORFLOW:${tsmain.version}`)
+    console.log(`MNET:${mnet.version}`)
+
+    return new Promise(async (resolve, rej) => {
+      TestClient = await ShelfClient.create(
+        {
+          basePath: './examples/',
+        },
+        () => {
+          resolve()
+        },
+      )
+    })
+  })
+
   test('Choki Watched Files', async () => {
     expect(TestClient.ready, 'Is Client Ready').toBe(true)
 
@@ -73,7 +73,7 @@ describe('Shelf Client', () => {
   })
 
   test('Content Handler', async () => {
-    const result = await ipcMain.invoke('getShelfContent', {
+    const result = await electron.ipcMain.invoke('getShelfContent', {
       pagination: {
         offset: 10,
         limit: 10,
@@ -86,7 +86,7 @@ describe('Shelf Client', () => {
   })
 
   test('Content Details Handler', async () => {
-    const result = await ipcMain.invoke('getDetailedImage', 1)
+    const result = await electron.ipcMain.invoke('getDetailedImage', 1)
 
     if (result === null) {
       throw 'Content Not found'
@@ -112,12 +112,12 @@ describe('Shelf Client', () => {
   })
 
   test('Tag Handler', async () => {
-    const tags = await ipcMain.invoke('getShelfTags')
+    const tags = await electron.ipcMain.invoke('getShelfTags')
 
     expect(tags, 'Tag Request').toBeInstanceOf(Array)
 
     expectTypeOf(tags.at(0)!).toMatchTypeOf<{
-      name:string
+      name: string
     }>()
   })
 })
