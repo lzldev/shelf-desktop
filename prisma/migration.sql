@@ -1,40 +1,32 @@
 -- CreateTable
 CREATE TABLE "Contents" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "hash" TEXT,
-    "extension" TEXT,
-    "createdAt" DATETIME NOT NULL,
-    "updatedAt" DATETIME NOT NULL,
-    "deletedAt" DATETIME
+    "hash" TEXT NOT NULL,
+    "extension" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateTable
 CREATE TABLE "Paths" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "path" TEXT,
-    "mTimeMs" REAL,
-    "contentId" INTEGER,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "path" TEXT NOT NULL,
+    "mTimeMs" REAL NOT NULL,
+    "contentId" INTEGER NOT NULL,
     CONSTRAINT "Paths_contentId_fkey" FOREIGN KEY ("contentId") REFERENCES "Contents" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "Tags" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "name" TEXT,
-    "colorId" INTEGER,
-    "createdAt" DATETIME NOT NULL,
-    "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "Tags_colorId_fkey" FOREIGN KEY ("colorId") REFERENCES "TagColors" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "name" TEXT NOT NULL,
+    "colorId" INTEGER NOT NULL,
+    CONSTRAINT "Tags_colorId_fkey" FOREIGN KEY ("colorId") REFERENCES "TagColors" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "ContentTags" (
     "contentId" INTEGER NOT NULL,
     "tagId" INTEGER NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
 
     PRIMARY KEY ("contentId", "tagId"),
     CONSTRAINT "ContentTags_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tags" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
@@ -44,10 +36,8 @@ CREATE TABLE "ContentTags" (
 -- CreateTable
 CREATE TABLE "TagColors" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "name" TEXT,
-    "color" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "name" TEXT NOT NULL,
+    "color" TEXT NOT NULL
 );
 
 -- CreateIndex

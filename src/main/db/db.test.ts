@@ -6,6 +6,8 @@ let connection: ReturnType<typeof createShelfKyselyDB>
 
 const db_path = __dirname + '/test.db'
 
+
+
 describe.only('db-tests', async (context) => {
   beforeAll(async () => {
     await rm(db_path, {
@@ -27,8 +29,6 @@ describe.only('db-tests', async (context) => {
       .values({
         hash: 'TEST HASH',
         extension: '.extension',
-        updatedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
       })
       .executeTakeFirst()
 
@@ -47,8 +47,8 @@ describe.only('db-tests', async (context) => {
     const color = await connection
       .insertInto('TagColors')
       .values({
+        name:"Funny Pink",
         color:"#fcb5c6",
-        updatedAt: new Date().toISOString(),
       })
       .returningAll()
       .executeTakeFirstOrThrow()
@@ -61,8 +61,6 @@ describe.only('db-tests', async (context) => {
       .values({
         name: 'Test Tag',
         colorId:color.id,
-        updatedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
       })
       .returningAll()
       .executeTakeFirstOrThrow()
@@ -70,6 +68,9 @@ describe.only('db-tests', async (context) => {
     expect(tag.id).toBeTypeOf('number')
     console.log('Insert Tag id:[', tag.id, ']')
   })
+
+
+  test.todo("Content with Tags")
 
   afterAll(async () => {
     await connection.destroy()

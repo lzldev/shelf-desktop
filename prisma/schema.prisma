@@ -12,11 +12,9 @@ datasource db {
 
 model Contents {
   id          Int           @id @default(autoincrement())
-  hash        String?
-  extension   String?
+  hash        String
+  extension   String
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @default(now())
-  deletedAt   DateTime?
   ContentTags ContentTags[]
   Paths       Paths[]
 
@@ -25,11 +23,9 @@ model Contents {
 
 model Paths {
   id        Int       @id @default(autoincrement())
-  path      String?
-  mTimeMs   Float?
-  contentId Int?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @default(now())
+  path      String
+  mTimeMs   Float
+  contentId Int
   Contents  Contents? @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
   @@index([contentId], map: "paths_content_id")
@@ -39,10 +35,8 @@ model Paths {
 
 model Tags {
   id          Int           @id @default(autoincrement())
-  name        String?
-  colorId     Int?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now())
+  name        String
+  colorId     Int
   ContentTags ContentTags[]
   TagColors   TagColors?    @relation(fields: [colorId], references: [id])
 }
@@ -50,8 +44,6 @@ model Tags {
 model ContentTags {
   contentId Int
   tagId     Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
   Tags      Tags     @relation(fields: [tagId], references: [id], onDelete: Cascade)
   Contents  Contents @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
@@ -62,9 +54,7 @@ model ContentTags {
 
 model TagColors {
   id        Int      @id @default(autoincrement())
-  name      String?
-  color     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  name      String
+  color     String
   Tags      Tags[]
 }

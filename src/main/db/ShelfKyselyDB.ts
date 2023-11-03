@@ -2,8 +2,10 @@ import {Kysely, SqliteDialect} from 'kysely'
 import {DB} from './kysely-types'
 import SQLite from 'better-sqlite3'
 import {__DBFILENAME} from './ShelfDB'
-import createTableSQL from '../../../prisma/migration.sql?raw'
 import {existsSync} from 'fs'
+
+//@ts-expect-error error here means we gucci
+import createTableSQL from '../../../prisma/migration.sql?raw'
 
 const createShelfKyselyDB = (dbPath: string) => {
   const db_existed = existsSync(dbPath)
