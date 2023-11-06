@@ -1,10 +1,10 @@
-import type { Kysely } from "kysely";
-import type { Contents, DB } from "./kysely-types";
-import { on } from "events";
+import { Kysely} from 'kysely'
+import type {
+  DB,
+} from './kysely-types'
 
+export type ShelfDBInstance = Kysely<DB>
 
-type instance = Kysely<DB>
-
-function CreateContent(values:Contents){
-
-}
+//TODO: RENAME TO CONTROLLER TYPES
+//TODO: Check if kysely has this already.
+export type Pagination = {offset: number; limit: number}
