@@ -1,5 +1,5 @@
 import * as chokidar from 'chokidar'
-import {__DBEXTENSION, createShelfDB, ShelfDBModels} from '../db/ShelfDB'
+import { ShelfDBConnection } from '../db/ShelfControllers'
 import {addChokiEvents} from './ChokiEvents'
 import {FSWatcher} from 'chokidar'
 import {zJson} from '../zJson'
@@ -24,10 +24,12 @@ import {ThumbWorkerData, ThumbWorkerType} from './thumbworker/types'
 import * as os from 'node:os'
 import {SHELF_LOGGER} from '../utils/Loggers'
 import {SHARE_ENV} from 'worker_threads'
+import { createShelfKyselyDB } from '../db/ShelfKyselyDB'
+import { __DBEXTENSION } from '../db/ShelfDB'
 
 class ShelfClient {
   public choki: FSWatcher
-  public ShelfDB: ShelfDBModels
+  public ShelfDB: ShelfDBConnection
   public AiWorker: AiWorkerType
   public ThumbWorker: ThumbWorkerType
 
@@ -42,7 +44,7 @@ class ShelfClient {
     options: IpcMainEvents['startShelfClient']['args'][0],
     callback: () => void,
   ) {
-    const ShelfDB = await createShelfDB(options.basePath)
+    const ShelfDB = createShelfKyselyDB(options.basePath)
 
     const config = new zJson(
       join(options.basePath + CLIENT_CONFIG_FILE_NAME),
@@ -83,16 +85,12 @@ class ShelfClient {
       } as any as AiWorkerType
     }
 
-    const max_threads = os.cpus().length
-    SHELF_LOGGER.info(`max_threads ${max_threads}`)
-
     let thumbWorker: ThumbWorkerType
 
     if (!import.meta.env.VITEST) {
       thumbWorker = CreateThumbWorker({
         env: SHARE_ENV,
         workerData: {
-          max_threads: max_threads <= 0 ? 2 : max_threads,
           thumbnailPath: SHELF_THUMB_DEFFAULT_PATH,
         } as ThumbWorkerData,
       }) as ThumbWorkerType
@@ -117,7 +115,7 @@ class ShelfClient {
     aiWorker: AiWorkerType
     thumbWorker: ThumbWorkerType
     choki: FSWatcher
-    ShelfDB: ShelfDBModels
+  ShelfDB: ShelfDBConnection
     config: zJson<typeof SHELF_CLIENT_CONFIG_SCHEMA, ShelfClientConfigValues>
     callback: () => void
   }) {
@@ -135,7 +133,7 @@ class ShelfClient {
   }
 
   async destroy() {
-    await this.ShelfDB.sequelize.close()
+    await this.ShelfDB.destroy()
     await this.choki.close()
   }
 

@@ -7,9 +7,14 @@ import {
 import {ShelfDBConnection} from './ShelfControllers'
 import { defaultColors } from '../utils/DefaultColors'
 import { CreateTagColors } from './ColorControllers'
+import { join } from 'path'
 
 let connection: ShelfDBConnection
-const DBPath = __dirname + '/test.db'
+
+const __DBEXTENSION = '.shelf'
+const __DBFILENAME = `.shelfdb${__DBEXTENSION}`
+
+const DBPath = join(__dirname,__DBFILENAME)
 
 function rngText() {
   const size = Math.floor(Math.random() * 25)
@@ -26,14 +31,14 @@ describe.only('db-tests', async () => {
       force: true,
     })
 
-    connection = createShelfKyselyDB(DBPath)
+    connection = createShelfKyselyDB(__dirname)
 
     const tables = await connection.introspection.getTables()
 
-    console.info(`PROCESS.VERSIONS.MODULES:${process.versions.modules}`)
-    console.info(`DBPATH:${DBPath}`)
-    console.info(`DB Tables:`)
-    console.info({tables})
+    console.log(`PROCESS.VERSIONS.MODULES:${process.versions.modules}`)
+    console.log(`DBPATH:${DBPath}`)
+    console.log(`DB Tables:`)
+    console.log({tables})
   })
 
 
@@ -75,8 +80,7 @@ describe.only('db-tests', async () => {
 
   test('List Content with relations using pagination', async () => {
     console.log(await connection.selectFrom('Paths').selectAll().execute())
-    const result = await ListContent(connection, {
-      limit: 10,
+    const result = await ListContent(connection, { limit: 10,
       offset: 5,
     })
 
