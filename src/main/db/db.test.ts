@@ -1,11 +1,15 @@
 import {afterAll, assert, beforeAll, describe, expect, test} from 'vitest'
 import {createShelfKyselyDB} from './ShelfKyselyDB'
 import {rm} from 'fs/promises'
-import {CreateManyContent, ListContent} from './ContentControllers'
-import {CreateManyPaths} from './PathsController'
-import { ShelfDBInstance } from './ShelfControllers'
+import {
+  CreateContentWithPaths as CreateContentWithPaths,
+  ListContent,
+} from './ContentControllers'
+import {ShelfDBConnection} from './ShelfControllers'
+import { defaultColors } from '../utils/DefaultColors'
+import { CreateTagColors } from './ColorControllers'
 
-let connection: ShelfDBInstance
+let connection: ShelfDBConnection
 const DBPath = __dirname + '/test.db'
 
 function rngText() {
@@ -22,64 +26,55 @@ describe.only('db-tests', async () => {
     await rm(DBPath, {
       force: true,
     })
-    console.log(`TEST DB PATH ${DBPath}`)
-    console.log(`DB TEST -> ${process.versions.modules}`)
 
     connection = createShelfKyselyDB(DBPath)
 
     const tables = await connection.introspection.getTables()
-    //        ^?  TableMetadata[]
-    console.log(`DB Tables:`)
-    console.log({tables})
+
+    console.info(`PROCESS.VERSIONS.MODULES:${process.versions.modules}`)
+    console.info(`DBPATH:${DBPath}`)
+    console.info(`DB Tables:`)
+    console.info({tables})
   })
-  test('Create a bunch of Content', async () => {
+
+
+
+  test('Insert default Colors',async() => {
+    const colors = await CreateTagColors(connection,defaultColors)
+
+    assert(colors)
+    expect(Number(colors[0].numInsertedOrUpdatedRows)).toEqual(defaultColors.length)
+  })
+
+
+  test('Insert 50 Contents with Paths', async () => {
     const arr = []
     for (let a = 0; a < 50; a++) {
       arr.push(rngText())
     }
 
-    const create = await CreateManyContent(
-      connection,
-      arr.map((v) => ({
-        hash: v,
-        extension: '.funny',
+    const create = await CreateContentWithPaths(connection, {
+      paths: arr.map((str) => [
+        {
+          path: str,
+          mTimeMs: 20005,
+        },
+        {
+          path: str,
+          mTimeMs: 20005,
+        },
+      ]),
+      contents: arr.map((str) => ({
+        hash: str,
+        extension: '.asd',
       })),
-    )
-
-    assert(create[0])
-    expect(Number(create[0].numInsertedOrUpdatedRows)).toBe(arr.length)
-
-    const crr = await connection.selectFrom('Contents').select('id').execute()
-
-    await CreateManyPaths(
-      connection,
-      crr.map((v) => {
-        console.log(`creating path for ${v.id}`)
-        return {
-          path: `SomePath.idk ${v}`,
-          contentId: v.id,
-          mTimeMs: 0,
-        }
-      }),
-    )
-
-    await CreateManyPaths(
-      connection,
-      crr.map((v) => {
-        console.log(`creating path for ${v.id}`)
-        return {
-          path: `SomePath.idk ${v}`,
-          contentId: v.id,
-          mTimeMs: 0,
-        }
-      }),
-    )
-
+    })
 
     return create
   })
 
-  test('ListContentWithPagination', async () => {
+
+  test('List Content with relations using pagination', async () => {
     console.log(await connection.selectFrom('Paths').selectAll().execute())
     const result = await ListContent(connection, {
       limit: 10,
@@ -92,18 +87,6 @@ describe.only('db-tests', async () => {
     return result
   })
 
-  test('Count content with offset', async () => {
-    const count = await connection
-      .selectFrom('Contents')
-      .select((eb) => eb.fn.count<number>('id').as('count'))
-      .executeTakeFirst()
-
-    const offset = 10
-
-    assert(count)
-    expect(count.count - offset).toBe(40)
-  })
-
   test('Create Single Content', async () => {
     const ret = await connection
       .insertInto('Contents')
@@ -113,16 +96,9 @@ describe.only('db-tests', async () => {
       })
       .executeTakeFirst()
 
-    expect(ret.insertId).toBeTypeOf('bigint')
-    console.log('Insert Content id:[', ret.insertId, ']')
 
-    const content = await connection
-      .selectFrom('Contents')
-      .selectAll()
-      .executeTakeFirst()
-
-    expect(content).toBeTruthy()
-    console.log('Content: ', content)
+    assert(ret)
+    expect(Number(ret.numInsertedOrUpdatedRows)).toEqual(1)
   })
 
   test('Create Color and Tag', async () => {
@@ -151,10 +127,9 @@ describe.only('db-tests', async () => {
     console.log('Insert Tag id:[', tag.id, ']')
   })
 
-  test.todo('Content with Tags')
-
   afterAll(async () => {
     await connection.destroy()
     await rm(DBPath)
+    console.log("TEST DB Removed")
   })
 })

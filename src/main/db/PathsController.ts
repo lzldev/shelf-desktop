@@ -1,17 +1,17 @@
-import { InsertObject, Kysely } from "kysely"
-import { Prettify } from "../../types/utils"
-import { DB } from "./kysely-types"
+import {InsertObject} from 'kysely'
+import {ShelfDBConnection} from './ShelfControllers'
+import {DB} from './kysely-types'
 
-type DBInstance = Kysely<DB>
-type PathsCreateValues = InsertObject<DB, 'Paths'>
-
-function CreateManyPaths(
-  connection: DBInstance,
-  values: PathsCreateValues[],
+export function CreatePaths(
+  connection: ShelfDBConnection,
+  values: InsertObject<DB, 'Paths'>[],
 ) {
   return connection.insertInto('Paths').values(values).execute()
 }
 
-
-
-export {CreateManyPaths}
+export function DeletePathsFromIds(
+  connection: ShelfDBConnection,
+  pathIds: number[],
+) {
+  return connection.deleteFrom('Paths').where('id', 'in', pathIds).execute()
+}

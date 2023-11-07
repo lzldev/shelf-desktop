@@ -173,8 +173,7 @@ async function main() {
           .insertInto('Tags')
           .values({
             name: normalized,
-            updatedAt: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
+            colorId:1,
           })
           .returning(['id', 'name'])
           .execute()
@@ -192,8 +191,6 @@ async function main() {
         .values({
           tagId: id,
           contentId: classifyData.id,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
         })
         .execute()
 

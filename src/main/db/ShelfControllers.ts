@@ -3,8 +3,7 @@ import type {
   DB,
 } from './kysely-types'
 
-export type ShelfDBInstance = Kysely<DB>
+export type ShelfDBConnection = Kysely<DB>
 
-//TODO: RENAME TO CONTROLLER TYPES
-//TODO: Check if kysely has this already.
 export type Pagination = {offset: number; limit: number}
+export type Cursor = {offset:number;limit:number} | undefined
