@@ -1,5 +1,12 @@
 import {ExpressionBuilder} from 'kysely'
-import type {ContentTags, Contents, DB, Tags} from './kysely-types'
+import type {
+  ContentTags,
+  Contents,
+  DB,
+  Paths,
+  TagColors,
+  Tags,
+} from './kysely-types'
 import {jsonArrayFrom} from 'kysely/helpers/sqlite'
 import {Nullable} from 'kysely/dist/cjs/util/type-utils'
 import {Cursor, Pagination, ShelfDBConnection} from './ShelfControllers'
@@ -8,14 +15,17 @@ import {
   InsertObjectOrList,
 } from 'kysely/dist/cjs/parser/insert-values-parser'
 
-function CreateContent(
+export function CreateContent(
   connection: ShelfDBConnection,
   values: InsertObjectOrList<DB, 'Contents'>,
 ) {
   return connection.insertInto('Contents').values(values).execute()
 }
 
-function UpdateContentWhereId(connection: ShelfDBConnection, id: number) {
+export function UpdateContentWhereId(
+  connection: ShelfDBConnection,
+  id: number,
+) {
   return connection
     .updateTable('Contents')
     .where('id', '=', id)
@@ -25,7 +35,7 @@ function UpdateContentWhereId(connection: ShelfDBConnection, id: number) {
 /**
  * @param values paths -> idx should be related to content id
  * */
-async function CreateContentWithPaths(
+export async function CreateContentWithPaths(
   connection: ShelfDBConnection,
   values: {
     paths: Omit<InsertObject<DB, 'Paths'>, 'contentId'>[][]
@@ -52,7 +62,27 @@ async function CreateContentWithPaths(
     .execute()
 }
 
-async function ListContent(
+export async function ContentDetails(
+  connection: ShelfDBConnection,
+  contentId: number,
+) {
+  return await connection
+    .selectFrom('Contents')
+    .leftJoin('Paths', 'Contents.id', 'Paths.contentId')
+    .leftJoin('ContentTags', 'Contents.id', 'ContentTags.contentId')
+    .select((eb) => [
+      'Contents.id',
+      'Contents.hash',
+      'Contents.extension',
+      'Contents.createdAt',
+      withTagsId(eb),
+      withPathStrings(eb).as('paths'),
+    ])
+    .where('Contents.id', '=', contentId)
+    .execute()
+}
+
+export async function ListContent(
   connection: ShelfDBConnection,
   pagination: Pagination,
 ) {
@@ -105,15 +135,36 @@ async function ListContent(
     content: results,
   }
 }
-
-function withTagsId(
+export function withPathStrings(
   eb: ExpressionBuilder<
     {
-      Tags: Tags
       Contents: Contents
       ContentTags: Nullable<ContentTags>
+      Paths: Nullable<Paths>
+      TagColors: TagColors
+      Tags: Tags
     },
-    'Contents' | 'ContentTags'
+    'Contents' | 'ContentTags' | 'Paths'
+  >,
+) {
+  return jsonArrayFrom(
+    eb
+      .selectFrom('Paths')
+      .select('Paths.path')
+      .whereRef('Contents.id', '=', 'Paths.contentId'),
+  )
+}
+
+export function withTagsId(
+  eb: ExpressionBuilder<
+    {
+      Contents: Contents
+      ContentTags: Nullable<ContentTags>
+      Paths: Nullable<Paths>
+      TagColors: TagColors
+      Tags: Tags
+    },
+    'Contents' | 'ContentTags' | 'Paths'
   >,
 ) {
   return jsonArrayFrom(
@@ -123,5 +174,3 @@ function withTagsId(
       .whereRef('ContentTags.tagId', '=', 'Tags.id'),
   ).as('tags')
 }
-
-export {CreateContentWithPaths, CreateContent, UpdateContentWhereId, ListContent}

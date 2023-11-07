@@ -2,8 +2,7 @@ import {afterAll, assert, beforeAll, describe, expect, test} from 'vitest'
 import {createShelfKyselyDB} from './ShelfKyselyDB'
 import {rm} from 'fs/promises'
 import {
-  CreateContentWithPaths as CreateContentWithPaths,
-  ListContent,
+  CreateContentWithPaths, ListContent,
 } from './ContentControllers'
 import {ShelfDBConnection} from './ShelfControllers'
 import { defaultColors } from '../utils/DefaultColors'
