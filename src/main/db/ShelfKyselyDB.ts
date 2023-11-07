@@ -3,7 +3,7 @@ import {ParseJSONResultsPlugin} from 'kysely'
 import {DB} from './kysely-types'
 import SQLite from 'better-sqlite3'
 import {existsSync} from 'fs'
-import { join } from 'path'
+import {join} from 'path'
 
 //@ts-expect-error File is being loaded raw ( as a string ) so no type
 import createTableSQL from '../../../prisma/migration.sql?raw'
@@ -16,7 +16,7 @@ const createShelfKyselyDB = (dbDir: string) => {
     throw ` DB dir nonExistant ${dbDir}`
   }
 
-  const dbPath = join(dbDir,__DBFILENAME)
+  const dbPath = join(dbDir, __DBFILENAME)
   const isDbNew = !existsSync(dbPath)
 
   const sqliteDb = new SQLite(dbPath, {

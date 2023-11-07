@@ -1,10 +1,27 @@
-import {Content} from '@models'
+import {DetailedContent, ListedContent} from 'src/main/db/ContentControllers'
+import {Prettify} from 'src/types/utils'
+
+type Content = Prettify<ListedContent | DetailedContent>
+
+function getPathFromContent(content: Content) {
+  if (!content) {
+    throw 'invalid'
+  }
+
+  if ('path' in content) {
+    return content.path
+  } else if (content.paths instanceof Array && content.paths.at(0)) {
+    return content.paths.at(0)!.path!
+  } else {
+    throw 'Invalid Content'
+  }
+}
 
 export const openInAnotherProgram = (content?: Content) => {
   if (!content) {
     return
   }
-  const path = content?.paths?.at(0)?.path
+  const path = getPathFromContent(content)
 
   if (!path) return
 
@@ -15,28 +32,27 @@ export const openContentDirectory = (content?: Content) => {
   if (!content) {
     return
   }
-  window.open(
-    'file://' +
-      content?.paths
-        ?.at(0)
-        ?.path.substring(0, content?.paths?.at(0)?.path.lastIndexOf('\\')),
-  )
+  const path = getPathFromContent(content)
+
+  window.open('file://' + path.substring(0, path.lastIndexOf('\\')))
 }
 
 export const encodeContentPathIntoURI = (content: Content) => {
-  const path = content?.paths?.at(0)?.path ?? ''
+  return encodePathIntoURI(getPathFromContent(content) ?? '')
+}
 
-  return encodePathIntoURI(path)
+export const contentIntoURI = (content: Content) => {
+  return encodePathIntoURI(getPathFromContent(content))
 }
 
 export const encodePathIntoURI = (path: string) => {
-  const parsed_path = path
+  const parsedPath = path
     ?.replaceAll('\\', '/')
     .split('/')
     .map((v) => encodeURIComponent(v))
     .join('/')
 
-  return 'file://' + parsed_path
+  return 'file://' + parsedPath
 }
 
 export const GetDirFromURI = (path: string) => {

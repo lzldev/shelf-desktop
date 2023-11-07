@@ -1,6 +1,7 @@
 import {create} from 'zustand'
 import {Tag} from '@models'
 
+//TODO:MOVE TYPE
 export type ContentQuery =
   | {
       type: 'tag'
@@ -11,6 +12,7 @@ export type ContentQuery =
       type: 'path'
       path: string
     }
+
 
 interface queryStore {
   query: Set<ContentQuery>

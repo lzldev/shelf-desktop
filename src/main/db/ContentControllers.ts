@@ -104,7 +104,7 @@ export async function ContentDetails(
       withPathStrings(eb).as('paths'),
     ])
     .where('Contents.id', '=', contentId)
-    .execute()
+    .executeTakeFirst()
 }
 
 export async function ListContent(
@@ -199,3 +199,10 @@ export function withTagsId(
       .whereRef('ContentTags.tagId', '=', 'Tags.id'),
   ).as('tags')
 }
+
+export type DetailedContent = NonNullable<
+  Awaited<ReturnType<typeof ContentDetails>>
+>
+export type ListedContent = Awaited<
+  ReturnType<typeof ListContent>
+>['content'][number]

@@ -3,10 +3,11 @@ import {Tag} from '../db/models/Tag'
 import {requestClient, sendEventAfter} from '../'
 import {IpcMainEvents} from '../../preload/ipcMainTypes'
 import {ContentTag} from '../db/models'
-import {ShelfClient} from './ShelfClient'
 import {Op} from 'sequelize'
 import {ContentTagFields} from '../db/models/ContentTag'
 import {dialog} from 'electron'
+
+import type {ShelfClient} from './ShelfClient'
 
 export function defaultHandler(func: (...any: any[]) => any) {
   return async (_: Electron.IpcMainInvokeEvent, ...args: any[]) => {
@@ -30,25 +31,31 @@ ipcMain.handle(
 ipcMain.handle('batchTagging', defaultHandler(batchTagging))
 
 async function getAllTags() {
-  const result = await Tag.findAll({
-    attributes: ['id', 'name', 'colorId'],
-  })
-  return result
+  const client = requestClient()
+  if (!client) {
+    return
+  }
+
+  return await client.ShelfDB.selectFrom('Tags')
+    .select(['id', 'name', 'colorId'])
+    .execute()
 }
 
 async function removeTagFromContent(
   options: IpcMainEvents['removeTagfromContent']['args'],
 ) {
-  const newRelation = await ContentTag.findOne({
-    where: {
-      contentId: options.contentId,
-      tagId: options.tagId,
-    },
-  })
-  try {
-    await newRelation?.destroy()
+  const client = requestClient()
+  if (!client) {
+    return
+  }
+
+  const del = await client.ShelfDB.deleteFrom('ContentTags')
+    .where((eb) => eb.or([eb('contentId', '=', options.contentId),eb('tagId', '=', options.tagId)]))
+    .executeTakeFirst()
+
+  if(Number(del.numDeletedRows) === 1){
     return true
-  } catch (e) {
+  }else{
     return false
   }
 }
@@ -56,14 +63,19 @@ async function removeTagFromContent(
 async function addTagToContent(
   options: IpcMainEvents['addTagToContent']['args'],
 ) {
-  const newRelation = await ContentTag.build({
-    contentId: options.contentId,
-    tagId: options.tagId,
-  })
-  try {
-    await newRelation.save()
+  const client = requestClient()
+  if (!client) {
+    return
+  }
+
+  const r = await client.ShelfDB.insertInto('ContentTags').values({
+    tagId:options.tagId,
+    contentId:options.contentId
+  }).executeTakeFirst()
+
+  if(Number(r.numInsertedOrUpdatedRows) === 1){
     return true
-  } catch (e) {
+  }else{
     return false
   }
 }

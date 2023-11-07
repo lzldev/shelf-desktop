@@ -25,18 +25,21 @@ import {useHotkeys} from './hooks/useHotkeys'
 import {ArrowLeftIcon} from '@heroicons/react/24/solid'
 import {openInAnotherProgram, openContentDirectory} from './utils/Content'
 import {checkExtension} from './utils/Extensions'
-import { useContentQueryStore } from './hooks/useQueryStore'
+import {useContentQueryStore} from './hooks/useQueryStore'
+import {ListedContent} from 'src/main/db/ContentControllers'
 
 const prevTitle = window.document.title
+
+type ContentDetailsProp = {
+  content?: ListedContent
+  onClose: (...any: any[]) => any
+} & HTMLAttributes<HTMLDivElement>
 
 function ContentDetails({
   content: contentProp,
   onClose,
   ...props
-}: {
-  content?: Content
-  onClose: (...any: any[]) => any
-} & HTMLAttributes<HTMLDivElement>): JSX.Element {
+}: ContentDetailsProp): JSX.Element {
   const {value: fullscreen, toggle: toggleFullscreen} = useToggle(false)
   const containerClass = clsx(props.className, 'backdrop-blur-xl')
   const navigate = useNavigate()
@@ -52,7 +55,7 @@ function ContentDetails({
       if (!contentProp || !contentProp.id) return null
 
       const id = contentProp?.id
-      const result = await window.api.invokeOnMain('getDetailedImage', id)
+      const result = await window.api.invokeOnMain('getDetailedContent', id)
 
       if (!result) {
         return null
@@ -199,11 +202,10 @@ export const InlineTagDropdown = ({
   ...props
 }: {
   removeTag: (tag: Tag) => any
-  onClose: (...any:any[]) => any
+  onClose: (...any: any[]) => any
   tag: Tag
   modalRef: RefObject<HTMLDivElement>
 } & DropdownMenuProps) => {
-
   const addQuery = useContentQueryStore((s) => s.addQuery)
 
   return (
@@ -216,7 +218,7 @@ export const InlineTagDropdown = ({
       <DropdownMenuItem
         className='select-none p-4 outline-none transition-colors hover:bg-gray-500 hover:text-white'
         onClick={() => {
-          addQuery({type:'tag',tag:tag,operation:'include'})
+          addQuery({type: 'tag', tag: tag, operation: 'include'})
           onClose()
         }}
       >

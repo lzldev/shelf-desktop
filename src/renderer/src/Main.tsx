@@ -81,11 +81,8 @@ function Main(): JSX.Element {
       const query = Array.from(CONTENTQUERY.values())
 
       const files = await window.api.invokeOnMain('getShelfContent', {
-        pagination: {
-          offset: pagination.offset,
-          limit: pagination.limit,
-        },
         query: query,
+        pagination,
         order: [orderField, orderDirection],
       })
 

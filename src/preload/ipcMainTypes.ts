@@ -1,18 +1,24 @@
-import {Content, Tag, TagColor} from '../main/db/models'
-import {TagFields} from '../main/db/models/Tag'
-import {TagColorFields} from '../main/db/models/TagColor'
 import {SomeRequired, TypeRecord} from '../types/utils'
 import {
   ColorOperation,
   TagOperation,
   batchTagging as BatchTagging,
 } from '../types/Operations'
+
 import {
   ShelfClientConfig,
   ShelfConfigType as ShelfConfigType,
 } from '../main/ShelfConfig'
+
 import {OpenDialogReturnValue} from 'electron/main'
+
+//TODO: Move this off the Store
 import {ContentQuery} from '../renderer/src/hooks/useQueryStore'
+
+import {Pagination} from '../main/db/ShelfControllers'
+import { TagColors, Tags } from '../main/db/kysely-types'
+
+import type {DetailedContent, ListContent} from '../main/db/ContentControllers'
 
 type IpcMainEventShape = {
   args: unknown | unknown[]
@@ -67,11 +73,11 @@ export type IpcMainEvents = TypeRecord<
     }
     getShelfContent: {
       args: {
-        pagination?: {offset: number; limit: number}
+        pagination?: Pagination
         order?: [string, 'ASC' | 'DESC']
         query: ContentQuery[]
       }
-      return: {content: Content[]; nextCursor?: {offset: number; limit: number}}
+      return: ReturnType<typeof ListContent>
     }
     createTag: {
       args:
@@ -90,17 +96,17 @@ export type IpcMainEvents = TypeRecord<
       args: {contentId: number; tagId: number}
       return: boolean
     }
-    getDetailedImage: {
+    getDetailedContent: {
       args: [contentId: number]
-      return: Content | null
+      return: DetailedContent
     }
     getShelfTags: {
       args: []
-      return: Tag[]
+      return: Tags[]
     }
     getShelfColors: {
       args: []
-      return: TagColor[]
+      return: TagColors[]
     }
     editColors: {
       args: [ColorOperation[]]

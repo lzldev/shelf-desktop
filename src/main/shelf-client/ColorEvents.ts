@@ -12,8 +12,12 @@ ipcMain.handle(
 )
 
 async function getColors() {
-  const result = await TagColor.findAll()
-  return result
+  const client = requestClient()
+  if (!client) {
+    return
+  }
+
+  return await client.ShelfDB.selectFrom('TagColors').selectAll().execute()
 }
 
 async function editColors(operations: IpcMainEvents['editColors']['args'][0]) {
