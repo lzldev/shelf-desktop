@@ -19,7 +19,10 @@ export function CreateContent(
   connection: ShelfDBConnection,
   values: InsertObjectOrList<DB, 'Contents'>,
 ) {
-  return connection.insertInto('Contents').values(values).execute()
+  if (values instanceof Array && values.length === 0) {
+    return
+  }
+  return connection.insertInto('Contents').values(values).executeTakeFirst()
 }
 
 export function UpdateContentWhereId(
@@ -32,6 +35,23 @@ export function UpdateContentWhereId(
     .executeTakeFirst()
 }
 
+export async function ClearOrphanedContents(connection: ShelfDBConnection) {
+  return connection
+    .deleteFrom('Contents')
+    .where((eb) =>
+      eb(
+        'Contents.id',
+        'in',
+        eb
+          .selectFrom('Contents')
+          .select('Contents.id')
+          .leftJoin('Paths', 'Contents.id', 'Paths.contentId')
+          .where('Paths.contentId', 'is', null),
+      ),
+    )
+    .execute()
+}
+
 /**
  * @param values paths -> idx should be related to content id
  * */
@@ -42,7 +62,12 @@ export async function CreateContentWithPaths(
     contents: InsertObject<DB, 'Contents'>[]
   },
 ) {
-  if (!(values.paths instanceof Array) || !(values.contents instanceof Array)) {
+  if (values.paths instanceof Array && values.paths.length === 0) {
+    return
+  } else if (
+    !(values.paths instanceof Array) ||
+    !(values.contents instanceof Array)
+  ) {
     return
   }
 

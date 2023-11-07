@@ -13,7 +13,7 @@ const __DBFILENAME = `.shelfdb${__DBEXTENSION}`
 
 const createShelfKyselyDB = (dbDir: string) => {
   if (!existsSync(dbDir)) {
-    throw 'DB dir nonExistant'
+    throw ` DB dir nonExistant ${dbDir}`
   }
 
   const dbPath = join(dbDir,__DBFILENAME)

@@ -27,7 +27,6 @@ if(wd.success){
   workerData = wd.data
 }else if(import.meta.env.VITEST){
   workerData = {
-    max_threads:2,
     thumbnailPath:'./examples/app/'
   }
 }else{

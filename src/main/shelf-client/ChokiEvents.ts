@@ -3,16 +3,21 @@ import {createHash} from 'crypto'
 import {FileTuple, filterDirectoryTree} from '../utils/choki'
 import {updateProgress as sendUpdateProgressEvent} from '..'
 import {ShelfClient} from './ShelfClient'
-import {Content, Path, TagColor} from '../db/models'
 import {normalize} from 'path'
 import {dialog} from 'electron'
 import {SHELF_LOGGER} from '../utils/Loggers'
 
 import {canClassify} from '../../renderer/src/utils/Extensions'
 import {createReadStream, statSync} from 'fs'
-import {defaultColors} from '../utils/DefaultColors'
 
 import {Effect} from 'effect'
+import {CreateDefaultColors} from '../db/ColorControllers'
+import {
+  ClearOrphanedContents,
+  CreateContentWithPaths,
+} from '../db/ContentControllers'
+import {Contents, Paths} from '../db/kysely-types'
+import {ShelfDBConnection} from '../db/ShelfControllers'
 
 export const addChokiEvents = (
   shelfClient: ShelfClient,
@@ -32,136 +37,136 @@ export const addChokiEvents = (
   choki.on('change', shelfOnChange)
 
   async function shelfOnError(error: Error) {
-    if (!('path' in error)) {
-      return
-    }
-
-    const path = error.path as string
-
-    shelfClient.config.set(
-      'ignoredPaths',
-      [...shelfClient.config.get('ignoredPaths', false), path],
-      false,
-    )
-
-    choki.unwatch(path)
+    // if (!('path' in error)) {
+    //   return
+    // }
+    //
+    // const path = error.path as string
+    //
+    // shelfClient.config.set(
+    //   'ignoredPaths',
+    //   [...shelfClient.config.get('ignoredPaths', false), path],
+    //   false,
+    // )
+    //
+    // choki.unwatch(path)
   }
 
   async function shelfOnChange(_filePath: string) {
-    if (!shelfClient.ready) {
-      return
-    }
-
-    try {
-      const filePath = normalize(_filePath)
-      const newHash = await hashFileAsync(filePath)
-
-      const content = await Content.findOne({
-        include: [
-          {
-            model: Path,
-            where: {
-              path: filePath,
-            },
-          },
-        ],
-      }).catch((e) => {
-        throw e
-      })
-
-      await content
-        ?.update({
-          hash: newHash,
-        })
-        .catch((e) => {
-          throw e
-        })
-    } catch (e) {
-      dialog.showErrorBox('Error [ONCHANGE]', JSON.stringify(e))
-    }
+    // if (!shelfClient.ready) {
+    //   return
+    // }
+    //
+    // try {
+    //   const filePath = normalize(_filePath)
+    //   const newHash = await hashFileAsync(filePath)
+    //
+    //   const content = await Content.findOne({
+    //     include: [
+    //       {
+    //         model: Path,
+    //         where: {
+    //           path: filePath,
+    //         },
+    //       },
+    //     ],
+    //   }).catch((e) => {
+    //     throw e
+    //   })
+    //
+    //   await content
+    //     ?.update({
+    //       hash: newHash,
+    //     })
+    //     .catch((e) => {
+    //       throw e
+    //     })
+    // } catch (e) {
+    //   dialog.showErrorBox('Error [ONCHANGE]', JSON.stringify(e))
+    // }
   }
 
   async function shelfOnAdd(pathString: string) {
-    if (!shelfClient.ready) {
-      return
-    }
-
-    try {
-      const filePath = normalize(pathString)
-      const fileHash = await hashFileAsync(filePath).catch((e) => {
-        throw e
-      })
-
-      const {mtimeMs} = statSync(filePath)
-
-      const [content] = await Content.findOrCreate({
-        where: {
-          hash: fileHash,
-        },
-        defaults: {
-          hash: fileHash,
-          extension: parse(filePath).ext,
-        },
-      }).catch((e) => {
-        throw e
-      })
-
-      const [newPath, created] = await Path.findOrCreate({
-        where: {
-          path: filePath,
-        },
-        defaults: {
-          path: filePath,
-          mTimeMs: mtimeMs,
-          contentId: content.id,
-        },
-      }).catch((e) => {
-        throw e
-      })
-
-      if (created) {
-        return
-      }
-
-      if (canClassify(content.extension)) {
-        shelfClient.AiWorker.postMessage({
-          type: 'new_file',
-          data: {
-            id: content.id,
-            path: filePath,
-          },
-        })
-      }
-
-      await newPath
-        .update({
-          contentId: content.id,
-        })
-        .catch((e) => {
-          throw e
-        })
-    } catch (e) {
-      dialog.showErrorBox('Error', JSON.stringify(e))
-    }
+    // if (!shelfClient.ready) {
+    //   return
+    // }
+    //
+    // try {
+    //   const filePath = normalize(pathString)
+    //   const fileHash = await hashFileAsync(filePath).catch((e) => {
+    //     throw e
+    //   })
+    //
+    //   const {mtimeMs} = statSync(filePath)
+    //
+    //   const [content] = await Content.findOrCreate({
+    //     where: {
+    //       hash: fileHash,
+    //     },
+    //     defaults: {
+    //       hash: fileHash,
+    //       extension: parse(filePath).ext,
+    //     },
+    //   }).catch((e) => {
+    //     throw e
+    //   })
+    //
+    //   const [newPath, created] = await Path.findOrCreate({
+    //     where: {
+    //       path: filePath,
+    //     },
+    //     defaults: {
+    //       path: filePath,
+    //       mTimeMs: mtimeMs,
+    //       contentId: content.id,
+    //     },
+    //   }).catch((e) => {
+    //     throw e
+    //   })
+    //
+    //   if (created) {
+    //     return
+    //   }
+    //
+    //   if (canClassify(content.extension)) {
+    //     shelfClient.AiWorker.postMessage({
+    //       type: 'new_file',
+    //       data: {
+    //         id: content.id,
+    //         path: filePath,
+    //       },
+    //     })
+    //   }
+    //
+    //   await newPath
+    //     .update({
+    //       contentId: content.id,
+    //     })
+    //     .catch((e) => {
+    //       throw e
+    //     })
+    // } catch (e) {
+    //   dialog.showErrorBox('Error', JSON.stringify(e))
+    // }
   }
 
   async function shelfOnUnlink(_filePath: string) {
-    try {
-      const filePath = normalize(_filePath)
-      const path = await Path.findOne({
-        where: {
-          path: filePath,
-        },
-      }).catch((e) => {
-        throw e
-      })
-
-      await path?.destroy().catch((e) => {
-        throw e
-      })
-    } catch (e) {
-      dialog.showErrorBox('Error', JSON.stringify(e))
-    }
+    // try {
+    //   const filePath = normalize(_filePath)
+    //   const path = await Path.findOne({
+    //     where: {
+    //       path: filePath,
+    //     },
+    //   }).catch((e) => {
+    //     throw e
+    //   })
+    //
+    //   await path?.destroy().catch((e) => {
+    //     throw e
+    //   })
+    // } catch (e) {
+    //   dialog.showErrorBox('Error', JSON.stringify(e))
+    // }
   }
 
   async function shelfOnReady() {
@@ -186,10 +191,10 @@ export const addChokiEvents = (
 
     if (!isDBNew) {
       console.time('DB CLEANUP ->')
-      await CleanupShelfDB(watchedFiles)
+      await CleanupShelfDB(shelfClient.ShelfDB,watchedFiles)
       console.timeEnd('DB CLEANUP ->')
     } else {
-      await TagColor.bulkCreate(defaultColors)
+      await CreateDefaultColors(shelfClient.ShelfDB)
     }
 
     const hashToPathRecord: Record<string, number[]> = {}
@@ -218,28 +223,32 @@ export const addChokiEvents = (
       ),
     )
 
-    await Content.bulkCreate(
-      Object.entries(hashToPathRecord).map(([hash, paths]) => ({
-        hash: hash,
+    const entries = Object.entries(hashToPathRecord)
+
+    await CreateContentWithPaths(shelfClient.ShelfDB, {
+      contents: entries.map(([hash, paths]) => ({
+        hash,
         extension: watchedFiles[paths[0]][2],
-        paths: paths.map(
-          (fileIdx) =>
-            ({
-              path: watchedFiles[fileIdx][0],
-              mTimeMs: watchedFiles[fileIdx][1],
-            } as Path),
-        ),
       })),
-      {
-        include: [{model: Path, as: 'paths'}],
-      },
-    )
+      paths: entries.map(([_, paths]) =>
+        paths.map((fileIdx) => ({
+          path: watchedFiles[fileIdx][0],
+          mTimeMs: watchedFiles[fileIdx][1],
+        })),
+      ),
+    })
     ;(
-      await Content.findAll({
-        where: {
-          hash: Object.keys(hashToPathRecord),
-        },
-      })
+      await shelfClient.ShelfDB.selectFrom('Contents')
+        .innerJoin('Paths', 'Contents.id', 'Paths.contentId')
+        .select((eb) => [
+          'Contents.id',
+          'Contents.extension',
+          'Contents.hash',
+          eb.ref('Paths.path').as('path'),
+        ])
+        .where('hash', 'in', Object.keys(hashToPathRecord))
+        .groupBy('Paths.contentId')
+        .execute()
     )
       .filter((content) => canClassify(content.extension))
       .forEach((content) => {
@@ -247,7 +256,7 @@ export const addChokiEvents = (
           type: 'new_file',
           data: {
             id: content.id,
-            path: watchedFiles[hashToPathRecord[content.hash][0]][0],
+            path: content.path,
           },
         })
       })
@@ -293,29 +302,63 @@ export const addChokiEvents = (
   }
 }
 
-const HASHMAXBYTES = 10485760 - 1 //10 MB
+async function CleanupShelfDB(
+  connection: ShelfDBConnection,
+  watchedFiles: FileTuple[],
+) {
+  const dbPaths = await connection.selectFrom('Paths').selectAll().execute()
+  const deletedPaths = []
+  const alreadyUpdatedContent = new Set<number>()
 
-async function hashFileAsync(filePath: string) {
-  return new Promise<string>((resolve, reject) => {
-    try {
-      const stream = createReadStream(filePath, {
-        end: HASHMAXBYTES,
-      })
-      const hash = createHash('md5')
+  for (const path of dbPaths) {
+    const idOnTuple = watchedFiles.findIndex((fileTuple) => {
+      return fileTuple[0] === path.path
+    })
 
-      stream.on('data', (_buff) => {
-        hash.update(_buff)
-      })
-      stream.on('end', () => {
-        resolve(hash.digest('hex'))
-      })
-      stream.on('error', (err) => {
-        reject(err)
-      })
-    } catch (err) {
-      reject(err)
+    const isPathWatched = idOnTuple !== -1
+
+    if (!isPathWatched) {
+      // await path.destroy()
+      deletedPaths.push(path.id)
+      continue
     }
-  })
+
+    if (path.mTimeMs === watchedFiles[idOnTuple][1]) {
+      watchedFiles.splice(idOnTuple, 1)
+      continue
+    }
+
+    const newContentHash = await hashFileAsync(path.path)
+    // SHELF_LOGGER.info(
+    //   `${
+    //     updatedContent[0] !== 0 ? 'SUCESS' : 'FAIL'
+    //   } ON UPDATING CONTENT ON CLEANUP | Path: ${path.path}`,
+    // )
+
+    await connection
+      .updateTable('Paths')
+      .where('id', '=', path.id)
+      .set({
+        mTimeMs: watchedFiles[idOnTuple][1],
+      })
+      .executeTakeFirst()
+
+    if (!alreadyUpdatedContent.has(path.contentId)) {
+      const updateContent = await connection
+        .updateTable('Contents')
+        .set({
+          hash: newContentHash,
+        })
+        .where('Contents.id', '=', path.contentId)
+        .returning('id')
+        .executeTakeFirst()
+
+      alreadyUpdatedContent.add(updateContent?.id ?? -1)
+    }
+  }
+
+  await connection.deleteFrom('Paths').where('id', 'in', deletedPaths).execute()
+  await ClearOrphanedContents(connection)
 }
 
 function createProgressUpdater<TParts extends Record<string, number>>(
@@ -378,71 +421,27 @@ function createProgressUpdater<TParts extends Record<string, number>>(
   return {sendProgress, addToKey}
 }
 
-async function CleanupShelfDB(watchedFiles: FileTuple[]) {
-  const dbPaths = await Path.findAll({
-    attributes: {
-      exclude: ['updatedAt', 'createdAt'],
-    },
-    // transaction: pathTransaction,
-  })
+const HASHMAXBYTES = 10485760 - 1 //10 MB
 
-  for (const path of dbPaths) {
-    const pathValues = path.toJSON()
-    const idOnTuple = watchedFiles.findIndex((fileTuple) => {
-      return fileTuple[0] === pathValues.path
-    })
-
-    const isPathWatched = idOnTuple !== -1
-
-    if (!isPathWatched) {
-      await path.destroy()
-      continue
-    }
-
-    if (pathValues.mTimeMs === watchedFiles[idOnTuple][1]) {
-      watchedFiles.splice(idOnTuple, 1)
-    } else {
-      const newContentHash = await hashFileAsync(path.path)
-      const updatedContent = await Content.update(
-        {
-          hash: newContentHash,
-        },
-        {
-          where: {
-            id: pathValues.contentId,
-          },
-        },
-      )
-
-      SHELF_LOGGER.info(
-        `${
-          updatedContent[0] !== 0 ? 'SUCESS' : 'FAIL'
-        } ON UPDATING CONTENT ON CLEANUP | Path: ${pathValues.path}`,
-      )
-
-      await path.update({
-        mTimeMs: watchedFiles[idOnTuple][1],
+async function hashFileAsync(filePath: string) {
+  return new Promise<string>((resolve, reject) => {
+    try {
+      const stream = createReadStream(filePath, {
+        end: HASHMAXBYTES,
       })
+      const hash = createHash('md5')
+
+      stream.on('data', (_buff) => {
+        hash.update(_buff)
+      })
+      stream.on('end', () => {
+        resolve(hash.digest('hex'))
+      })
+      stream.on('error', (err) => {
+        reject(err)
+      })
+    } catch (err) {
+      reject(err)
     }
-  }
-
-  const orphanedContents = await Content.findAll({
-    attributes: ['id'],
-    include: [
-      {
-        model: Path,
-        required: false,
-      },
-    ],
-    where: {
-      '$Paths.contentId$': null,
-    },
-    subQuery: false,
-  })
-
-  const cleaned = await Content.destroy({
-    where: {
-      id: orphanedContents.map((v) => v.id),
-    },
   })
 }

@@ -1,20 +1,23 @@
-import {afterAll, assert, beforeAll, describe, expect, test} from 'vitest'
+import {afterAll, assert, beforeAll, describe, expect, test, vi} from 'vitest'
 import {createShelfKyselyDB} from './ShelfKyselyDB'
 import {rm} from 'fs/promises'
 import {
-  CreateContentWithPaths, ListContent,
+  ClearOrphanedContents,
+  CreateContent,
+  CreateContentWithPaths,
+  ListContent,
 } from './ContentControllers'
 import {ShelfDBConnection} from './ShelfControllers'
-import { defaultColors } from '../utils/DefaultColors'
-import { CreateTagColors } from './ColorControllers'
-import { join } from 'path'
+import {defaultColors} from '../utils/DefaultColors'
+import {CreateDefaultColors, CreateTagColors} from './ColorControllers'
+import {join} from 'path'
 
 let connection: ShelfDBConnection
 
 const __DBEXTENSION = '.shelf'
 const __DBFILENAME = `.shelfdb${__DBEXTENSION}`
 
-const DBPath = join(__dirname,__DBFILENAME)
+const DBPath = join(__dirname, __DBFILENAME)
 
 function rngText() {
   const size = Math.floor(Math.random() * 25)
@@ -41,15 +44,14 @@ describe.only('db-tests', async () => {
     console.log({tables})
   })
 
-
-
-  test('Insert default Colors',async() => {
-    const colors = await CreateTagColors(connection,defaultColors)
+  test('Insert default Colors', async () => {
+    const colors = await CreateDefaultColors(connection)
 
     assert(colors)
-    expect(Number(colors[0].numInsertedOrUpdatedRows)).toEqual(defaultColors.length)
+    expect(Number(colors[0].numInsertedOrUpdatedRows)).toEqual(
+      defaultColors.length,
+    )
   })
-
 
   test('Insert 50 Contents with Paths', async () => {
     const arr = []
@@ -77,31 +79,14 @@ describe.only('db-tests', async () => {
     return create
   })
 
-
   test('List Content with relations using pagination', async () => {
     console.log(await connection.selectFrom('Paths').selectAll().execute())
-    const result = await ListContent(connection, { limit: 10,
-      offset: 5,
-    })
+    const result = await ListContent(connection, {limit: 10, offset: 5})
 
     console.log(result)
     assert(result)
     expect(result.content.length).toBe(10)
     return result
-  })
-
-  test('Create Single Content', async () => {
-    const ret = await connection
-      .insertInto('Contents')
-      .values({
-        hash: 'TEST HASH',
-        extension: '.extension',
-      })
-      .executeTakeFirst()
-
-
-    assert(ret)
-    expect(Number(ret.numInsertedOrUpdatedRows)).toEqual(1)
   })
 
   test('Create Color and Tag', async () => {
@@ -130,9 +115,87 @@ describe.only('db-tests', async () => {
     console.log('Insert Tag id:[', tag.id, ']')
   })
 
+  test('Clear Orphaned Contents', async () => {
+    const max = 2
+
+    const rows = await connection
+      .with('last_two', (db) =>
+        db
+          .selectFrom('Paths')
+          .select(['id', 'contentId'])
+          .orderBy('id desc')
+          .limit(max),
+      )
+      .deleteFrom('Paths')
+      .where((eb) =>
+        eb('Paths.id', 'in', eb.selectFrom('last_two').select('last_two.id')),
+      )
+      .execute()
+
+    // const rows = await connection
+    //   .deleteFrom('Paths')
+    //   .where((eb) =>
+    //     eb(
+    //       'Paths.id',
+    //       'in',
+    //       eb
+    //         .selectFrom('Paths as p2')
+    //         .select(['p2.id'])
+    //         .groupBy('p2.contentId')
+    //         .orderBy('p2.contentId desc')
+    //         .limit(max),
+    //     ),
+    //   )
+    //   .execute()
+    //
+
+    assert(rows[0])
+    expect(Number(rows[0].numDeletedRows)).toBe(max)
+
+    // assert(rows2[0])
+    // expect(Number(rows2[0].numDeletedRows)).toBe(max)
+
+    const res = await ClearOrphanedContents(connection)
+
+    assert(res)
+    assert(res[0])
+    expect(Number(res[0].numDeletedRows)).toBe(max / 2)
+  })
+
+  test('Create Single Content', async () => {
+    const ret = await connection
+      .insertInto('Contents')
+      .values({
+        hash: 'TEST HASH',
+        extension: '.extension',
+      })
+      .executeTakeFirst()
+
+    assert(ret)
+    expect(Number(ret.numInsertedOrUpdatedRows)).toEqual(1)
+  })
+
+  test('Insert NOTHING', async () => {
+    await CreateContent(connection, [])
+    await CreateContentWithPaths(connection, {paths: [], contents: []})
+  })
+
+  test('Create Single Content', async () => {
+    const ret = await connection
+      .insertInto('Contents')
+      .values({
+        hash: 'TEST HASH',
+        extension: '.extension',
+      })
+      .executeTakeFirst()
+
+    assert(ret)
+    expect(Number(ret.numInsertedOrUpdatedRows)).toEqual(1)
+  })
+
   afterAll(async () => {
     await connection.destroy()
     await rm(DBPath)
-    console.log("TEST DB Removed")
+    console.log('TEST DB Removed')
   })
 })
