@@ -9,13 +9,12 @@ import {
   isFirstRun,
   describe,
   expectTypeOf,
+  assert,
 } from 'vitest'
 import {IpcRendererEvents} from '../src/preload/ipcRendererTypes'
 import '../src/main/index.ts'
 import '../src/main/shelf-client/index'
 import {__MOCK_ELECTRON} from '../__mocks__/electron'
-
-let TestClient: ShelfClient
 
 vi.mock('electron')
 vi.mock('@electron-toolkit/preload')
@@ -39,6 +38,8 @@ vi.mock('../src/main/index.ts', () => ({
 
 const electron = (await import('electron')) as unknown as __MOCK_ELECTRON
 
+let TestClient: ShelfClient
+
 describe('Shelf Client', () => {
   beforeAll(async () => {
     if (TestClient) {
@@ -51,12 +52,13 @@ describe('Shelf Client', () => {
     console.log(`TENSORFLOW:${tsmain.version}`)
     console.log(`MNET:${mnet.version}`)
 
-    return new Promise(async (resolve, rej) => {
-      TestClient = await ShelfClient.create(
+    await new Promise<void>((resolve, rej) => {
+      const test = ShelfClient.create(
         {
           basePath: './examples/',
         },
         () => {
+          TestClient = test as unknown as ShelfClient
           resolve()
         },
       )
@@ -86,12 +88,13 @@ describe('Shelf Client', () => {
   })
 
   test('Content Details Handler', async () => {
-    const result = await electron.ipcMain.invoke('getDetailedImage', 1)
+    const result = await electron.ipcMain.invoke('getDetailedContent', 1)
 
     if (result === null) {
       throw 'Content Not found'
     }
 
+    assert(result)
     expect(result).toBeTruthy()
     expect(result).toBeTypeOf('object')
     expect(result.paths).toBeInstanceOf(Array)
@@ -103,7 +106,7 @@ describe('Shelf Client', () => {
       extension: expect.any(String),
     })
 
-    expectTypeOf(result!).toMatchTypeOf<{
+    expectTypeOf(result).toMatchTypeOf<{
       hash: string
       extension: string
       paths?: {path: string}[]

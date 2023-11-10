@@ -1,20 +1,68 @@
 import {ipcMain, BrowserWindow, dialog} from 'electron'
 import {AppConfig, requestClient, sendEventToAllWindows} from '..'
 
-import {SherfIpcMainListener} from '../../preload/ipcMainTypes'
+import {ShelfIpcMainListener} from '../../preload/ipcMainTypes'
 import {existsSync} from 'fs'
 import {CLIENT_CONFIG_FILE_NAME} from '../ShelfConfig'
 import {__DBFILENAME} from '../db/ShelfDB'
 import {join} from 'path'
 import {OpenDialogReturnValue} from 'electron/main'
-import {exec} from 'node:child_process'
-import {SHELF_LOGGER} from '../utils/Loggers'
 
 ipcMain.handle('preview_content', createPreviewContentHandler())
+ipcMain.handle('getConfig', async () => AppConfig.getAll())
+ipcMain.handle('openDialog', openDirDialog)
+
+ipcMain.handle(
+  'toggleFullscreen',
+  async (
+    evt: Electron.IpcMainInvokeEvent,
+    newStatus: boolean,
+  ): Promise<void> => {
+    const window = BrowserWindow.fromId(evt.sender.id)!
+    if (window.fullScreen === newStatus) return
+    window.setFullScreen(newStatus ? newStatus : !window.fullScreen)
+  },
+)
+ipcMain.handle('saveClientConfig', async (_, config) => {
+  requestClient()!.config.setAll(config)
+  return true
+})
+ipcMain.handle('getClientConfig', async () => {
+  return requestClient().config.getAll()
+})
+ipcMain.handle('saveConfig', async (_, config) => {
+  AppConfig.setAll(config)
+  sendEventToAllWindows('updateConfig')
+  return true
+})
+ipcMain.handle('openDirectory', async () => {
+  const directory = await openDirDialog()
+
+  if (directory.canceled) {
+    return {...directory, canceled: true}
+  }
+
+  const isNew = checkDirectory(directory.filePaths[0])
+  return {...directory, isNew}
+})
+
+async function openDirDialog() {
+  return dialog.showOpenDialog({
+    properties: ['openDirectory'],
+  }) as OpenDialogReturnValue
+}
+
+function checkDirectory(dir: string) {
+  return !(
+    existsSync(join(dir, CLIENT_CONFIG_FILE_NAME)) &&
+    existsSync(join(dir, __DBFILENAME))
+  )
+}
+
 function createPreviewContentHandler() {
   const errorSet = new Set<string>()
 
-  const handler: SherfIpcMainListener<'preview_content'> = async (
+  const handler: ShelfIpcMainListener<'preview_content'> = async (
     _,
     data,
     type,
@@ -40,50 +88,4 @@ function createPreviewContentHandler() {
   }
 
   return handler
-}
-
-ipcMain.handle('getConfig', async () => AppConfig.getAll())
-ipcMain.handle('saveConfig', async (_, config) => {
-  AppConfig.setAll(config)
-  sendEventToAllWindows('updateConfig')
-  return true
-})
-
-ipcMain.handle('getClientConfig', async () => {
-  return requestClient()!.config.getAll()
-})
-ipcMain.handle('saveClientConfig', async (_, config) => {
-  requestClient()!.config.setAll(config)
-  return true
-})
-
-ipcMain.handle('toggleFullscreen', async (evt, newStatus) => {
-  const window = BrowserWindow.fromId(evt.sender.id)!
-  if (window.fullScreen === newStatus) return
-  window.setFullScreen(newStatus ? newStatus : !window.fullScreen)
-})
-
-ipcMain.handle('openDialog', async () => openDirDialog())
-ipcMain.handle('openDirectory', async () => {
-  const directory = await openDirDialog()
-
-  if (directory.canceled) {
-    return {...directory, canceled: true}
-  }
-
-  const isNew = checkDirectory(directory.filePaths[0])
-  return {...directory, isNew}
-})
-
-function checkDirectory(dir: string) {
-  return !(
-    existsSync(join(dir, CLIENT_CONFIG_FILE_NAME)) &&
-    existsSync(join(dir, __DBFILENAME))
-  )
-}
-
-async function openDirDialog() {
-  return dialog.showOpenDialog({
-    properties: ['openDirectory'],
-  }) as OpenDialogReturnValue
 }

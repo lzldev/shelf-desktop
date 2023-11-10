@@ -9,7 +9,6 @@ export const InlineTag = (
 ) => {
   const {colors} = useColors()
   const defaultColor = useConfigStore((s) => s.config!.defaultColor)
-
   const color = colors?.get(props.tag.colorId!)?.color || defaultColor
 
   return (

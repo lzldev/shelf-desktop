@@ -5,8 +5,9 @@ import {ThumbWorkerReceive} from './thumbworker/types'
 
 export function setupWorkerHandlers() {
   const client = requestClient()
+
   if (!client) {
-    throw 'error setting up worker handlers'
+    throw 'Client no found when setting up worker handlers'
   }
 
   const {ThumbWorker, AiWorker} = client

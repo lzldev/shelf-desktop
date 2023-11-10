@@ -1,5 +1,5 @@
 import * as chokidar from 'chokidar'
-import { ShelfDBConnection } from '../db/ShelfControllers'
+import {ShelfDBConnection} from '../db/ShelfControllers'
 import {addChokiEvents} from './ChokiEvents'
 import {FSWatcher} from 'chokidar'
 import {zJson} from '../zJson'
@@ -21,11 +21,9 @@ import type {AIWORKERTYPE as AiWorkerType} from './ai_worker/types'
 import CreateThumbWorker from './thumbworker/worker?nodeWorker'
 import {ThumbWorkerData, ThumbWorkerType} from './thumbworker/types'
 
-import * as os from 'node:os'
-import {SHELF_LOGGER} from '../utils/Loggers'
 import {SHARE_ENV} from 'worker_threads'
-import { createShelfKyselyDB } from '../db/ShelfKyselyDB'
-import { __DBEXTENSION } from '../db/ShelfDB'
+import {createShelfKyselyDB} from '../db/ShelfKyselyDB'
+import {__DBEXTENSION} from '../db/ShelfDB'
 
 class ShelfClient {
   public choki: FSWatcher
@@ -62,11 +60,11 @@ class ShelfClient {
     const choki = chokidar.watch(
       [options.basePath, ...config.get('additionalPaths')],
       {
-        ignored: [
-          ...config.get('ignoredPaths'),
-          config.get('ignoreUnsupported') ? globSupportedFormats : '',
-          `**/**.${__DBEXTENSION}`,
-        ],
+        // ignored: [
+        //   ...config.get('ignoredPaths'),
+        //   config.get('ignoreUnsupported') ? globSupportedFormats : '',
+        //   `**/**.${__DBEXTENSION}`,
+        // ],
         followSymlinks: false,
       },
     )
@@ -92,9 +90,9 @@ class ShelfClient {
         env: SHARE_ENV,
         workerData: {
           thumbnailPath: SHELF_THUMB_DEFFAULT_PATH,
-        } as ThumbWorkerData,
+        } satisfies ThumbWorkerData,
       }) as ThumbWorkerType
-    }else {
+    } else {
       thumbWorker = {
         postMessage: () => {},
         on: () => {},
@@ -115,7 +113,7 @@ class ShelfClient {
     aiWorker: AiWorkerType
     thumbWorker: ThumbWorkerType
     choki: FSWatcher
-  ShelfDB: ShelfDBConnection
+    ShelfDB: ShelfDBConnection
     config: zJson<typeof SHELF_CLIENT_CONFIG_SCHEMA, ShelfClientConfigValues>
     callback: () => void
   }) {

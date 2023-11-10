@@ -21,6 +21,7 @@ export const openInAnotherProgram = (content?: Content) => {
   if (!content) {
     return
   }
+
   const path = getPathFromContent(content)
 
   if (!path) return
@@ -51,8 +52,7 @@ export const encodePathIntoURI = (path: string) => {
     .split('/')
     .map((v) => encodeURIComponent(v))
     .join('/')
-
-  return 'file://' + parsedPath
+  return 'file://' + (parsedPath[0] === '/' ? '' : '/') + parsedPath
 }
 
 export const GetDirFromURI = (path: string) => {

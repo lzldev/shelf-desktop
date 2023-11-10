@@ -4,6 +4,9 @@ import {defaultHandler} from './TagEvents'
 import {dialog, ipcMain} from 'electron'
 import {requestClient, sendEventAfter} from '../'
 import {ShelfClient} from './ShelfClient'
+import {InsertObject} from 'kysely'
+import {DB} from '../db/kysely-types'
+import {SHELF_LOGGER} from '../utils/Loggers'
 
 ipcMain.handle('getShelfColors', defaultHandler(getColors))
 ipcMain.handle(
@@ -13,61 +16,45 @@ ipcMain.handle(
 
 async function getColors() {
   const client = requestClient()
-  if (!client) {
-    return
-  }
 
   return await client.ShelfDB.selectFrom('TagColors').selectAll().execute()
 }
 
 async function editColors(operations: IpcMainEvents['editColors']['args'][0]) {
-  const client = requestClient() as ShelfClient
-  const editColorsTransaction = await client.ShelfDB.sequelize.transaction()
+  const client = requestClient()
 
-  try {
-    for (const op of operations) {
-      switch (op.operation) {
-        case 'CREATE': {
-          await TagColor.build({...op})
-            .save({
-              transaction: editColorsTransaction,
-            })
-            .catch((err) => {
-              throw err
-            })
-          continue
-        }
-        case 'UPDATE': {
-          const {id: toBeUpdatedId, operation, ...values} = op
-          await TagColor.update(
-            {...values},
-            {where: {id: toBeUpdatedId}, transaction: editColorsTransaction},
-          ).catch((err) => {
-            throw err
+  await client.ShelfDB.transaction()
+    .execute(async (trx) => {
+      const newColors: InsertObject<DB, 'TagColors'>[] = []
+
+      for (const op of operations) {
+        if (op.operation === 'CREATE') {
+          newColors.push({
+            color: op.color,
+            name: op.name,
           })
           continue
         }
-        case 'DELETE': {
-          await TagColor.destroy({
-            where: {
-              id: op.id,
-            },
-            transaction: editColorsTransaction,
-          }).catch((err) => {
-            throw err
-          })
+
+        if (op.operation === 'UPDATE') {
+          await trx
+            .updateTable('TagColors')
+            .where('id', '=', op.id)
+            .set({color: op.color, name: op.name})
+            .execute()
           continue
         }
-        default:
-          throw 'UNEXPECTED OPERATION'
+
+        if (op.operation === 'DELETE') {
+          await trx.deleteFrom('TagColors').where('id', '=', op.id).execute()
+          continue
+        }
       }
-    }
-  } catch (err) {
-    await editColorsTransaction.rollback()
-    dialog.showErrorBox('Error', JSON.stringify(err))
-    return false
-  }
+    })
+    .catch(() => {
+      SHELF_LOGGER.error('Failed to EDIT colors')
+      return false
+    })
 
-  await editColorsTransaction.commit()
   return true
 }

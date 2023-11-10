@@ -12,10 +12,6 @@ ipcMain.handle('getDetailedContent', defaultHandler(getDetailedContent))
 async function getContent(options: IpcMainEvents['getShelfContent']['args']) {
   const client = requestClient()
 
-  if (!client) {
-    return
-  }
-
   const order = options?.order ? [options?.order] : undefined
 
   const {paths, tagIds} = options.query.reduce(
@@ -44,9 +40,5 @@ async function getDetailedContent(
 ) {
   const client = requestClient()
 
-  if (!client) {
-    return
-  }
-
-  return await ContentDetails(client.ShelfDB,id)
+  return await ContentDetails(client.ShelfDB, id)
 }
