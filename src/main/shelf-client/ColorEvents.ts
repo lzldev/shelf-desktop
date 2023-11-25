@@ -34,22 +34,20 @@ async function editColors(operations: IpcMainEvents['editColors']['args'][0]) {
             name: op.name,
           })
           continue
-        }
-
-        if (op.operation === 'UPDATE') {
+        } else if (op.operation === 'UPDATE') {
           await trx
             .updateTable('TagColors')
             .where('id', '=', op.id)
             .set({color: op.color, name: op.name})
             .execute()
           continue
-        }
-
-        if (op.operation === 'DELETE') {
+        } else if (op.operation === 'DELETE') {
           await trx.deleteFrom('TagColors').where('id', '=', op.id).execute()
           continue
         }
       }
+
+      trx.insertInto('TagColors').values(newColors).execute()
     })
     .catch(() => {
       SHELF_LOGGER.error('Failed to EDIT colors')

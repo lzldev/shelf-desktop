@@ -91,7 +91,7 @@ export async function ContentDetails(
   connection: ShelfDBConnection,
   contentId: number,
 ) {
-  return await connection
+  return connection
     .selectFrom('Contents')
     .leftJoin('Paths', 'Contents.id', 'Paths.contentId')
     .leftJoin('ContentTags', 'Contents.id', 'ContentTags.contentId')
@@ -100,7 +100,7 @@ export async function ContentDetails(
       'Contents.hash',
       'Contents.extension',
       'Contents.createdAt',
-      withTagsId(eb),
+      withTags(eb),
       withPathStrings(eb).as('paths'),
     ])
     .where('Contents.id', '=', contentId)
@@ -133,7 +133,7 @@ export async function ListContent(
       'Contents.extension',
       'Contents.createdAt',
       'Paths.path',
-      withTagsId(eb),
+      withTags(eb),
     ])
     // LIKE PATH Query
     // .where((eb) => eb.or([eb('Paths.path','like','%Some%')]))
@@ -180,7 +180,7 @@ export function withPathStrings(
   )
 }
 
-export function withTagsId(
+export function withTags(
   eb: ExpressionBuilder<
     {
       Contents: Contents
@@ -195,7 +195,7 @@ export function withTagsId(
   return jsonArrayFrom(
     eb
       .selectFrom('Tags')
-      .select('Tags.id')
+      .select(['Tags.id', 'Tags.colorId', 'Tags.name'])
       .whereRef('ContentTags.tagId', '=', 'Tags.id'),
   ).as('tags')
 }

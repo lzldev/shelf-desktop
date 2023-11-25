@@ -16,7 +16,6 @@ const updateTags = async () => {
   useTags.setState({tags: newTags})
 }
 
-//Initial Fetch
 updateTags().finally(() => {
   useTags.setState((state) => ({
     ...state,
