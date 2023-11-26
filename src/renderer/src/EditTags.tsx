@@ -4,12 +4,10 @@ import clsx from 'clsx'
 import {InlineButton} from './components/InlineButton'
 import {Updater, useImmer} from 'use-immer'
 import {CREATETagOP, TagOperation, UpdateTagOP} from 'src/types/Operations'
-import {Tag} from '@models'
 import {useColors} from './hooks/useColors'
 import {useTagQuery} from './hooks/useTagQuery'
 import {useHotkeys} from './hooks/useHotkeys'
 import {SidePanelModal} from './components/SidebarPanelModal'
-import {TagCreation} from '@models'
 import {PencilSquareIcon, PlusIcon} from '@heroicons/react/24/solid'
 
 const TagColorBody = clsx(

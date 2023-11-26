@@ -29,18 +29,20 @@ import {ArrowPathIcon, Cog8ToothIcon} from '@heroicons/react/24/solid'
 import {MarkContent} from './utils/Main'
 import {ContentPreview} from './components/ContentPreview'
 import {useContentQueryStore} from './hooks/useQueryStore'
+import {ListedContent} from 'src/main/db/ContentControllers'
 
 function Main(): JSX.Element {
   const config = useConfigStore((s) => s.config)
   const {tags} = useTags()
 
-  const CONTENTQUERY = useContentQueryStore((s) => s.query)
+  const contentQuery = useContentQueryStore((s) => s.query)
 
-  const [modalContent, setModalContent] = useState<Content | undefined>()
+  const [modalContent, setModalContent] = useState<ListedContent | undefined>()
+
   const [markedContent, setMarkedContent] = useImmer<Set<number>>(new Set())
 
   const {orderDirection, orderField, toggleDirection} = useOrderStore()
-  const contentList = useRef<HTMLDivElement & MasonryInfiniteGrid>(null)
+  const contentContainer = useRef<HTMLDivElement & MasonryInfiniteGrid>(null)
   const markerIdx = useRef<[pageNumber: number, contentNumber: number]>()
 
   const {keys} = useHotkeysRef({
@@ -53,7 +55,7 @@ function Main(): JSX.Element {
   })
 
   const {
-    data: contentQuery,
+    data: contentList,
     error,
     isLoading,
     isFetching,
@@ -77,7 +79,7 @@ function Main(): JSX.Element {
         limit: config!.pageSize,
       }
 
-      const query = Array.from(CONTENTQUERY.values())
+      const query = Array.from(contentQuery.values())
 
       const files = await window.api.invokeOnMain('getShelfContent', {
         query: query,
@@ -93,15 +95,15 @@ function Main(): JSX.Element {
   )
 
   useEffect(() => {
-    if (!contentList.current) return
+    if (!contentContainer.current) return
 
     const onScroll = () => {
-      if (!contentList.current) return
+      if (!contentContainer.current) return
       const threshold = 100
 
       if (
         window.scrollY + window.innerHeight >=
-          contentList.current.clientHeight - threshold &&
+          contentContainer.current.clientHeight - threshold &&
         hasNextPage &&
         !isFetching
       ) {
@@ -115,7 +117,7 @@ function Main(): JSX.Element {
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
     }
-  }, [hasNextPage, contentList])
+  }, [hasNextPage, contentContainer])
 
   const {
     value: showContentModal,
@@ -123,7 +125,7 @@ function Main(): JSX.Element {
     turnOff: closeContentModal,
   } = useToggle(
     false,
-    (content: Content) => {
+    (content: ListedContent) => {
       setModalContent(content)
     },
     () => {
@@ -149,7 +151,7 @@ function Main(): JSX.Element {
     turnOff: closeOptionsModal,
   } = useToggle(false)
 
-  if (error || !contentQuery?.pages) {
+  if (error || !contentList?.pages) {
     return <>{error}</>
   }
   if (isLoading) {
@@ -166,7 +168,7 @@ function Main(): JSX.Element {
         createPortal(
           <ContentDetails
             className={'text-6 fixed inset-0 z-50 max-h-screen w-full'}
-            content={modalContent}
+            initialContent={modalContent}
             onClose={() => closeContentModal()}
           />,
           document.body,
@@ -217,11 +219,11 @@ function Main(): JSX.Element {
         </a>
         <a className='text-end font-mono text-gray-400'>
           TAGS:
-          {tags.length}
+          {tags.size}
         </a>
         <a className='text-end font-mono text-gray-400'>
           SHOWING:
-          {contentQuery
+          {contentList
             .pages!.map((page) => {
               return page.content.length
             })
@@ -235,14 +237,14 @@ function Main(): JSX.Element {
         )}
       </div>
       <div
-        ref={contentList}
+        ref={contentContainer}
         className='relative isolate -z-10'
       >
         <ContentGrid
-          ref={contentList}
+          ref={contentContainer}
           error={error}
         >
-          {contentQuery?.pages?.map((page, pageIdx) => {
+          {contentList?.pages?.map((page, pageIdx) => {
             if (Array.isArray(page)) {
               return
             }
@@ -287,7 +289,7 @@ function Main(): JSX.Element {
                       markerIdx.current,
                       pageIdx,
                       contentIdx,
-                      contentQuery,
+                      contentList,
                     )
 
                     setMarkedContent((marked) => {

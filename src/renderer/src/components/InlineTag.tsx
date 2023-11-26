@@ -1,15 +1,17 @@
 import clsx from 'clsx'
 import type {HTMLAttributes} from 'react'
-import type {Tag} from '@models'
 import {useConfigStore} from '../hooks/useConfig'
 import {useColors} from '../hooks/useColors'
+import {useTags} from '../hooks/useTags'
 
-export const InlineTag = (
-  props: {tag: Tag} & HTMLAttributes<HTMLDivElement>,
-) => {
-  const {colors} = useColors()
+type InlineTagProps = {tagId: number} & HTMLAttributes<HTMLDivElement>
+
+export const InlineTag = ({tagId, ...props}: InlineTagProps) => {
   const defaultColor = useConfigStore((s) => s.config!.defaultColor)
-  const color = colors?.get(props.tag.colorId!)?.color || defaultColor
+  const tag = useTags((s) => s.tags.get(tagId)!)
+  const color = useColors(
+    (s) => s.colors.get(tag.colorId)?.color || defaultColor,
+  )
 
   return (
     <div
@@ -22,7 +24,7 @@ export const InlineTag = (
         backgroundColor: color,
       }}
     >
-      {props.tag.name}
+      {tag.name}
     </div>
   )
 }

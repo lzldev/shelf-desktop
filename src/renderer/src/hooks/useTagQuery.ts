@@ -8,11 +8,13 @@ export const useTagQuery = () => {
 
   const foundTags = useMemo(
     () =>
-      Array.from(tags.values()).filter((tag) =>
-        tag.name
-          .toLowerCase()
-          .includes(SplitQuery[SplitQuery.length - 1].toLowerCase()),
-      ),
+      Array.from(tags.values())
+        .filter((tag) =>
+          tag.name
+            .toLowerCase()
+            .includes(SplitQuery[SplitQuery.length - 1].toLowerCase()),
+        )
+        .map((tag) => Number(tag.id)),
     [query, tags],
   )
 

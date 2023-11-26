@@ -1,7 +1,8 @@
 import clsx from 'clsx'
 import {HTMLAttributes} from 'react'
 
-export const InlineButton = (props: HTMLAttributes<HTMLAnchorElement>) => {
+type InlineButtonProps = HTMLAttributes<HTMLAnchorElement>
+export const InlineButton = (props: InlineButtonProps) => {
   return (
     <span
       {...props}

@@ -33,8 +33,6 @@ export const SearchBar = ({
 
   const hideSelected = ContentQuery.size === 0
 
-  const tags = useTags((s) => s.tags)
-
   const {paths: pathQ, tags: tagQ} = Array.from(ContentQuery.values()).reduce(
     (previous, current) => {
       switch (current.field) {
@@ -118,14 +116,14 @@ export const SearchBar = ({
               {DropDownTags.map((tag, idx) => {
                 return (
                   <InlineTag
-                    key={Number(tag.id)}
+                    key={tag}
                     tabIndex={idx + 2}
-                    tag={tag}
+                    tagId={tag}
                     onClick={() => {
                       setQuery('')
                       addQuery({
                         field: 'tag',
-                        value: Number(tag.id),
+                        value: tag,
                         operation: 'include',
                       })
                     }}
@@ -133,7 +131,7 @@ export const SearchBar = ({
                       setQuery('')
                       addQuery({
                         field: 'tag',
-                        value: Number(tag.id),
+                        value: tag,
                         operation: 'include',
                       })
                     }}
@@ -162,7 +160,7 @@ export const SearchBar = ({
           {tagQ.map((tagQuery) => (
             <InlineTag
               key={tagQuery.value}
-              tag={tags.get(tagQuery.value)!}
+              tagId={tagQuery.value}
               onClick={() => removeQuery(tagQuery)}
             />
           ))}

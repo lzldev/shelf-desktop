@@ -1,12 +1,12 @@
 import {InfiniteData} from '@tanstack/react-query'
-import {Content} from '@models'
+import {ListedContent} from 'src/main/db/ContentControllers'
 
 export function MarkContent(
   markerIdx: [number, number],
   pageIdx: number,
   contentIdx: number,
   contentQuery: InfiniteData<{
-    content: Content[]
+    content: ListedContent[]
     nextCursor?: {offset: number; limit: number} | undefined
   }>,
 ) {

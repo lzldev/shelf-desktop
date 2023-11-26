@@ -10,7 +10,6 @@ import {
 } from 'react'
 import {InlineTag} from './components/InlineTag'
 import {ShelfContent} from './components/ShelfContent'
-import {Content, Tag} from '@models'
 import clsx from 'clsx'
 import {useToggle} from './hooks/useToggle'
 import {InlineButton} from './components/InlineButton'
@@ -26,17 +25,17 @@ import {ArrowLeftIcon} from '@heroicons/react/24/solid'
 import {openInAnotherProgram, openContentDirectory} from './utils/Content'
 import {checkExtension} from './utils/Extensions'
 import {useContentQueryStore} from './hooks/useQueryStore'
-import {ListedContent} from 'src/main/db/ContentControllers'
+import {DetailedContent, ListedContent} from 'src/main/db/ContentControllers'
 
 const prevTitle = window.document.title
 
 type ContentDetailsProp = {
-  content?: ListedContent
+  initialContent?: {id: number; hash: string}
   onClose: (...any: any[]) => any
 } & HTMLAttributes<HTMLDivElement>
 
 function ContentDetails({
-  content: contentProp,
+  initialContent,
   onClose,
   ...props
 }: ContentDetailsProp): JSX.Element {
@@ -48,13 +47,16 @@ function ContentDetails({
   const {
     data: content,
     error,
+    isLoading,
     refetch,
   } = useQuery(
     ['DetailedContent'],
     async () => {
-      if (!contentProp || !contentProp.id) return null
+      console.log(initialContent)
+      if (!initialContent || !initialContent.id) return null
 
-      const id = contentProp?.id
+      const id = initialContent?.id
+
       const result = await window.api.invokeOnMain('getDetailedContent', id)
 
       if (!result) {
@@ -64,7 +66,7 @@ function ContentDetails({
       return result
     },
     {
-      initialData: contentProp,
+      initialData: initialContent as DetailedContent,
       cacheTime: 0,
       staleTime: 0,
     },
@@ -95,9 +97,15 @@ function ContentDetails({
     }
   }, [content])
 
+  if (isLoading) {
+    return <div className={clsx('backdrop-blur-xl', containerClass)}></div>
+  }
   if (!content || error) {
     return (
-      <div className={containerClass}>
+      <div
+        className={containerClass}
+        onClick={onClose}
+      >
         <h1 onClick={() => navigate({pathname: '/'})}>{'ERROR -> ' + error}</h1>
       </div>
     )
@@ -154,7 +162,6 @@ function ContentDetails({
               </p>
             )
           })}
-          d
         </div>
         <div className='flex flex-row flex-wrap'>
           {(content?.tags || []).map((tag) => {
@@ -163,8 +170,8 @@ function ContentDetails({
                 key={tag.id}
                 onClose={onClose}
                 modalRef={modalRef}
-                tag={tag}
-                removeTag={async (tag: Tag) => {
+                tagId={tag.id}
+                removeTag={async () => {
                   await window.api.invokeOnMain('removeTagfromContent', {
                     contentId: content.id,
                     tagId: tag.id,
@@ -182,7 +189,7 @@ function ContentDetails({
             addTag={async (tag) => {
               await window.api.invokeOnMain('addTagToContent', {
                 contentId: content.id,
-                tagId: tag.id,
+                tagId: tag,
               })
               refetch()
             }}
@@ -198,13 +205,13 @@ function ContentDetails({
 export const InlineTagDropdown = ({
   removeTag,
   onClose,
-  tag,
+  tagId,
   modalRef,
   ...props
 }: {
-  removeTag: (tag: Tag) => any
+  removeTag: (tagId: number) => any
   onClose: (...any: any[]) => any
-  tag: Tag
+  tagId: number
   modalRef: RefObject<HTMLDivElement>
 } & DropdownMenuProps) => {
   const addQuery = useContentQueryStore((s) => s.addQuery)
@@ -212,14 +219,14 @@ export const InlineTagDropdown = ({
   return (
     <Dropdown
       {...props}
-      triggerRender={() => <InlineTag tag={tag} />}
+      triggerRender={() => <InlineTag tagId={tagId} />}
       modalRef={modalRef}
     >
       <DropdownMenuArrow className='fill-white' />
       <DropdownMenuItem
         className='select-none p-4 outline-none transition-colors hover:bg-gray-500 hover:text-white'
         onClick={() => {
-          addQuery({field: 'tag', value: tag.id, operation: 'include'})
+          addQuery({field: 'tag', value: tagId, operation: 'include'})
           onClose()
         }}
       >
@@ -227,7 +234,7 @@ export const InlineTagDropdown = ({
       </DropdownMenuItem>
       <DropdownMenuItem
         className='select-none p-4 outline-none transition-colors hover:bg-gray-500 hover:text-white'
-        onClick={() => removeTag(tag)}
+        onClick={() => removeTag(tagId)}
       >
         Remove
       </DropdownMenuItem>
@@ -240,7 +247,7 @@ export const AddTagDropdown = ({
   modalRef,
   ...props
 }: {
-  addTag: (tag: Tag) => any
+  addTag: (tagId: number) => any
   modalRef: RefObject<HTMLDivElement>
 } & PropsWithChildren &
   DropdownMenuProps) => {
@@ -264,8 +271,8 @@ export const AddTagDropdown = ({
         {foundTags.map((tag) => {
           return (
             <InlineTag
-              key={tag.id}
-              tag={tag}
+              key={tag}
+              tagId={tag}
               onClick={() => {
                 addTag(tag)
               }}

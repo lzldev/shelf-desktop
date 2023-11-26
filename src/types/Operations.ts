@@ -1,15 +1,18 @@
-import {TagCreationFields} from '../main/db/models/Tag'
-import {TagColorCreationFields} from '../main/db/models/TagColor'
 import {Prettify} from './utils'
+import type {DB} from 'src/main/db/kysely-types'
+import type {InsertObject} from 'kysely/dist/cjs/parser/insert-values-parser'
+
+type ColorValues = Pick<InsertObject<DB, 'TagColors'>, 'color' | 'name'>
+type TagValues = Pick<InsertObject<DB, 'Tags'>, 'name' | 'colorId'>
 
 export type ColorOperation =
   | ({
       operation: 'CREATE'
-    } & TagColorCreationFields)
+    } & ColorValues)
   | ({
       operation: 'UPDATE'
       id: number
-    } & TagColorCreationFields)
+    } & Partial<ColorValues>)
   | {operation: 'DELETE'; id: number}
 
 export type CreateColorOP = Prettify<
@@ -26,12 +29,12 @@ export type TagOperation =
   | ({
       operation: 'CREATE'
       colorId: number
-    } & TagCreationFields)
+    } & TagValues)
   | ({
       operation: 'UPDATE'
       id: number
       colorId: number
-    } & TagCreationFields)
+    } & TagValues)
   | {operation: 'DELETE'; id: number}
 
 export type CREATETagOP = Prettify<Extract<TagOperation, {operation: 'CREATE'}>>
@@ -43,4 +46,3 @@ export type batchTagging = {
   tagIds: number[]
   contentIds: number[]
 }
-
