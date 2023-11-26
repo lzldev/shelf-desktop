@@ -207,7 +207,7 @@ export function withTags(
   >,
 ) {
   return eb.fn
-    .agg<string>('json_group_array', [
+    .agg<{id: number; name: string; colorId: number}[]>('json_group_array', [
       jsonBuildObject({
         id: eb.ref('Tags.id'),
         name: eb.ref('Tags.name'),
