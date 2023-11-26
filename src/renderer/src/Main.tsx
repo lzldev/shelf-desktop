@@ -10,7 +10,6 @@ import {
 } from 'react'
 
 import {useTags} from './hooks/useTags'
-import {Content} from '@models'
 import {useInfiniteQuery} from '@tanstack/react-query'
 import {createPortal} from 'react-dom'
 import {ContentDetails} from './ContentDetails'

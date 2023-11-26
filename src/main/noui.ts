@@ -2,7 +2,6 @@ import * as readline from 'readline'
 import {SHELF_LOGGER} from './utils/Loggers'
 import {ShelfClient} from './shelf-client/ShelfClient'
 import {app} from 'electron'
-import {Content, Path, Tag} from './db/models'
 
 export async function noUIMode() {
   if (!import.meta.env.MAIN_VITE_NO_UI_PATH) {
@@ -36,11 +35,7 @@ export async function noUIMode() {
         console.log(Client.getWatchedFiles())
         break
       case 'c': {
-        const content = await Content.findAll({
-          include: [{model: Tag}, {model: Path}],
-        })
-
-        SHELF_LOGGER.info(content)
+        console.log('NOT REIMPLEMENTED IN KYSELY YET')
         break
       }
       default: {

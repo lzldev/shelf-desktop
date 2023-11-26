@@ -22,8 +22,7 @@ import CreateThumbWorker from './thumbworker/worker?nodeWorker'
 import {ThumbWorkerData, ThumbWorkerType} from './thumbworker/types'
 
 import {SHARE_ENV} from 'worker_threads'
-import {createShelfKyselyDB} from '../db/ShelfKyselyDB'
-import {__DBEXTENSION} from '../db/ShelfDB'
+import {__DBEXTENSION, createShelfKyselyDB} from '../db/ShelfKyselyDB'
 
 class ShelfClient {
   public choki: FSWatcher

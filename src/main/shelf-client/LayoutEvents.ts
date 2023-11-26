@@ -4,9 +4,9 @@ import {AppConfig, requestClient, sendEventToAllWindows} from '..'
 import {ShelfIpcMainListener} from '../../preload/ipcMainTypes'
 import {existsSync} from 'fs'
 import {CLIENT_CONFIG_FILE_NAME} from '../ShelfConfig'
-import {__DBFILENAME} from '../db/ShelfDB'
 import {join} from 'path'
 import {OpenDialogReturnValue} from 'electron/main'
+import {__DBFILENAME} from '../db/ShelfKyselyDB'
 
 ipcMain.handle('preview_content', createPreviewContentHandler())
 ipcMain.handle('getConfig', async () => AppConfig.getAll())

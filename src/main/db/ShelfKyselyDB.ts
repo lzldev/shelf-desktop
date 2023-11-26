@@ -8,8 +8,8 @@ import {join} from 'path'
 //@ts-expect-error File is being loaded raw ( as a string ) so no type
 import createTableSQL from '../../../prisma/migration.sql?raw'
 
-const __DBEXTENSION = '.shelf'
-const __DBFILENAME = `.shelfdb${__DBEXTENSION}`
+export const __DBEXTENSION = '.shelf'
+export const __DBFILENAME = `.shelfdb${__DBEXTENSION}`
 
 const createShelfKyselyDB = (dbDir: string) => {
   if (!existsSync(dbDir)) {

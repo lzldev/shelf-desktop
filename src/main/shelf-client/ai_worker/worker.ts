@@ -18,17 +18,18 @@ import sharp from 'sharp'
 import {handleWorkerMessage} from '../../utils/Worker'
 
 import {z} from 'zod'
+import {__DBFILENAME} from '../../db/ShelfKyselyDB'
 
 const wd = AIWorkerDataParser.safeParse(_workerData)
-let workerData:z.infer<typeof AIWorkerDataParser>
+let workerData: z.infer<typeof AIWorkerDataParser>
 
-if(wd.success){
+if (wd.success) {
   workerData = wd.data
-}else if(import.meta.env.VITEST){
+} else if (import.meta.env.VITEST) {
   workerData = {
-    dbPath:"./examples/"
+    dbPath: './examples/',
   }
-}else{
+} else {
   throw wd.error
 }
 
@@ -41,9 +42,6 @@ if (isMainThread) {
 const port = parentPort!
 
 const WORKER_LOGGER = createWorkerLogger(threadId)
-
-export const __DBEXTENSION = '.shelf'
-export const __DBFILENAME = `.shelfdb${__DBEXTENSION}`
 
 const createDbPath = (dbPath: string) => `${dbPath}/${__DBFILENAME}`
 const createShelfKyselyDB = (dbPath: string) => {
@@ -173,7 +171,7 @@ async function main() {
           .insertInto('Tags')
           .values({
             name: normalized,
-            colorId:1,
+            colorId: 1,
           })
           .returning(['id', 'name'])
           .execute()
