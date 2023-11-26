@@ -60,11 +60,11 @@ class ShelfClient {
     const choki = chokidar.watch(
       [options.basePath, ...config.get('additionalPaths')],
       {
-        // ignored: [
-        //   ...config.get('ignoredPaths'),
-        //   config.get('ignoreUnsupported') ? globSupportedFormats : '',
-        //   `**/**.${__DBEXTENSION}`,
-        // ],
+        ignored: [
+          ...config.get('ignoredPaths'),
+          config.get('ignoreUnsupported') ? globSupportedFormats : '',
+          `**/**.${__DBEXTENSION}`,
+        ],
         followSymlinks: false,
       },
     )

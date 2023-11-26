@@ -21,15 +21,15 @@ import {join} from 'node:path'
 
 import {z} from 'zod'
 const wd = ThumbWorkerDataParser.safeParse(_workerData)
-let workerData:z.infer<typeof ThumbWorkerDataParser>
+let workerData: z.infer<typeof ThumbWorkerDataParser>
 
-if(wd.success){
+if (wd.success) {
   workerData = wd.data
-}else if(import.meta.env.VITEST){
+} else if (import.meta.env.VITEST) {
   workerData = {
-    thumbnailPath:'./examples/app/'
+    thumbnailPath: './examples/app/',
   }
-}else{
+} else {
   throw wd.error
 }
 
@@ -47,14 +47,16 @@ const port = parentPort!
 const postMessage = createPortWrapper<ThumbWorkerReceive>(port)
 const LOGGER = createWorkerLogger(threadId, 'THUMBWORKER', 5)
 
+//Turning off sharp cache for smaller ram usage
+
+sharp.cache(false)
+
 LOGGER.info('Starting')
 LOGGER.info(`ffmpeg: ${ffmpegStatic}`)
 
 async function main() {
   handleWorkerMessage<ThumbWorkerInvoke>(port, {
     resize_video: async ({data}) => {
-      LOGGER.info('Video preview')
-
       const video_preview = await videoPreviewExec(
         data.filePath,
         data.hash,
@@ -74,8 +76,6 @@ async function main() {
       if (!video_preview) {
         return
       }
-
-      LOGGER.info(`Video preview success ${video_preview}`)
 
       postMessage('preview_ready', {
         type: 'preview_ready',

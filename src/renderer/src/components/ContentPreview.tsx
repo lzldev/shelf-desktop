@@ -30,6 +30,7 @@ function ContentPreview({
     }
 
     const listener: PREVIEW_LISTENER = (data) => {
+      console.log('data!!', data)
       if (!data.success && data.hash === content.hash) {
         unregister(content.hash)
         return
@@ -42,22 +43,28 @@ function ContentPreview({
       unregister(content.hash)
     }
 
-    const async = async () => {
-      const path = content?.paths?.at(0)?.path
+    const effect = async () => {
+      const path = content?.path
       if (!path || format === 'unrecognized') {
+        console.log('asking for preview', !path, format)
         return
       }
 
-      const response = await window.api.invokeOnMain(
-        'preview_content',
-        {
-          hash: content.hash,
-          filePath: path,
-        },
-        format,
-      )
+      const response = await window.api
+        .invokeOnMain(
+          'preview_content',
+          {
+            hash: content.hash,
+            filePath: path,
+          },
+          format,
+        )
+        .catch((error) => {
+          console.log('Error on preview_content\n', error)
+        })
 
-      if (response.instaError) {
+      if (!response || response.instaError) {
+        console.log('Insta error !!!', response)
         return
       }
 
@@ -68,7 +75,7 @@ function ContentPreview({
       }
     }
 
-    async()
+    effect()
 
     return () => {}
   }, [error])

@@ -212,12 +212,12 @@ ipcMain.handle('startShelfClient', async (_, options) => {
 
   Client = await ShelfClient.create(options, () => {
     const progressWindow = Windows.get('progress')
+
     if (progressWindow) {
       progressWindow.close()
     }
 
     setupWorkerHandlers()
-
     createWindow('main')
   })
 })

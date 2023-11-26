@@ -1,22 +1,15 @@
-import {parse} from 'path'
 import {createHash} from 'crypto'
 import {FileTuple, filterDirectoryTree} from '../utils/choki'
 import {updateProgress as sendUpdateProgressEvent} from '..'
 import {ShelfClient} from './ShelfClient'
-import {normalize} from 'path'
-import {dialog} from 'electron'
 import {SHELF_LOGGER} from '../utils/Loggers'
 
 import {canClassify} from '../../renderer/src/utils/Extensions'
-import {createReadStream, statSync} from 'fs'
+import {createReadStream} from 'fs'
 
 import {Effect} from 'effect'
 import {CreateDefaultColors} from '../db/ColorControllers'
-import {
-  ClearOrphanedContents,
-  CreateContentWithPaths,
-} from '../db/ContentControllers'
-import {Contents, Paths} from '../db/kysely-types'
+import {CleanupContent, CreateContentWithPaths} from '../db/ContentControllers'
 import {ShelfDBConnection} from '../db/ShelfControllers'
 
 export const addChokiEvents = (
@@ -189,15 +182,15 @@ export const addChokiEvents = (
 
     console.time('DB ->')
 
+    const hashToPathRecord: Record<string, number[]> = {}
+
     if (!isDBNew) {
-      console.time('DB CLEANUP ->')
-      await CleanupShelfDB(shelfClient.ShelfDB,watchedFiles)
-      console.timeEnd('DB CLEANUP ->')
+      console.time('PATH CLEANUP ->')
+      await CleanupShelfDB(shelfClient.ShelfDB, watchedFiles)
+      console.timeEnd('PATH CLEANUP ->')
     } else {
       await CreateDefaultColors(shelfClient.ShelfDB)
     }
-
-    const hashToPathRecord: Record<string, number[]> = {}
 
     await Effect.runPromise(
       Effect.all(
@@ -307,7 +300,8 @@ async function CleanupShelfDB(
   watchedFiles: FileTuple[],
 ) {
   const dbPaths = await connection.selectFrom('Paths').selectAll().execute()
-  const deletedPaths = []
+
+  const deletedPaths: number[] = []
   const alreadyUpdatedContent = new Set<number>()
 
   for (const path of dbPaths) {
@@ -317,23 +311,21 @@ async function CleanupShelfDB(
 
     const isPathWatched = idOnTuple !== -1
 
+    //File is not Watched . Just Remove it from DB later.
     if (!isPathWatched) {
       // await path.destroy()
       deletedPaths.push(path.id)
       continue
     }
 
+    //File is watched and is the same. just keep as is and skip hashing it later.
     if (path.mTimeMs === watchedFiles[idOnTuple][1]) {
       watchedFiles.splice(idOnTuple, 1)
       continue
     }
 
+    //File was modified . Hash it and update DB.
     const newContentHash = await hashFileAsync(path.path)
-    // SHELF_LOGGER.info(
-    //   `${
-    //     updatedContent[0] !== 0 ? 'SUCESS' : 'FAIL'
-    //   } ON UPDATING CONTENT ON CLEANUP | Path: ${path.path}`,
-    // )
 
     await connection
       .updateTable('Paths')
@@ -354,11 +346,21 @@ async function CleanupShelfDB(
         .executeTakeFirst()
 
       alreadyUpdatedContent.add(updateContent?.id ?? -1)
+
+      //Skip adding the file to the DB Later.
+      watchedFiles.splice(idOnTuple, 1)
     }
   }
 
-  await connection.deleteFrom('Paths').where('id', 'in', deletedPaths).execute()
-  await ClearOrphanedContents(connection)
+  const del = await connection
+    .deleteFrom('Paths')
+    .where('Paths.id', 'in', deletedPaths)
+    .execute()
+
+  await CleanupContent(connection)
+
+  SHELF_LOGGER.info(`To be Deleted:${deletedPaths.length}`)
+  SHELF_LOGGER.info(`Deleted Paths:${del.at(0)?.numDeletedRows}`)
 }
 
 function createProgressUpdater<TParts extends Record<string, number>>(

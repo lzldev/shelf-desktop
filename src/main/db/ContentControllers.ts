@@ -14,6 +14,7 @@ import {
   InsertObject,
   InsertObjectOrList,
 } from 'kysely/dist/cjs/parser/insert-values-parser'
+import {SHELF_LOGGER} from '../utils/Loggers'
 
 export function CreateContent(
   connection: ShelfDBConnection,
@@ -35,21 +36,24 @@ export function UpdateContentWhereId(
     .executeTakeFirst()
 }
 
-export async function ClearOrphanedContents(connection: ShelfDBConnection) {
-  return connection
+export async function CleanupContent(connection: ShelfDBConnection) {
+  const dels = await connection
     .deleteFrom('Contents')
     .where((eb) =>
-      eb(
-        'Contents.id',
-        'in',
-        eb
-          .selectFrom('Contents')
-          .select('Contents.id')
-          .leftJoin('Paths', 'Contents.id', 'Paths.contentId')
-          .where('Paths.contentId', 'is', null),
-      ),
+      eb.or([
+        eb('Contents.id', 'in', [
+          eb
+            .selectFrom('Contents')
+            .select('Contents.id')
+            .leftJoin('Paths', 'Contents.id', 'Paths.contentId')
+            .where('Paths.contentId', 'is', null),
+        ]),
+      ]),
     )
     .execute()
+
+  SHELF_LOGGER.info(`DELETED : ${dels.at(0)?.numDeletedRows}`)
+  return dels
 }
 
 /**

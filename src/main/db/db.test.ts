@@ -2,14 +2,14 @@ import {afterAll, assert, beforeAll, describe, expect, test, vi} from 'vitest'
 import {createShelfKyselyDB} from './ShelfKyselyDB'
 import {rm} from 'fs/promises'
 import {
-  ClearOrphanedContents,
+  CleanupContent,
   CreateContent,
   CreateContentWithPaths,
   ListContent,
 } from './ContentControllers'
 import {ShelfDBConnection} from './ShelfControllers'
 import {defaultColors} from '../utils/DefaultColors'
-import {CreateDefaultColors, CreateTagColors} from './ColorControllers'
+import {CreateDefaultColors} from './ColorControllers'
 import {join} from 'path'
 
 let connection: ShelfDBConnection
@@ -155,7 +155,11 @@ describe.only('db-tests', async () => {
     // assert(rows2[0])
     // expect(Number(rows2[0].numDeletedRows)).toBe(max)
 
-    const res = await ClearOrphanedContents(connection)
+    const currentHashes = (
+      await connection.selectFrom('Contents').select('hash').execute()
+    ).map((c) => c.hash)
+
+    const res = await CleanupContent(connection, currentHashes)
 
     assert(res)
     assert(res[0])

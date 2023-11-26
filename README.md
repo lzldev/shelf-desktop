@@ -2,14 +2,14 @@
 <img src="./logo.svg" align="center" alt="Shelf logo" />
 </p>
 <p align="center">
-<img src="https://img.shields.io/github/license/lizlodev/tagger-desktop" alt="License">
-<img src="https://img.shields.io/badge/Sequelize-%20-lightgreen" alt="License">
-<img src="https://img.shields.io/badge/SQLITE-%20-green" alt="License">
-<img src="https://img.shields.io/badge/Electron-%20-dodgerblue" alt="License">
+<img src="https://img.shields.io/github/license/lzldev/shelf-desktop" alt="License">
+<img src="https://img.shields.io/badge/Sequelize-%20-lightgreen" alt="Sequelize badge">
+<img src="https://img.shields.io/badge/SQLITE-%20-green" alt="SQLITE Badge">
+<img src="https://img.shields.io/badge/Electron-%20-dodgerblue" alt="Electron Badge">
 </p>
 <p align="center">
-<img src="https://img.shields.io/badge/React-%20-dodgerblue" alt="License">
-<img src="https://img.shields.io/badge/TailwindCSS-%20-cyan" alt="License">
+<img src="https://img.shields.io/badge/React-%20-dodgerblue" alt="React Badge">
+<img src="https://img.shields.io/badge/TailwindCSS-%20-cyan" alt="TailwindCSS Badge">
 </p>
 
   <div align="center">
