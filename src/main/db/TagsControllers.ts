@@ -1,7 +1,7 @@
 import {InsertObject} from 'kysely'
 import {ShelfDBConnection} from './ShelfControllers'
 import {DB} from './kysely-types'
-import {defaultTags} from '../utils/DefaultValues'
+import {defaultTagNames, defaultTags} from '../utils/DefaultValues'
 
 export function CreateTags(
   connection: ShelfDBConnection,
@@ -11,7 +11,29 @@ export function CreateTags(
 }
 
 export async function CreateDefaultTags(connection: ShelfDBConnection) {
-  return CreateTags(connection, defaultTags)
+  return (
+    await connection
+      .insertInto('Tags')
+      .values(defaultTags)
+      .returning(['id', 'name'])
+      .execute()
+  ).reduce((pv, value) => {
+    pv[value.name as defaultTagNames] = value.id
+    return pv
+  }, {} as Record<defaultTagNames, number>)
+}
+
+export async function getDefaultTags(connection: ShelfDBConnection) {
+  return (
+    await connection
+      .selectFrom('Tags')
+      .select(['id', 'name'])
+      .where('Tags.name', 'in', defaultTagNames)
+      .execute()
+  ).reduce((pv, value) => {
+    pv[value.name as defaultTagNames] = value.id
+    return pv
+  }, {} as Record<defaultTagNames, number>)
 }
 
 export function DeleteTagsFromIds(

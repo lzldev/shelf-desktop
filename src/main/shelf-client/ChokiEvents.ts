@@ -4,14 +4,15 @@ import {updateProgress as sendUpdateProgressEvent} from '..'
 import {ShelfClient} from './ShelfClient'
 import {SHELF_LOGGER} from '../utils/Loggers'
 
-import {canClassify} from '../../renderer/src/utils/Extensions'
+import {canClassify, checkExtension} from '../../renderer/src/utils/Extensions'
 import {createReadStream} from 'fs'
 
 import {Effect} from 'effect'
 import {CreateDefaultColors} from '../db/ColorControllers'
 import {CleanupContent, CreateContentWithPaths} from '../db/ContentControllers'
 import {ShelfDBConnection} from '../db/ShelfControllers'
-import {CreateDefaultTags} from '../db/TagsControllers'
+import {CreateDefaultTags, getDefaultTags} from '../db/TagsControllers'
+import {CreateTagContent} from '../db/TagContentControllers'
 
 export const addChokiEvents = (
   shelfClient: ShelfClient,
@@ -191,8 +192,11 @@ export const addChokiEvents = (
       console.timeEnd('PATH CLEANUP ->')
     } else {
       await CreateDefaultColors(shelfClient.ShelfDB)
-      await CreateDefaultTags(shelfClient.ShelfDB)
     }
+
+    const defaultTags = await (isDBNew
+      ? CreateDefaultTags(shelfClient.ShelfDB)
+      : getDefaultTags(shelfClient.ShelfDB))
 
     await Effect.runPromise(
       Effect.all(
@@ -220,7 +224,7 @@ export const addChokiEvents = (
 
     const entries = Object.entries(hashToPathRecord)
 
-    await CreateContentWithPaths(shelfClient.ShelfDB, {
+    const createdContents = await CreateContentWithPaths(shelfClient.ShelfDB, {
       contents: entries.map(([hash, paths]) => ({
         hash,
         extension: watchedFiles[paths[0]][2],
@@ -232,6 +236,21 @@ export const addChokiEvents = (
         })),
       ),
     })
+
+    createdContents &&
+      (await CreateTagContent(
+        shelfClient.ShelfDB,
+        createdContents.map((content) => {
+          const fileTuple = hashToPathRecord[content.hash].at(0)!
+          const extension = watchedFiles[fileTuple][2]
+          const type = checkExtension(extension)
+
+          return {
+            contentId: content.id,
+            tagId: defaultTags[type === 'unrecognized' ? 'document' : type],
+          }
+        }),
+      ))
     ;(
       await shelfClient.ShelfDB.selectFrom('Contents')
         .innerJoin('Paths', 'Contents.id', 'Paths.contentId')

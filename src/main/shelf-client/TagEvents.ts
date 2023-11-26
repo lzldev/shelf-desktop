@@ -4,6 +4,8 @@ import {IpcMainEvents} from '../../preload/ipcMainTypes'
 import {InsertObject} from 'kysely'
 import {DB} from '../db/kysely-types'
 import {SHELF_LOGGER} from '../utils/Loggers'
+import {ShelfClient} from './ShelfClient'
+import {CreateTagContent} from '../db/TagContentControllers'
 
 export function defaultHandler(func: (...any: any[]) => any) {
   return async (_: Electron.IpcMainInvokeEvent, ...args: any[]) => {
@@ -60,12 +62,7 @@ async function addTagToContent(
 ) {
   const client = requestClient()
 
-  const result = await client.ShelfDB.insertInto('ContentTags')
-    .values({
-      tagId: options.tagId,
-      contentId: options.contentId,
-    })
-    .executeTakeFirst()
+  const result = await CreateTagContent(client.ShelfDB, options)
 
   if (Number(result.numInsertedOrUpdatedRows) === 1) {
     return true

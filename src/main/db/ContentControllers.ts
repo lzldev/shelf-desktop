@@ -65,6 +65,9 @@ export async function CreateContentWithPaths(
     paths: Omit<InsertObject<DB, 'Paths'>, 'contentId'>[][]
     contents: InsertObject<DB, 'Contents'>[]
   },
+  options = {
+    returning: false,
+  },
 ) {
   if (values.paths instanceof Array && values.paths.length === 0) {
     return
@@ -75,20 +78,22 @@ export async function CreateContentWithPaths(
     return
   }
 
-  const contentIds = await connection
+  const content = await connection
     .insertInto('Contents')
     .values(values.contents)
-    .returning('id')
+    .returning(['id', 'hash'])
     .execute()
 
-  return connection
+  await connection
     .insertInto('Paths')
     .values(
       values.paths.flatMap((value, idx) =>
-        value.map((v) => ({...v, contentId: contentIds[idx].id})),
+        value.map((v) => ({...v, contentId: content[idx].id})),
       ),
     )
     .execute()
+
+  return content
 }
 
 export async function ContentDetails(

@@ -8,12 +8,12 @@ export const defaultColors = [
   {color: '#8b5cf6', name: 'Purple'},
   {color: '#202020', name: 'Black'},
   {color: '#A8C0F8', name: 'Light Blue'},
-] satisfies Omit<TagColors, 'id'>[]
+] as const satisfies Readonly<Omit<TagColors, 'id'>[]>
 
 export const defaultTags = [
   {
     name: 'video',
-    colorId: 1,
+    colorId: 3,
   },
   {
     name: 'image',
@@ -21,6 +21,10 @@ export const defaultTags = [
   },
   {
     name: 'document',
-    colorId: 1,
+    colorId: 2,
   },
-] satisfies Omit<Tags, 'id'>[]
+] as const satisfies Readonly<Omit<Tags, 'id'>[]>
+
+export const defaultTagNames = defaultTags.map((value) => value.name)
+
+export type defaultTagNames = (typeof defaultTags)[number]['name']
