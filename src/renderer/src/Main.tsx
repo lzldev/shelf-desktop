@@ -74,7 +74,7 @@ function Main(): JSX.Element {
         },
       } = context
 
-      const pagination = pageParam || {
+      const pagination = pageParam ?? {
         offset: 0,
         limit: config!.pageSize,
       }

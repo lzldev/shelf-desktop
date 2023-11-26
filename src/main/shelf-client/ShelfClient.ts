@@ -51,8 +51,7 @@ class ShelfClient {
         ignoredPaths: [],
         ignoreHidden: true,
         ignoreUnsupported: true,
-        //TODO: Change this to true before release
-        ai_worker: false,
+        ai_worker: true,
         ...(options.config ? options.config : {}),
       },
     )

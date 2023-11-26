@@ -15,6 +15,8 @@ import {
   InsertObjectOrList,
 } from 'kysely/dist/cjs/parser/insert-values-parser'
 import {SHELF_LOGGER} from '../utils/Loggers'
+import {ContentQuery} from '../../renderer/src/hooks/useQueryStore'
+import {encodeBase64} from 'effect/dist/declarations/src/Encoding'
 
 export function CreateContent(
   connection: ShelfDBConnection,
@@ -102,7 +104,6 @@ export async function ContentDetails(
 ) {
   const content = await connection
     .selectFrom('Contents')
-    .leftJoin('Paths', 'Contents.id', 'Paths.contentId')
     .leftJoin('ContentTags', 'Contents.id', 'ContentTags.contentId')
     .leftJoin('Tags', 'ContentTags.tagId', 'Tags.id')
     .select((eb) => [
@@ -116,13 +117,15 @@ export async function ContentDetails(
     .where('Contents.id', '=', contentId)
     .executeTakeFirst()
 
-  console.log(content)
   return content
 }
 
 export async function ListContent(
   connection: ShelfDBConnection,
-  pagination: Pagination,
+  options: {
+    pagination: Pagination
+    query: ContentQuery[]
+  },
 ) {
   const count = await connection
     .selectFrom('Contents')
@@ -136,28 +139,49 @@ export async function ListContent(
     }
   }
 
+  const {pagination, query} = options
+
+  const queryPaths = query.filter((value) => value.field === 'path')
+  const queryTags = query.filter((value) => value.field === 'tag')
+
   const results = await connection
     .selectFrom('Contents')
-    .innerJoin('Paths', 'Contents.id', 'Paths.contentId')
     .leftJoin('ContentTags', 'Contents.id', 'ContentTags.contentId')
     .leftJoin('Tags', 'ContentTags.tagId', 'Tags.id')
+    .leftJoin('Paths', 'Contents.id', 'Paths.contentId')
     .select((eb) => [
       'Contents.id',
       'Contents.hash',
       'Contents.extension',
       'Contents.createdAt',
-      'Paths.path',
       withTags(eb),
+      eb.fn.count('ContentTags.contentId').as('ShouldTags'),
+      eb
+        .selectFrom('Paths')
+        .select('Paths.path')
+        .whereRef('Paths.contentId', '=', 'Contents.id')
+        .as('path'),
     ])
-    // LIKE PATH Query
-    // .where((eb) => eb.or([eb('Paths.path','like','%Some%')]))
-    // OR TAG OR TAG OR TAG Query
-    // .where('ContentTags.tagId', '=', 1)
+    .$if(queryPaths.length > 0, (qb) =>
+      qb.where((eb) =>
+        eb.and(
+          queryPaths.map((value) =>
+            eb('Paths.path', 'like', `%${value.value}%`),
+          ),
+        ),
+      ),
+    )
+    .$if(queryTags.length > 0, (qb) =>
+      qb.where((eb) =>
+        eb.or(
+          queryTags.map((value) => eb('Tags.id', '=', value.value as number)),
+        ),
+      ),
+    )
+    .groupBy(['Contents.id', 'Paths.contentId', 'ContentTags.contentId'])
+    .orderBy('Contents.id', 'desc')
     .limit(pagination.limit)
     .offset(pagination.offset)
-    //TODO: PASS PARAMETERS FOR THAT
-    .orderBy('Contents.id', 'desc')
-    .groupBy('Paths.contentId')
     .execute()
 
   const nextCursor = (

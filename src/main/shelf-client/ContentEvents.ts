@@ -12,25 +12,7 @@ async function getContent(options: IpcMainEvents['getShelfContent']['args']) {
 
   const order = options?.order ? [options?.order] : undefined
 
-  const {paths, tagIds} = options.query.reduce(
-    (prev, current) => {
-      switch (current.type) {
-        case 'tag':
-          prev.tagIds.push(current.tag.id)
-          break
-        case 'path':
-          prev.paths.push(current.path)
-          break
-      }
-      return prev
-    },
-    {paths: [], tagIds: []} as {paths: string[]; tagIds: number[]},
-  )
-
-  return await ListContent(
-    client.ShelfDB,
-    options.pagination ?? {offset: 25, limit: 25},
-  )
+  return await ListContent(client.ShelfDB, options)
 }
 
 async function getDetailedContent(

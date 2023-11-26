@@ -6,7 +6,7 @@ export type ContentQuery =
   | {
       field: 'path'
       value: string
-      operation: defaultOperations | 'something else'
+      operation: defaultOperations
     }
   | {
       field: 'tag'

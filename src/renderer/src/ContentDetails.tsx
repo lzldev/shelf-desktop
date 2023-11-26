@@ -25,7 +25,6 @@ import {ArrowLeftIcon} from '@heroicons/react/24/solid'
 import {openInAnotherProgram, openContentDirectory} from './utils/Content'
 import {checkExtension} from './utils/Extensions'
 import {useContentQueryStore} from './hooks/useQueryStore'
-import {DetailedContent, ListedContent} from 'src/main/db/ContentControllers'
 
 const prevTitle = window.document.title
 
@@ -49,43 +48,36 @@ function ContentDetails({
     error,
     isLoading,
     refetch,
-  } = useQuery(
-    ['DetailedContent'],
-    async () => {
-      if (!initialContent || !initialContent.id) return null
+    remove,
+  } = useQuery(['DetailedContent'], async () => {
+    if (!initialContent || !initialContent.id) return null
 
-      const id = initialContent?.id
+    const id = initialContent?.id
 
-      const result = await window.api.invokeOnMain('getDetailedContent', id)
+    const result = await window.api.invokeOnMain('getDetailedContent', id)
 
-      if (!result) {
-        return null
-      }
+    if (!result) {
+      return null
+    }
 
-      console.log(result)
+    return result
+  })
 
-      return result
+  const close = () => {
+    remove()
+    onClose()
+  }
+
+  const {toggle: toggleHotkeys} = useHotkeys({
+    Escape: close,
+    f: toggleFullscreen,
+    o: () => {
+      openInAnotherProgram(content!)
     },
-    {
-      initialData: initialContent as DetailedContent,
-      cacheTime: 0,
-      staleTime: 0,
+    d: () => {
+      openContentDirectory(content!)
     },
-  )
-
-  const {toggle: toggleHotkeys} = useHotkeys(
-    {
-      Escape: onClose,
-      f: toggleFullscreen,
-      o: () => {
-        openInAnotherProgram(content!)
-      },
-      d: () => {
-        openContentDirectory(content!)
-      },
-    },
-    !!content,
-  )
+  })
 
   useEffect(() => {
     if (!content) return
@@ -98,23 +90,23 @@ function ContentDetails({
     }
   }, [content])
 
+  const format = useMemo(
+    () => (content ? checkExtension(content.extension) : 'unrecognized'),
+    [content],
+  )
+
   if (isLoading) {
     return <div className={clsx('backdrop-blur-xl', containerClass)}></div>
-  }
-  if (!content || error) {
+  } else if (!content || error) {
     return (
       <div
         className={containerClass}
-        onClick={onClose}
+        onClick={close}
       >
         <h1 onClick={() => navigate({pathname: '/'})}>{'ERROR -> ' + error}</h1>
       </div>
     )
-  }
-
-  const format = useMemo(() => checkExtension(content!.extension), [content])
-
-  if (fullscreen && format === 'image') {
+  } else if (fullscreen && format === 'image') {
     return (
       <div className={clsx(containerClass, 'bg-black bg-opacity-50')}>
         <ShelfContent
@@ -138,7 +130,7 @@ function ContentDetails({
       <div className={clsx('flex flex-row items-center bg-gray-200 p-5')}>
         <ArrowLeftIcon
           className='h-6 w-6 align-middle transition-colors hover:stroke-white'
-          onClick={onClose}
+          onClick={close}
         />
       </div>
       <div onClick={() => toggleFullscreen()}>

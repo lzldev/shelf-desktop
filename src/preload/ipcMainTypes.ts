@@ -106,8 +106,8 @@ export type IpcMainEvents = TypeRecord<
     }
     getShelfContent: {
       args: {
-        pagination?: Pagination
-        order?: [string, 'ASC' | 'DESC']
+        pagination: Pagination
+        order: [string, 'ASC' | 'DESC']
         query: ContentQuery[]
       }
       return: ReturnType<typeof ListContent>
