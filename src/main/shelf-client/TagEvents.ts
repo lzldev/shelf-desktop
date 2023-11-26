@@ -43,7 +43,7 @@ async function removeTagFromContent(
 
   const del = await client.ShelfDB.deleteFrom('ContentTags')
     .where((eb) =>
-      eb.or([
+      eb.and([
         eb('contentId', '=', options.contentId),
         eb('tagId', '=', options.tagId),
       ]),

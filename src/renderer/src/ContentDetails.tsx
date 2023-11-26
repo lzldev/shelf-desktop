@@ -52,7 +52,6 @@ function ContentDetails({
   } = useQuery(
     ['DetailedContent'],
     async () => {
-      console.log(initialContent)
       if (!initialContent || !initialContent.id) return null
 
       const id = initialContent?.id
@@ -62,6 +61,8 @@ function ContentDetails({
       if (!result) {
         return null
       }
+
+      console.log(result)
 
       return result
     },

@@ -8,9 +8,10 @@ import {
   ListContent,
 } from './ContentControllers'
 import {ShelfDBConnection} from './ShelfControllers'
-import {defaultColors} from '../utils/DefaultValues'
+import {defaultColors, defaultTags} from '../utils/DefaultValues'
 import {CreateDefaultColors} from './ColorControllers'
 import {join} from 'path'
+import {CreateDefaultTags} from './TagsControllers'
 
 let connection: ShelfDBConnection
 
@@ -51,6 +52,13 @@ describe.only('db-tests', async () => {
     expect(Number(colors[0].numInsertedOrUpdatedRows)).toEqual(
       defaultColors.length,
     )
+  })
+
+  test('Insert default Tags', async () => {
+    const tags = await CreateDefaultTags(connection)
+
+    assert(tags)
+    expect(Number(Object.keys(tags).length)).toEqual(defaultTags.length)
   })
 
   test('Insert 50 Contents with Paths', async () => {
@@ -132,34 +140,14 @@ describe.only('db-tests', async () => {
       )
       .execute()
 
-    // const rows = await connection
-    //   .deleteFrom('Paths')
-    //   .where((eb) =>
-    //     eb(
-    //       'Paths.id',
-    //       'in',
-    //       eb
-    //         .selectFrom('Paths as p2')
-    //         .select(['p2.id'])
-    //         .groupBy('p2.contentId')
-    //         .orderBy('p2.contentId desc')
-    //         .limit(max),
-    //     ),
-    //   )
-    //   .execute()
-    //
-
     assert(rows[0])
     expect(Number(rows[0].numDeletedRows)).toBe(max)
-
-    // assert(rows2[0])
-    // expect(Number(rows2[0].numDeletedRows)).toBe(max)
 
     const currentHashes = (
       await connection.selectFrom('Contents').select('hash').execute()
     ).map((c) => c.hash)
 
-    const res = await CleanupContent(connection, currentHashes)
+    const res = await CleanupContent(connection)
 
     assert(res)
     assert(res[0])

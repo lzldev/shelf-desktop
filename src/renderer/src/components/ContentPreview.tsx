@@ -30,7 +30,6 @@ function ContentPreview({
     }
 
     const listener: PREVIEW_LISTENER = (data) => {
-      console.log('data!!', data)
       if (!data.success && data.hash === content.hash) {
         unregister(content.hash)
         return
@@ -46,7 +45,6 @@ function ContentPreview({
     const effect = async () => {
       const path = content?.path
       if (!path || format === 'unrecognized') {
-        console.log('asking for preview', !path, format)
         return
       }
 
@@ -60,11 +58,10 @@ function ContentPreview({
           format,
         )
         .catch((error) => {
-          console.log('Error on preview_content\n', error)
+          console.error('Error on preview_content\n', error)
         })
 
       if (!response || response.instaError) {
-        console.log('Insta error !!!', response)
         return
       }
 

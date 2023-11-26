@@ -1,4 +1,4 @@
-import {ExpressionBuilder, InferResult} from 'kysely'
+import {ExpressionBuilder, InferResult, sql} from 'kysely'
 import type {
   ContentTags,
   Contents,
@@ -7,7 +7,7 @@ import type {
   TagColors,
   Tags,
 } from './kysely-types'
-import {jsonArrayFrom} from 'kysely/helpers/sqlite'
+import {jsonArrayFrom, jsonBuildObject} from 'kysely/helpers/sqlite'
 import {Nullable} from 'kysely/dist/cjs/util/type-utils'
 import {Cursor, Pagination, ShelfDBConnection} from './ShelfControllers'
 import {
@@ -100,10 +100,11 @@ export async function ContentDetails(
   connection: ShelfDBConnection,
   contentId: number,
 ) {
-  return connection
+  const content = await connection
     .selectFrom('Contents')
     .leftJoin('Paths', 'Contents.id', 'Paths.contentId')
     .leftJoin('ContentTags', 'Contents.id', 'ContentTags.contentId')
+    .leftJoin('Tags', 'ContentTags.tagId', 'Tags.id')
     .select((eb) => [
       'Contents.id',
       'Contents.hash',
@@ -114,6 +115,9 @@ export async function ContentDetails(
     ])
     .where('Contents.id', '=', contentId)
     .executeTakeFirst()
+
+  console.log(content)
+  return content
 }
 
 export async function ListContent(
@@ -136,6 +140,7 @@ export async function ListContent(
     .selectFrom('Contents')
     .innerJoin('Paths', 'Contents.id', 'Paths.contentId')
     .leftJoin('ContentTags', 'Contents.id', 'ContentTags.contentId')
+    .leftJoin('Tags', 'ContentTags.tagId', 'Tags.id')
     .select((eb) => [
       'Contents.id',
       'Contents.hash',
@@ -196,17 +201,20 @@ export function withTags(
       ContentTags: Nullable<ContentTags>
       Paths: Nullable<Paths>
       TagColors: TagColors
-      Tags: Tags
+      Tags: Nullable<Tags>
     },
-    'Contents' | 'ContentTags' | 'Paths'
+    'Contents' | 'ContentTags' | 'Paths' | 'Tags'
   >,
 ) {
-  return jsonArrayFrom(
-    eb
-      .selectFrom('Tags')
-      .select(['Tags.id', 'Tags.colorId', 'Tags.name'])
-      .whereRef('ContentTags.tagId', '=', 'Tags.id'),
-  ).as('tags')
+  return eb.fn
+    .agg<string>('json_group_array', [
+      jsonBuildObject({
+        id: eb.ref('Tags.id'),
+        name: eb.ref('Tags.name'),
+        colorId: eb.ref('Tags.colorId'),
+      }),
+    ])
+    .as('tags')
 }
 
 export type DetailedContent = NonNullable<
