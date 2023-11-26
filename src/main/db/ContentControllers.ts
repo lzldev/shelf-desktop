@@ -1,4 +1,4 @@
-import {ExpressionBuilder} from 'kysely'
+import {ExpressionBuilder, InferResult} from 'kysely'
 import type {
   ContentTags,
   Contents,
@@ -212,6 +212,7 @@ export function withTags(
 export type DetailedContent = NonNullable<
   Awaited<ReturnType<typeof ContentDetails>>
 >
+
 export type ListedContent = Awaited<
   ReturnType<typeof ListContent>
 >['content'][number]

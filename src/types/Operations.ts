@@ -1,9 +1,17 @@
 import {Prettify} from './utils'
 import type {DB} from 'src/main/db/kysely-types'
 import type {InsertObject} from 'kysely/dist/cjs/parser/insert-values-parser'
+import type {ExtractTypeFromValueExpression} from 'kysely/dist/cjs/parser/value-parser'
 
-type ColorValues = Pick<InsertObject<DB, 'TagColors'>, 'color' | 'name'>
-type TagValues = Pick<InsertObject<DB, 'Tags'>, 'name' | 'colorId'>
+type ParseKysely<T> = {
+  [key in keyof T]: ExtractTypeFromValueExpression<T[key]>
+}
+
+type ColorValues = ParseKysely<
+  Pick<InsertObject<DB, 'TagColors'>, 'color' | 'name'>
+>
+
+type TagValues = ParseKysely<Pick<InsertObject<DB, 'Tags'>, 'name' | 'colorId'>>
 
 export type ColorOperation =
   | ({

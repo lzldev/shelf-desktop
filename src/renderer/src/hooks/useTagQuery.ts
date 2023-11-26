@@ -14,7 +14,7 @@ export const useTagQuery = () => {
             .toLowerCase()
             .includes(SplitQuery[SplitQuery.length - 1].toLowerCase()),
         )
-        .map((tag) => Number(tag.id)),
+        .map((tag) => tag.id),
     [query, tags],
   )
 

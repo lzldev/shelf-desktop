@@ -1,17 +1,19 @@
 import {TagColors} from 'src/main/db/kysely-types'
 import {create} from 'zustand'
 
+export type NormalizedColors = TagColors & {id: number}
+
 function mapFromColors(colors: TagColors[]) {
-  const colorsMap = new Map<number, TagColors>()
+  const colorsMap = new Map<number, NormalizedColors>()
   colors.forEach((color) => {
-    colorsMap.set(Number(color.id), color)
+    colorsMap.set(Number(color.id), color as NormalizedColors)
   })
 
   return colorsMap
 }
 
 interface ColorStore {
-  colors: Map<number, TagColors>
+  colors: Map<number, NormalizedColors>
   isReady: boolean
 }
 
