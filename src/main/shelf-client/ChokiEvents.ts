@@ -11,6 +11,7 @@ import {Effect} from 'effect'
 import {CreateDefaultColors} from '../db/ColorControllers'
 import {CleanupContent, CreateContentWithPaths} from '../db/ContentControllers'
 import {ShelfDBConnection} from '../db/ShelfControllers'
+import {CreateDefaultTags} from '../db/TagsControllers'
 
 export const addChokiEvents = (
   shelfClient: ShelfClient,
@@ -190,6 +191,7 @@ export const addChokiEvents = (
       console.timeEnd('PATH CLEANUP ->')
     } else {
       await CreateDefaultColors(shelfClient.ShelfDB)
+      await CreateDefaultTags(shelfClient.ShelfDB)
     }
 
     await Effect.runPromise(

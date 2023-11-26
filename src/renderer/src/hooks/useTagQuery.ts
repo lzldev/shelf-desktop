@@ -8,7 +8,7 @@ export const useTagQuery = () => {
 
   const foundTags = useMemo(
     () =>
-      tags.filter((tag) =>
+      Array.from(tags.values()).filter((tag) =>
         tag.name
           .toLowerCase()
           .includes(SplitQuery[SplitQuery.length - 1].toLowerCase()),

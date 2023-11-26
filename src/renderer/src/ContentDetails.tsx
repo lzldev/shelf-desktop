@@ -219,7 +219,7 @@ export const InlineTagDropdown = ({
       <DropdownMenuItem
         className='select-none p-4 outline-none transition-colors hover:bg-gray-500 hover:text-white'
         onClick={() => {
-          addQuery({type: 'tag', tag: tag, operation: 'include'})
+          addQuery({field: 'tag', value: tag.id, operation: 'include'})
           onClose()
         }}
       >

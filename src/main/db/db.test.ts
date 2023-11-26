@@ -8,7 +8,7 @@ import {
   ListContent,
 } from './ContentControllers'
 import {ShelfDBConnection} from './ShelfControllers'
-import {defaultColors} from '../utils/DefaultColors'
+import {defaultColors} from '../utils/DefaultValues'
 import {CreateDefaultColors} from './ColorControllers'
 import {join} from 'path'
 
