@@ -24,7 +24,7 @@ import {checkExtension} from './utils/Extensions'
 import {useContentQueryStore} from './hooks/useQueryStore'
 import {useHotkeys} from './hooks/useHotkeys'
 import {openContentDirectory, openInAnotherProgram} from './utils/Content'
-import {useQuery, useQueryClient} from '@tanstack/react-query'
+import {useQuery} from '@tanstack/react-query'
 
 const prevTitle = window.document.title
 
@@ -74,6 +74,7 @@ function ContentDetails({
 
   useEffect(() => {
     if (!content) return
+
     window.document.title = `${prevTitle} - ${
       content?.paths?.at(0)?.path ?? 'Invalid Path'
     }`

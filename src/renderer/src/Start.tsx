@@ -92,7 +92,7 @@ function StartingOptions(props: {base: string}) {
     ignoreHidden: false,
     ignoreUnsupported: true,
     //TODO: Change this to true before release
-    ai_worker: false,
+    aiWorker: false,
   })
 
   return (

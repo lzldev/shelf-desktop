@@ -28,7 +28,7 @@ const createShelfKyselyDB = (dbDir: string) => {
   }
 
   return new Kysely<DB>({
-    log: ['query', 'error'],
+    log: ['error'],
     dialect: new SqliteDialect({
       database: sqliteDb,
     }),

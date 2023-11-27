@@ -90,7 +90,7 @@ function Main(): JSX.Element {
       return files
     },
     initialPageParam: {offset: 0, limit: config!.pageSize},
-    getNextPageParam: (lastPage, pages) => lastPage.nextCursor,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
   })
 
   useEffect(() => {
@@ -128,7 +128,7 @@ function Main(): JSX.Element {
       setModalContent(content)
     },
     () => {
-      setModalContent(undefined)
+      setModalContent(null)
     },
   )
 

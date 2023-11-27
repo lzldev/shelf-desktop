@@ -51,7 +51,7 @@ class ShelfClient {
         ignoredPaths: [],
         ignoreHidden: true,
         ignoreUnsupported: true,
-        ai_worker: true,
+        aiWorker: true,
         ...(options.config ? options.config : {}),
       },
     )
@@ -70,7 +70,7 @@ class ShelfClient {
 
     let aiWorker: AiWorkerType
 
-    if (!import.meta.env.VITEST && config.get('ai_worker')) {
+    if (!import.meta.env.VITEST && config.get('aiWorker')) {
       aiWorker = CreateAIWorker({
         env: SHARE_ENV,
         workerData: {dbPath: options.basePath},

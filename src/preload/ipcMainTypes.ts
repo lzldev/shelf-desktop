@@ -1,4 +1,4 @@
-import {SomeRequired, TypeRecord} from '../types/utils'
+import {TypeRecord} from '../types/utils'
 import {
   ColorOperation,
   TagOperation,

@@ -299,7 +299,7 @@ export const addChokiEvents = (
       })
     }
 
-    if (shelfClient.config.get('ai_worker')) {
+    if (shelfClient.config.get('aiWorker')) {
       console.time('Waiting for AIWORKER...')
       await WaitForAIWork()
         .then(() => {

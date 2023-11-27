@@ -1,4 +1,4 @@
-import {ExpressionBuilder, InferResult, sql} from 'kysely'
+import {ExpressionBuilder} from 'kysely'
 import type {
   ContentTags,
   Contents,
@@ -16,7 +16,6 @@ import {
 } from 'kysely/dist/cjs/parser/insert-values-parser'
 import {SHELF_LOGGER} from '../utils/Loggers'
 import {ContentQuery} from '../../renderer/src/hooks/useQueryStore'
-import {encodeBase64} from 'effect/dist/declarations/src/Encoding'
 
 export function CreateContent(
   connection: ShelfDBConnection,
@@ -66,9 +65,6 @@ export async function CreateContentWithPaths(
   values: {
     paths: Omit<InsertObject<DB, 'Paths'>, 'contentId'>[][]
     contents: InsertObject<DB, 'Contents'>[]
-  },
-  options = {
-    returning: false,
   },
 ) {
   if (values.paths instanceof Array && values.paths.length === 0) {
@@ -148,25 +144,27 @@ export async function ListContent(
     .selectFrom('Contents')
     .leftJoin('ContentTags', 'Contents.id', 'ContentTags.contentId')
     .leftJoin('Tags', 'ContentTags.tagId', 'Tags.id')
-    .leftJoin('Paths', 'Contents.id', 'Paths.contentId')
+    .leftJoin(
+      (something) =>
+        something
+          .selectFrom('Paths')
+          .select(['Paths.path', 'Paths.contentId'])
+          .groupBy('Paths.contentId')
+          .as('paths'),
+      (join) => join.onRef('paths.contentId', '=', 'Contents.id'),
+    )
     .select((eb) => [
       'Contents.id',
       'Contents.hash',
       'Contents.extension',
       'Contents.createdAt',
       withTags(eb),
-      eb.fn.count('ContentTags.contentId').as('ShouldTags'),
-      eb
-        .selectFrom('Paths')
-        .select('Paths.path')
-        .whereRef('Paths.contentId', '=', 'Contents.id')
-        .as('path'),
     ])
     .$if(queryPaths.length > 0, (qb) =>
       qb.where((eb) =>
-        eb.and(
+        eb.or(
           queryPaths.map((value) =>
-            eb('Paths.path', 'like', `%${value.value}%`),
+            eb('paths.path', 'like', `%${value.value}%`),
           ),
         ),
       ),
@@ -178,7 +176,7 @@ export async function ListContent(
         ),
       ),
     )
-    .groupBy(['Contents.id', 'Paths.contentId', 'ContentTags.contentId'])
+    .groupBy(['Contents.id', 'ContentTags.contentId'])
     .orderBy('Contents.id', 'desc')
     .limit(pagination.limit)
     .offset(pagination.offset)
@@ -201,13 +199,13 @@ export async function ListContent(
 export function withPathStrings(
   eb: ExpressionBuilder<
     {
+      Paths: Paths
       Contents: Contents
       ContentTags: Nullable<ContentTags>
-      Paths: Nullable<Paths>
       TagColors: TagColors
-      Tags: Tags
+      Tags: Nullable<Tags>
     },
-    'Contents' | 'ContentTags' | 'Paths'
+    'Contents' | 'ContentTags' | 'Tags'
   >,
 ) {
   return jsonArrayFrom(
@@ -223,11 +221,11 @@ export function withTags(
     {
       Contents: Contents
       ContentTags: Nullable<ContentTags>
-      Paths: Nullable<Paths>
+      Paths: Paths
       TagColors: TagColors
       Tags: Nullable<Tags>
     },
-    'Contents' | 'ContentTags' | 'Paths' | 'Tags'
+    'Contents' | 'ContentTags' | 'Tags'
   >,
 ) {
   return eb.fn

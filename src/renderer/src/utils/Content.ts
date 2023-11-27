@@ -1,20 +1,10 @@
-import {DetailedContent, ListedContent} from 'src/main/db/ContentControllers'
+import {DetailedContent} from 'src/main/db/ContentControllers'
 import {Prettify} from 'src/types/utils'
 
-type Content = Prettify<ListedContent | DetailedContent>
+type Content = Prettify<DetailedContent>
 
 function getPathFromContent(content: Content) {
-  if (!content) {
-    throw 'invalid'
-  }
-
-  if ('path' in content) {
-    return content.path
-  } else if (content.paths instanceof Array && content.paths.at(0)) {
-    return content.paths.at(0)!.path!
-  } else {
-    throw 'Invalid Content'
-  }
+  return content.paths.at(0)?.path ?? null
 }
 
 export const openInAnotherProgram = (content?: Content) => {
@@ -33,9 +23,14 @@ export const openContentDirectory = (content?: Content) => {
   if (!content) {
     return
   }
+
   const path = getPathFromContent(content)
 
-  window.open('file://' + path.substring(0, path.lastIndexOf('\\')))
+  if (!path) {
+    return
+  }
+
+  window.open('file://' + path.substring(0, path.lastIndexOf('/')))
 }
 
 export const encodeContentPathIntoURI = (content: Content) => {
@@ -43,7 +38,9 @@ export const encodeContentPathIntoURI = (content: Content) => {
 }
 
 export const contentIntoURI = (content: Content) => {
-  return encodePathIntoURI(getPathFromContent(content))
+  const path = getPathFromContent(content) ?? ''
+  console.log(content.paths)
+  return encodePathIntoURI(path)
 }
 
 export const encodePathIntoURI = (path: string) => {
