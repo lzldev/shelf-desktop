@@ -54,7 +54,14 @@ function ContentDetails({
       if (contentInfo === null) {
         return null
       }
-      return window.api.invokeOnMain('getDetailedContent', contentInfo.id)
+      const r = await window.api.invokeOnMain(
+        'getDetailedContent',
+        contentInfo.id,
+      )
+
+      console.log(r)
+
+      return r
     },
   })
 

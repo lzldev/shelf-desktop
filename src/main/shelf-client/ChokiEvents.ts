@@ -1,5 +1,5 @@
 import {createHash} from 'crypto'
-import {FileTuple, filterDirectoryTree} from '../utils/choki'
+import {FileTuple, filterDirectoryTree, toFileTuple} from '../utils/choki'
 import {updateProgress as sendUpdateProgressEvent} from '..'
 import {ShelfClient} from './ShelfClient'
 import {SHELF_LOGGER} from '../utils/Loggers'
@@ -9,10 +9,15 @@ import {createReadStream} from 'fs'
 
 import {Effect} from 'effect'
 import {CreateDefaultColors} from '../db/ColorControllers'
-import {CleanupContent, CreateContentWithPaths} from '../db/ContentControllers'
+import {
+  CleanupContent,
+  CreateContent,
+  CreateContentWithPaths,
+} from '../db/ContentControllers'
 import {ShelfDBConnection} from '../db/ShelfControllers'
 import {CreateDefaultTags, getDefaultTags} from '../db/TagsControllers'
 import {CreateTagContent} from '../db/TagContentControllers'
+import {CreatePaths} from '../db/PathsController'
 
 export const addChokiEvents = (
   shelfClient: ShelfClient,
@@ -81,70 +86,6 @@ export const addChokiEvents = (
     // }
   }
 
-  async function shelfOnAdd(pathString: string) {
-    // if (!shelfClient.ready) {
-    //   return
-    // }
-    //
-    // try {
-    //   const filePath = normalize(pathString)
-    //   const fileHash = await hashFileAsync(filePath).catch((e) => {
-    //     throw e
-    //   })
-    //
-    //   const {mtimeMs} = statSync(filePath)
-    //
-    //   const [content] = await Content.findOrCreate({
-    //     where: {
-    //       hash: fileHash,
-    //     },
-    //     defaults: {
-    //       hash: fileHash,
-    //       extension: parse(filePath).ext,
-    //     },
-    //   }).catch((e) => {
-    //     throw e
-    //   })
-    //
-    //   const [newPath, created] = await Path.findOrCreate({
-    //     where: {
-    //       path: filePath,
-    //     },
-    //     defaults: {
-    //       path: filePath,
-    //       mTimeMs: mtimeMs,
-    //       contentId: content.id,
-    //     },
-    //   }).catch((e) => {
-    //     throw e
-    //   })
-    //
-    //   if (created) {
-    //     return
-    //   }
-    //
-    //   if (canClassify(content.extension)) {
-    //     shelfClient.AiWorker.postMessage({
-    //       type: 'new_file',
-    //       data: {
-    //         id: content.id,
-    //         path: filePath,
-    //       },
-    //     })
-    //   }
-    //
-    //   await newPath
-    //     .update({
-    //       contentId: content.id,
-    //     })
-    //     .catch((e) => {
-    //       throw e
-    //     })
-    // } catch (e) {
-    //   dialog.showErrorBox('Error', JSON.stringify(e))
-    // }
-  }
-
   async function shelfOnUnlink(_filePath: string) {
     // try {
     //   const filePath = normalize(_filePath)
@@ -162,6 +103,61 @@ export const addChokiEvents = (
     // } catch (e) {
     //   dialog.showErrorBox('Error', JSON.stringify(e))
     // }
+  }
+
+  async function shelfOnAdd(filePath: string) {
+    if (!shelfClient.ready) {
+      return
+    }
+
+    const fileTuple = toFileTuple(filePath)
+
+    console.log(`FILE`, fileTuple)
+    SHELF_LOGGER.info(`FILE`, fileTuple)
+    if (fileTuple[2] === false) {
+      SHELF_LOGGER.info(`File Skipped REASON:"DIR"`)
+      return
+    }
+
+    const connection = shelfClient.ShelfDB
+    const fileHash = await hashFileAsync(fileTuple[0]).catch((e) => {
+      throw e
+    })
+
+    const found = await connection
+      .selectFrom('Contents')
+      .select(['Contents.hash', 'Contents.id'])
+      .where('Contents.hash', '=', fileHash)
+      .executeTakeFirst()
+
+    if (found) {
+      const newPath = await CreatePaths(connection, [
+        {
+          path: fileTuple[0],
+          mTimeMs: fileTuple[1],
+          contentId: found.id,
+        },
+      ])
+      console.log('Found!', newPath, found)
+      return
+    }
+
+    const newContent = await CreateContent(connection, [
+      {
+        hash: fileHash,
+        extension: fileTuple[2],
+      },
+    ])
+
+    console.log('not found!', newContent)
+
+    return CreatePaths(connection, [
+      {
+        contentId: Number(newContent?.insertId),
+        path: fileTuple[0],
+        mTimeMs: fileTuple[1],
+      },
+    ])
   }
 
   async function shelfOnReady() {

@@ -20,25 +20,23 @@ export const flattenDirectoryTree = (tree: DirectoryTree): string[] => {
   return paths
 }
 
-export const toFileTuple = (filePaths: string[]) => {
-  return filePaths
-    .map((p) => {
-      const stats = statSync(p)
-      const normalizedPath = normalize(p)
-      const extesionOrDirectory = stats.isDirectory()
-        ? false
-        : path.parse(p).ext
+export function toFileTuple(
+  p: string,
+): [filePath: string, modifiedTimeMS: number, extesion: false | string] {
+  const stats = statSync(p)
+  const normalizedPath = normalize(p)
+  const extesionOrDirectory = stats.isDirectory() ? false : path.parse(p).ext
 
-      return [normalizedPath, stats.mtimeMs, extesionOrDirectory] satisfies [
-        filePath: string,
-        modifiedTimeMS: number,
-        extesion: false | string,
-      ]
-    })
+  return [normalizedPath, stats.mtimeMs, extesionOrDirectory]
+}
+
+export function arrayToFileTuple(filePaths: string[]) {
+  return filePaths
+    .map(toFileTuple)
     .filter((path) => path[2] !== false) as FileTuple[]
 }
 
-export const toFileMap = (filePaths: string[]) => {
+export function toFileMap(filePaths: string[]) {
   const newSet = new Map<string, number>()
   filePaths.forEach((path) => {
     const {mtimeMs} = statSync(path)
@@ -52,4 +50,4 @@ export const toFileMap = (filePaths: string[]) => {
  * Filter out Directories from Choki directory tree, and returns an array of FileTuple.
  * */
 export const filterDirectoryTree = (tree: DirectoryTree): FileTuple[] =>
-  toFileTuple(flattenDirectoryTree(tree))
+  arrayToFileTuple(flattenDirectoryTree(tree))

@@ -1,4 +1,4 @@
-import {ExpressionBuilder} from 'kysely'
+import {ExpressionBuilder, sql} from 'kysely'
 import type {
   ContentTags,
   Contents,
@@ -176,11 +176,13 @@ export async function ListContent(
         ),
       ),
     )
-    .groupBy(['Contents.id', 'ContentTags.contentId'])
+    .groupBy(['Contents.id'])
     .orderBy('Contents.id', 'desc')
     .limit(pagination.limit)
     .offset(pagination.offset)
     .execute()
+
+  console.log(results.at(0))
 
   const nextCursor = (
     count.count - (pagination.offset + results.length) > 0
@@ -228,14 +230,23 @@ export function withTags(
     'Contents' | 'ContentTags' | 'Tags'
   >,
 ) {
-  return eb.fn
-    .agg<{id: number; name: string; colorId: number}[]>('json_group_array', [
-      jsonBuildObject({
-        id: eb.ref('Tags.id'),
-        name: eb.ref('Tags.name'),
-        colorId: eb.ref('Tags.colorId'),
-      }),
-    ])
+  return eb
+    .case()
+    .when('Tags.id', 'is not', eb.val(null))
+    .then(
+      eb.fn.agg<{id: number; name: string; colorId: number}[]>(
+        'json_group_array',
+        [
+          jsonBuildObject({
+            id: eb.ref('Tags.id'),
+            name: eb.ref('Tags.name'),
+            colorId: eb.ref('Tags.colorId'),
+          }),
+        ],
+      ),
+    )
+    .else(sql.lit(`[]`))
+    .end()
     .as('tags')
 }
 
