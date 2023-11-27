@@ -3,8 +3,8 @@ import {checkExtension} from '../utils/Extensions'
 import clsx from 'clsx'
 import {HTMLAttributes, useMemo, useRef, useState} from 'react'
 import {useConfigStore} from '../hooks/useConfig'
-import { contentIntoURI } from '../utils/Content'
-import { DetailedContent } from 'src/main/db/ContentControllers'
+import {contentIntoURI} from '../utils/Content'
+import {DetailedContent} from 'src/main/db/ContentControllers'
 
 function ShelfContent({
   content,
@@ -22,10 +22,10 @@ function ShelfContent({
   const thumbnailPath = useConfigStore((s) => s.config!.thumbnailPath)
 
   const [uri, preview_uri] = useMemo(() => {
-    const uri =  contentIntoURI(content)
+    const uri = contentIntoURI(content)
     const previewUri = 'file://' + thumbnailPath + content.hash + '.jpg'
 
-    return [uri,previewUri]
+    return [uri, previewUri]
   }, [content])
 
   return (

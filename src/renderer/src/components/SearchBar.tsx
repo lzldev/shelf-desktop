@@ -4,7 +4,6 @@ import {InlineButton} from './InlineButton'
 import {InlineTag} from './InlineTag'
 import {useTagQuery} from '../hooks/useTagQuery'
 import {useContentQueryStore, ContentQuery} from '../hooks/useQueryStore'
-import {useTags} from '../hooks/useTags'
 
 export const SearchBar = ({
   markedContent,

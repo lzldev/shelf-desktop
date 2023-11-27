@@ -1,5 +1,4 @@
 import {useNavigate} from 'react-router-dom'
-import {useQuery} from '@tanstack/react-query'
 import {
   HTMLAttributes,
   PropsWithChildren,
@@ -20,21 +19,22 @@ import {
   DropdownMenuItem,
   DropdownMenuProps,
 } from '@radix-ui/react-dropdown-menu'
-import {useHotkeys} from './hooks/useHotkeys'
 import {ArrowLeftIcon} from '@heroicons/react/24/solid'
-import {openInAnotherProgram, openContentDirectory} from './utils/Content'
 import {checkExtension} from './utils/Extensions'
 import {useContentQueryStore} from './hooks/useQueryStore'
+import {useHotkeys} from './hooks/useHotkeys'
+import {openContentDirectory, openInAnotherProgram} from './utils/Content'
+import {useQuery, useQueryClient} from '@tanstack/react-query'
 
 const prevTitle = window.document.title
 
 type ContentDetailsProp = {
-  initialContent?: {id: number; hash: string}
+  contentInfo: {id: number} | null
   onClose: (...any: any[]) => any
 } & HTMLAttributes<HTMLDivElement>
 
 function ContentDetails({
-  initialContent,
+  contentInfo,
   onClose,
   ...props
 }: ContentDetailsProp): JSX.Element {
@@ -48,26 +48,19 @@ function ContentDetails({
     error,
     isLoading,
     refetch,
-    remove,
-  } = useQuery(['DetailedContent'], async () => {
-    if (!initialContent || !initialContent.id) return null
-
-    const id = initialContent?.id
-
-    const result = await window.api.invokeOnMain('getDetailedContent', id)
-
-    if (!result) {
-      return null
-    }
-
-    return result
+  } = useQuery({
+    queryKey: ['DetailedContent', contentInfo],
+    queryFn: async () => {
+      if (contentInfo === null) {
+        return null
+      }
+      return window.api.invokeOnMain('getDetailedContent', contentInfo.id)
+    },
   })
 
   const close = () => {
-    remove()
     onClose()
   }
-
   const {toggle: toggleHotkeys} = useHotkeys({
     Escape: close,
     f: toggleFullscreen,

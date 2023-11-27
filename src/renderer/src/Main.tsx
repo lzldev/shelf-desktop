@@ -37,7 +37,7 @@ function Main(): JSX.Element {
 
   const contentQuery = useContentQueryStore((s) => s.query)
 
-  const [modalContent, setModalContent] = useState<ListedContent | undefined>()
+  const [modalContent, setModalContent] = useState<ListedContent | null>(null)
 
   const [markedContent, setMarkedContent] = useImmer<Set<number>>(new Set())
 
@@ -62,9 +62,9 @@ function Main(): JSX.Element {
     refetch,
     hasNextPage,
     fetchNextPage,
-  } = useInfiniteQuery(
-    ['content'],
-    async (context) => {
+  } = useInfiniteQuery({
+    queryKey: ['content'],
+    queryFn: async (context) => {
       const {orderDirection, orderField} = useOrderStore.getState()
 
       const {
@@ -89,10 +89,9 @@ function Main(): JSX.Element {
 
       return files
     },
-    {
-      getNextPageParam: (lastPage) => lastPage.nextCursor,
-    },
-  )
+    initialPageParam: {offset: 0, limit: config!.pageSize},
+    getNextPageParam: (lastPage, pages) => lastPage.nextCursor,
+  })
 
   useEffect(() => {
     if (!contentContainer.current) return
@@ -168,7 +167,7 @@ function Main(): JSX.Element {
         createPortal(
           <ContentDetails
             className={'text-6 fixed inset-0 z-50 max-h-screen w-full'}
-            initialContent={modalContent}
+            contentInfo={modalContent}
             onClose={() => closeContentModal()}
           />,
           document.body,
