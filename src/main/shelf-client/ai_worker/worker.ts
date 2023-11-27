@@ -19,6 +19,7 @@ import {handleWorkerMessage} from '../../utils/Worker'
 
 import {z} from 'zod'
 import {__DBFILENAME} from '../../db/ShelfKyselyDB'
+import {CreateTagContent} from '../../db/TagContentControllers'
 
 const wd = AIWorkerDataParser.safeParse(_workerData)
 let workerData: z.infer<typeof AIWorkerDataParser>
@@ -184,13 +185,10 @@ async function main() {
         TagToIDMap.set(normalized, id)
       }
 
-      await db
-        .insertInto('ContentTags')
-        .values({
-          tagId: id,
-          contentId: classifyData.id,
-        })
-        .execute()
+      await CreateTagContent(db, {
+        tagId: id,
+        contentId: classifyData.id,
+      })
 
       WORKER_LOGGER.info(
         `TAG ${normalized} | Confidence : ${classification.probability}`,

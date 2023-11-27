@@ -41,6 +41,9 @@ CREATE TABLE "TagColors" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Contents_hash_key" ON "Contents"("hash");
+
+-- CreateIndex
 CREATE INDEX "contents_hash" ON "Contents"("hash");
 
 -- CreateIndex

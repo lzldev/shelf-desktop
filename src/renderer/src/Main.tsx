@@ -64,6 +64,7 @@ function Main(): JSX.Element {
     fetchNextPage,
   } = useInfiniteQuery({
     queryKey: ['content'],
+    structuralSharing: false,
     queryFn: async (context) => {
       const {orderDirection, orderField} = useOrderStore.getState()
 

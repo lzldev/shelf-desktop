@@ -24,7 +24,15 @@ export function CreateContent(
   if (values instanceof Array && values.length === 0) {
     return
   }
-  return connection.insertInto('Contents').values(values).executeTakeFirst()
+  return connection
+    .insertInto('Contents')
+    .values(values)
+    .onConflict((cb) =>
+      cb
+        .columns(['hash'])
+        .doUpdateSet((eb) => ({extension: eb.ref('Contents.extension')})),
+    )
+    .executeTakeFirst()
 }
 
 export function UpdateContentWhereId(
@@ -80,6 +88,11 @@ export async function CreateContentWithPaths(
     .insertInto('Contents')
     .values(values.contents)
     .returning(['id', 'hash'])
+    .onConflict((cb) =>
+      cb
+        .columns(['hash'])
+        .doUpdateSet((eb) => ({extension: eb.ref('Contents.extension')})),
+    )
     .execute()
 
   await connection

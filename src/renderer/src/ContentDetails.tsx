@@ -59,8 +59,6 @@ function ContentDetails({
         contentInfo.id,
       )
 
-      console.log(r)
-
       return r
     },
   })
@@ -145,6 +143,9 @@ function ContentDetails({
           'max-h-full min-h-full overflow-y-auto bg-gray-200 px-4 pt-4'
         }
       >
+        <div>
+          HASH:<b>{content.hash}</b>
+        </div>
         <div className={'my-2 flex flex-col'}>
           {(content?.paths || []).map((p, idx) => {
             return (
@@ -156,6 +157,7 @@ function ContentDetails({
               </p>
             )
           })}
+          d
         </div>
         <div className='flex flex-row flex-wrap'>
           {(content?.tags || []).map((tag) => {

@@ -366,6 +366,7 @@ async function CleanupShelfDB(
 
       //Skip adding the file to the DB Later.
       watchedFiles.splice(idOnTuple, 1)
+      continue
     }
   }
 

@@ -12,9 +12,9 @@ datasource db {
 
 model Contents {
   id          Int           @id @default(autoincrement())
-  hash        String
+  hash        String        @unique
   extension   String
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime      @default(now())
   ContentTags ContentTags[]
   Paths       Paths[]
 
@@ -31,7 +31,6 @@ model Paths {
   @@index([contentId], map: "paths_content_id")
   @@index([path], map: "paths_path")
 }
-
 
 model Tags {
   id          Int           @id @default(autoincrement())
@@ -53,8 +52,8 @@ model ContentTags {
 }
 
 model TagColors {
-  id        Int      @id @default(autoincrement())
-  name      String
-  color     String
-  Tags      Tags[]
+  id    Int    @id @default(autoincrement())
+  name  String
+  color String
+  Tags  Tags[]
 }
