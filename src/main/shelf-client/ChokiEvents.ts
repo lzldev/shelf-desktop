@@ -194,6 +194,12 @@ export const addChokiEvents = (
       ? CreateDefaultTags(shelfClient.ShelfDB)
       : getDefaultTags(shelfClient.ShelfDB))
 
+    isDBNew &&
+      shelfClient.AiWorker.postMessage({
+        type: 'update_state',
+        data: null,
+      })
+
     await Effect.runPromise(
       Effect.all(
         watchedFiles.map((v, watchedFileIndex) =>
