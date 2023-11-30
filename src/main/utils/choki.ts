@@ -20,11 +20,15 @@ export const flattenDirectoryTree = (tree: DirectoryTree): string[] => {
   return paths
 }
 
+export function fileTupleNormalize(path: string) {
+  return normalize(path)
+}
+
 export function toFileTuple(
   p: string,
 ): [filePath: string, modifiedTimeMS: number, extesion: false | string] {
   const stats = statSync(p)
-  const normalizedPath = normalize(p)
+  const normalizedPath = fileTupleNormalize(p)
   const extesionOrDirectory = stats.isDirectory() ? false : path.parse(p).ext
 
   return [normalizedPath, stats.mtimeMs, extesionOrDirectory]

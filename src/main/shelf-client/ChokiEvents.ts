@@ -1,5 +1,5 @@
 import {createHash} from 'crypto'
-import {FileTuple, filterDirectoryTree, toFileTuple} from '../utils/choki'
+import {FileTuple, fileTupleNormalize, filterDirectoryTree, toFileTuple} from '../utils/choki'
 import {updateProgress as sendUpdateProgressEvent} from '..'
 import {ShelfClient} from './ShelfClient'
 import {SHELF_LOGGER} from '../utils/Loggers'
@@ -18,6 +18,7 @@ import {ShelfDBConnection} from '../db/ShelfControllers'
 import {CreateDefaultTags, getDefaultTags} from '../db/TagsControllers'
 import {CreateTagContent} from '../db/TagContentControllers'
 import {CreatePaths} from '../db/PathsController'
+import {bigint} from 'zod'
 
 export const addChokiEvents = (
   shelfClient: ShelfClient,
@@ -35,6 +36,8 @@ export const addChokiEvents = (
   choki.on('add', shelfOnAdd)
   choki.on('unlink', shelfOnUnlink)
   choki.on('change', shelfOnChange)
+
+  choki.on('error', (asd) => {})
 
   async function shelfOnError(error: Error) {
     // if (!('path' in error)) {
@@ -86,23 +89,60 @@ export const addChokiEvents = (
     // }
   }
 
-  async function shelfOnUnlink(_filePath: string) {
-    // try {
-    //   const filePath = normalize(_filePath)
-    //   const path = await Path.findOne({
-    //     where: {
-    //       path: filePath,
-    //     },
-    //   }).catch((e) => {
-    //     throw e
-    //   })
-    //
-    //   await path?.destroy().catch((e) => {
-    //     throw e
-    //   })
-    // } catch (e) {
-    //   dialog.showErrorBox('Error', JSON.stringify(e))
-    // }
+  async function shelfOnUnlink(filePath: string) {
+    if (!shelfClient.ready) {
+      return
+    }
+
+    SHELF_LOGGER.info(filePath)
+
+    const fileTuple = fileTupleNormalize(filePath)
+
+    if (fileTuple[2] === false) {
+      SHELF_LOGGER.info(`File DELETE Skipped REASON:"DIR"`)
+      return
+    }
+
+    const connection = shelfClient.ShelfDB
+
+    const dbPath = await connection
+      .selectFrom('Paths')
+      .select(['id', 'contentId'])
+      .where('path','=',fileTuple)
+      .executeTakeFirst()
+
+    if (!dbPath) {
+      SHELF_LOGGER.info(`File DELETE Skipped REASON:"NOT FOUND ON DB"`)
+      return
+    }
+
+    const deletedPath = await connection
+      .deleteFrom('Paths')
+      .where('id', '=', dbPath.id)
+      .executeTakeFirst()
+
+    if (Number(deletedPath.numDeletedRows) === 0) {
+      SHELF_LOGGER.warn(`File DELETE WARNING REASON:"Couldn't delete from DB"`)
+      return
+    }
+
+    const restOfPathsForContent = await connection
+      .selectFrom('Paths')
+      .select((eb) => eb.fn.count<number>('id').as('count'))
+      .where('contentId', '=', dbPath.contentId)
+      .executeTakeFirst()
+
+    if (restOfPathsForContent?.count > 0) {
+      return
+    }
+
+    const deletedContent = await connection.deleteFrom('Contents').where('id','=',dbPath.contentId).executeTakeFirst();
+
+
+    if(deletedContent){
+      SHELF_LOGGER.warn(`File DELETE WARNING REASON:"Couldn't delete from DB"`)
+      return
+    }
   }
 
   async function shelfOnAdd(filePath: string) {
@@ -114,6 +154,7 @@ export const addChokiEvents = (
 
     console.log(`FILE`, fileTuple)
     SHELF_LOGGER.info(`FILE`, fileTuple)
+
     if (fileTuple[2] === false) {
       SHELF_LOGGER.info(`File Skipped REASON:"DIR"`)
       return
@@ -147,7 +188,6 @@ export const addChokiEvents = (
         extension: fileTuple[2],
       },
     ])
-
 
     return CreatePaths(connection, [
       {
@@ -251,7 +291,6 @@ export const addChokiEvents = (
           }
         }),
       ))
-
     ;(
       await shelfClient.ShelfDB.selectFrom('Contents')
         .innerJoin('Paths', 'Contents.id', 'Paths.contentId')
