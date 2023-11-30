@@ -195,8 +195,6 @@ export async function ListContent(
     .offset(pagination.offset)
     .execute()
 
-  console.log(results.at(0))
-
   const nextCursor = (
     count.count - (pagination.offset + results.length) > 0
       ? {

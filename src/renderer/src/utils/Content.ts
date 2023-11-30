@@ -39,7 +39,6 @@ export const encodeContentPathIntoURI = (content: Content) => {
 
 export const contentIntoURI = (content: Content) => {
   const path = getPathFromContent(content) ?? ''
-  console.log(content.paths)
   return encodePathIntoURI(path)
 }
 

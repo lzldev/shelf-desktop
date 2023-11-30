@@ -131,14 +131,13 @@ export const addChokiEvents = (
       .executeTakeFirst()
 
     if (found) {
-      const newPath = await CreatePaths(connection, [
+      await CreatePaths(connection, [
         {
           path: fileTuple[0],
           mTimeMs: fileTuple[1],
           contentId: found.id,
         },
       ])
-      console.log('Found!', newPath, found)
       return
     }
 
@@ -149,7 +148,6 @@ export const addChokiEvents = (
       },
     ])
 
-    console.log('not found!', newContent)
 
     return CreatePaths(connection, [
       {
@@ -253,6 +251,7 @@ export const addChokiEvents = (
           }
         }),
       ))
+
     ;(
       await shelfClient.ShelfDB.selectFrom('Contents')
         .innerJoin('Paths', 'Contents.id', 'Paths.contentId')

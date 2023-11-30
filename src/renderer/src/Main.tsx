@@ -167,7 +167,6 @@ function Main(): JSX.Element {
       {showContentModal &&
         createPortal(
           <ContentDetails
-            className={'text-6 fixed inset-0 z-50 max-h-screen w-full'}
             contentInfo={modalContent}
             onClose={() => closeContentModal()}
           />,
