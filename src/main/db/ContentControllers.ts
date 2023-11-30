@@ -170,12 +170,40 @@ export async function ListContent(
           ),
         ),
     )
+    .with('foundTags(id)', (qb) =>
+      qb
+        .selectFrom('Tags')
+        .select(['id'])
+        .$if(queryTags.length > 0, (qb) =>
+          qb.where((eb) =>
+            eb.or(
+              queryTags.map((value) =>
+                eb('Tags.id', '=', value.value as number),
+              ),
+            ),
+          ),
+        ),
+    )
     .selectFrom('Contents')
-    .leftJoin('ContentTags', 'Contents.id', 'ContentTags.contentId')
-    .leftJoin('Tags', 'ContentTags.tagId', 'Tags.id')
     .leftJoin(
-      (something) =>
-        something
+      (eb) =>
+        eb
+          .selectFrom('ContentTags')
+          .select(['ContentTags.contentId', 'ContentTags.tagId'])
+          .as('contentTags'),
+      (join) => join.onRef('contentTags.contentId', '=', 'Contents.id'),
+    )
+    .leftJoin(
+      (eb) =>
+        eb
+          .selectFrom('Tags')
+          .select(['Tags.id', 'Tags.name', 'Tags.colorId'])
+          .as('Tags'),
+      (join) => join.onRef('Tags.id', '=', 'contentTags.tagId'),
+    )
+    .leftJoin(
+      (eb) =>
+        eb
           .selectFrom('Paths')
           .select(['Paths.path', 'Paths.contentId', 'Paths.id'])
           .as('paths'),
@@ -186,31 +214,38 @@ export async function ListContent(
       'Contents.hash',
       'Contents.extension',
       'Contents.createdAt',
-      withTags(eb),
+      eb.selectNoFrom('paths.path').as('path'),
+      jsonArrayFrom(
+        eb
+          .selectFrom('Tags')
+          .select(['Tags.id', 'Tags.name', 'Tags.colorId'])
+          .where((wb) =>
+            wb(
+              'Tags.id',
+              'in',
+              wb
+                .selectFrom('contentTags')
+                .select(['contentTags.tagId'])
+                .whereRef('contentTags.contentId', '=', 'Contents.id'),
+            ),
+          ),
+      ).as('tags'),
     ])
     .where((eb) =>
-      eb(
-        'paths.id',
-        'in',
-        eb.selectFrom('foundPaths').select(['foundPaths.id']),
-      ),
-    )
-    // .where((eb) => eb('paths.id','in',eb.parens((pb) => pb.selectFrom('foundPaths').select(['foundPaths.id'])))
-    // qb.where((eb) =>
-    //   eb.or(
-    //     queryPaths.map((value) =>
-    //       eb('paths.path', 'like', `%${value.value}%`),
-    //     ),
-    //   ),
-    // ),
-    .$if(queryTags.length > 0, (qb) =>
-      qb.where((eb) =>
-        eb.or(
-          queryTags.map((value) => eb('Tags.id', '=', value.value as number)),
+      eb.and([
+        eb(
+          'paths.id',
+          'in',
+          eb.selectFrom('foundPaths').select(['foundPaths.id']),
         ),
-      ),
+        eb(
+          'Tags.id',
+          'in',
+          eb.selectFrom('foundTags').select(['foundTags.id']),
+        ),
+      ]),
     )
-    .groupBy(['Contents.id', 'paths.contentId'])
+    .groupBy(['Contents.id'])
     .orderBy('Contents.id', 'desc')
     .limit(pagination.limit)
     .offset(pagination.offset)
