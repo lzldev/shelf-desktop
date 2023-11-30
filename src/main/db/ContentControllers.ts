@@ -16,6 +16,7 @@ import {
 } from 'kysely/dist/cjs/parser/insert-values-parser'
 import {SHELF_LOGGER} from '../utils/Loggers'
 import {ContentQuery} from '../../renderer/src/hooks/useQueryStore'
+import {QueryExecutorBase} from 'kysely/dist/cjs/query-executor/query-executor-base'
 
 export function CreateContent(
   connection: ShelfDBConnection,
@@ -154,6 +155,21 @@ export async function ListContent(
   const queryTags = query.filter((value) => value.field === 'tag')
 
   const results = await connection
+    .with('foundPaths(id, contentId, path)', (qb) =>
+      qb
+        .selectFrom('Paths')
+        .select(['id', 'contentId', 'path'])
+        .groupBy('Paths.contentId')
+        .$if(queryPaths.length > 0, (qb) =>
+          qb.where((eb) =>
+            eb.or(
+              queryPaths.map((value) =>
+                eb('Paths.path', 'like', `%${value.value}%`),
+              ),
+            ),
+          ),
+        ),
+    )
     .selectFrom('Contents')
     .leftJoin('ContentTags', 'Contents.id', 'ContentTags.contentId')
     .leftJoin('Tags', 'ContentTags.tagId', 'Tags.id')
@@ -161,8 +177,7 @@ export async function ListContent(
       (something) =>
         something
           .selectFrom('Paths')
-          .select(['Paths.path', 'Paths.contentId'])
-          .groupBy('Paths.contentId')
+          .select(['Paths.path', 'Paths.contentId', 'Paths.id'])
           .as('paths'),
       (join) => join.onRef('paths.contentId', '=', 'Contents.id'),
     )
@@ -173,15 +188,21 @@ export async function ListContent(
       'Contents.createdAt',
       withTags(eb),
     ])
-    .$if(queryPaths.length > 0, (qb) =>
-      qb.where((eb) =>
-        eb.or(
-          queryPaths.map((value) =>
-            eb('paths.path', 'like', `%${value.value}%`),
-          ),
-        ),
+    .where((eb) =>
+      eb(
+        'paths.id',
+        'in',
+        eb.selectFrom('foundPaths').select(['foundPaths.id']),
       ),
     )
+    // .where((eb) => eb('paths.id','in',eb.parens((pb) => pb.selectFrom('foundPaths').select(['foundPaths.id'])))
+    // qb.where((eb) =>
+    //   eb.or(
+    //     queryPaths.map((value) =>
+    //       eb('paths.path', 'like', `%${value.value}%`),
+    //     ),
+    //   ),
+    // ),
     .$if(queryTags.length > 0, (qb) =>
       qb.where((eb) =>
         eb.or(
@@ -189,7 +210,7 @@ export async function ListContent(
         ),
       ),
     )
-    .groupBy(['Contents.id'])
+    .groupBy(['Contents.id', 'paths.contentId'])
     .orderBy('Contents.id', 'desc')
     .limit(pagination.limit)
     .offset(pagination.offset)

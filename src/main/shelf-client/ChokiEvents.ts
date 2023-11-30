@@ -1,5 +1,10 @@
 import {createHash} from 'crypto'
-import {FileTuple, fileTupleNormalize, filterDirectoryTree, toFileTuple} from '../utils/choki'
+import {
+  FileTuple,
+  fileTupleNormalize,
+  filterDirectoryTree,
+  toFileTuple,
+} from '../utils/choki'
 import {updateProgress as sendUpdateProgressEvent} from '..'
 import {ShelfClient} from './ShelfClient'
 import {SHELF_LOGGER} from '../utils/Loggers'
@@ -108,7 +113,7 @@ export const addChokiEvents = (
     const dbPath = await connection
       .selectFrom('Paths')
       .select(['id', 'contentId'])
-      .where('path','=',fileTuple)
+      .where('path', '=', fileTuple)
       .executeTakeFirst()
 
     if (!dbPath) {
@@ -136,10 +141,12 @@ export const addChokiEvents = (
       return
     }
 
-    const deletedContent = await connection.deleteFrom('Contents').where('id','=',dbPath.contentId).executeTakeFirst();
+    const deletedContent = await connection
+      .deleteFrom('Contents')
+      .where('id', '=', dbPath.contentId)
+      .executeTakeFirst()
 
-
-    if(deletedContent){
+    if (deletedContent) {
       SHELF_LOGGER.warn(`File DELETE WARNING REASON:"Couldn't delete from DB"`)
       return
     }

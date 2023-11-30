@@ -44,6 +44,8 @@ const port = parentPort!
 
 const WORKER_LOGGER = createWorkerLogger(threadId)
 
+sharp.cache(false)
+
 const createDbPath = (dbPath: string) => `${dbPath}/${__DBFILENAME}`
 const createShelfKyselyDB = (dbPath: string) => {
   return new Kysely<DB>({
