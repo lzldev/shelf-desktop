@@ -1,7 +1,7 @@
 import {createHash} from 'crypto'
 import {
   FileTuple,
-  fileTupleNormalize,
+  normalizePath,
   filterDirectoryTree,
   toFileTuple,
 } from '../utils/choki'
@@ -101,7 +101,7 @@ export const addChokiEvents = (
 
     SHELF_LOGGER.info(filePath)
 
-    const fileTuple = fileTupleNormalize(filePath)
+    const fileTuple = toFileTuple(normalizePath(filePath))
 
     if (fileTuple[2] === false) {
       SHELF_LOGGER.info(`File DELETE Skipped REASON:"DIR"`)
@@ -113,7 +113,7 @@ export const addChokiEvents = (
     const dbPath = await connection
       .selectFrom('Paths')
       .select(['id', 'contentId'])
-      .where('path', '=', fileTuple)
+      .where('path', '=', fileTuple[0])
       .executeTakeFirst()
 
     if (!dbPath) {
@@ -137,7 +137,7 @@ export const addChokiEvents = (
       .where('contentId', '=', dbPath.contentId)
       .executeTakeFirst()
 
-    if (restOfPathsForContent?.count > 0) {
+    if (!restOfPathsForContent || restOfPathsForContent?.count > 0) {
       return
     }
 
