@@ -1,4 +1,4 @@
-import {afterAll, assert, beforeAll, describe, expect, test, vi} from 'vitest'
+import {afterAll, assert, beforeAll, describe, expect, test} from 'vitest'
 import {createShelfKyselyDB} from './ShelfKyselyDB'
 import {rm} from 'fs/promises'
 import {
@@ -89,7 +89,10 @@ describe.only('db-tests', async () => {
 
   test('List Content with relations using pagination', async () => {
     console.log(await connection.selectFrom('Paths').selectAll().execute())
-    const result = await ListContent(connection, {limit: 10, offset: 5})
+    const result = await ListContent(connection, {
+      pagination: {limit: 10, offset: 5},
+      query: [],
+    })
 
     console.log(result)
     assert(result)
