@@ -16,7 +16,6 @@ import {
 } from 'kysely/dist/cjs/parser/insert-values-parser'
 import {SHELF_LOGGER} from '../utils/Loggers'
 import {ContentQuery} from '../../renderer/src/hooks/useQueryStore'
-import {QueryExecutorBase} from 'kysely/dist/cjs/query-executor/query-executor-base'
 
 export function CreateContent(
   connection: ShelfDBConnection,

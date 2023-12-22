@@ -23,18 +23,22 @@ ipcMain.handle(
     window.setFullScreen(newStatus ? newStatus : !window.fullScreen)
   },
 )
+
 ipcMain.handle('saveClientConfig', async (_, config) => {
   requestClient()!.config.setAll(config)
   return true
 })
+
 ipcMain.handle('getClientConfig', async () => {
   return requestClient().config.getAll()
 })
+
 ipcMain.handle('saveConfig', async (_, config) => {
   AppConfig.setAll(config)
   sendEventToAllWindows('updateConfig')
   return true
 })
+
 ipcMain.handle('openDirectory', async () => {
   const directory = await openDirDialog()
 
