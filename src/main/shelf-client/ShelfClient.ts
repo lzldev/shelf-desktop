@@ -124,7 +124,11 @@ class ShelfClient {
 
     this.config.save()
 
-    addChokiEvents(this, newInstance.callback)
+    addChokiEvents(this, () => {
+      this.ready = true
+
+      newInstance.callback()
+    })
 
     return this
   }

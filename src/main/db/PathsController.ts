@@ -1,4 +1,4 @@
-import {InsertObject} from 'kysely'
+import {InsertObject, UpdateObject} from 'kysely'
 import {ShelfDBConnection} from './ShelfControllers'
 import {DB} from './kysely-types'
 
@@ -14,4 +14,16 @@ export function DeletePathsFromIds(
   pathIds: number[],
 ) {
   return connection.deleteFrom('Paths').where('id', 'in', pathIds).execute()
+}
+
+export function UpdatePath(
+  connection: ShelfDBConnection,
+  id: number,
+  values: UpdateObject<DB, 'Paths'>,
+) {
+  return connection
+    .updateTable('Paths')
+    .where('Paths.id', '=', id)
+    .set(values)
+    .executeTakeFirst()
 }

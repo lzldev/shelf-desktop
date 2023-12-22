@@ -21,12 +21,15 @@ import {
 import {ShelfDBConnection} from '../db/ShelfControllers'
 import {CreateDefaultTags, getDefaultTags} from '../db/TagsControllers'
 import {CreateTagContent} from '../db/TagContentControllers'
-import {CreatePaths} from '../db/PathsController'
+import {CreatePaths, UpdatePath} from '../db/PathsController'
 import {hashFileAsync, hashShelfFile, hashShelfFiles} from './FileHashing'
+import {AiWorkerReceive} from './ai_worker/types'
+import {InsertObject} from 'kysely'
+import {DB} from '../db/kysely-types'
 
 export const addChokiEvents = (
   shelfClient: ShelfClient,
-  onReadyCallback: (...args: any[]) => void,
+  onReadyFinished: (...args: any[]) => void,
 ) => {
   const choki = shelfClient.choki
 
@@ -248,107 +251,117 @@ export const addChokiEvents = (
       addToKey('SHELF', fileName),
     )
 
-    const entries = Object.entries(hashToPathRecord)
+    const contentsAndPaths = Object.entries(hashToPathRecord).reduce(
+      (previousValue, [hash, pathIds]) => {
+        previousValue.contents.push({
+          hash,
+          extension: watchedFiles[pathIds[0]].extension,
+        })
 
-    const createdContents = await CreateContentWithPaths(shelfClient.ShelfDB, {
-      contents: entries.map(([hash, paths]) => ({
-        hash,
-        extension: watchedFiles[paths[0]].extension,
-      })),
-      paths: entries.map(([_, paths]) =>
-        paths.map((fileIdx) => ({
-          path: watchedFiles[fileIdx].filePath,
-          mTimeMs: watchedFiles[fileIdx].modifiedTimeMS,
-        })),
-      ),
-    })
+        previousValue.paths.push(
+          pathIds.map((fileIdx) => ({
+            path: watchedFiles[fileIdx].filePath,
+            mTimeMs: watchedFiles[fileIdx].modifiedTimeMS,
+          })),
+        )
+        return previousValue
+      },
+      {
+        contents: [],
+        paths: [],
+      } as {
+        contents: InsertObject<DB, 'Contents'>[]
+        paths: Omit<InsertObject<DB, 'Paths'>, 'contentId'>[][]
+      },
+    )
 
-    //if !createdContent . end early
-    //if createdContent . AI TAG , FileType TAG
+    const createdContents = await CreateContentWithPaths(
+      shelfClient.ShelfDB,
+      contentsAndPaths,
+    )
+
+    if (!createdContents) {
+      onReadyFinished()
+      return
+    }
 
     //TODO: Extract into "addFileTypeTag"
-    if (createdContents) {
-      await CreateTagContent(
-        shelfClient.ShelfDB,
-        createdContents.map((content) => {
-          const shelfConfig = hashToPathRecord[content.hash].at(0)!
-          const extension = watchedFiles[shelfConfig].extension
-          const type = checkExtension(extension)
+    await CreateTagContent(
+      shelfClient.ShelfDB,
+      createdContents.map((content) => {
+        const shelfConfig = hashToPathRecord[content.hash].at(0)!
+        const extension = watchedFiles[shelfConfig].extension
+        const type = checkExtension(extension)
 
-          return {
-            contentId: content.id,
-            tagId: defaultTags[type === 'unrecognized' ? 'document' : type],
-          }
-        }),
-      )
-    }
-
-    //TODO: Part of the AI Classsification
-    //TODO: Extract Select into (Filter new from ContentHash Array)
-    ;(
-      await shelfClient.ShelfDB.selectFrom('Contents')
-        .innerJoin('Paths', 'Contents.id', 'Paths.contentId')
-        .select((eb) => [
-          'Contents.id',
-          'Contents.extension',
-          'Contents.hash',
-          eb.ref('Paths.path').as('path'),
-        ])
-        .where('hash', 'in', Object.keys(hashToPathRecord))
-        .groupBy('Paths.contentId')
-        .execute()
+        return {
+          contentId: content.id,
+          tagId: defaultTags[type === 'unrecognized' ? 'document' : type],
+        }
+      }),
     )
-      .filter((content) => canClassify(content.extension))
-      .forEach((content) => {
-        shelfClient.AiWorker.postMessage({
-          type: 'new_file',
-          data: {
-            id: content.id,
-            path: content.path,
-          },
-        })
-      })
 
-    //TODO: Move into separate function.
-    //TODO: Remove this if not needed.
-    SHELF_LOGGER.info('Wainting for AI Tagging...')
     console.timeEnd('DB ->')
 
-    const WaitForAIWork = async () => {
-      return new Promise((resolve, reject) => {
-        shelfClient.AiWorker.postMessage({
-          type: 'emit_batch',
-          data: undefined,
-        })
+    createdContents.forEach((content) => {
+      const fileIdx = hashToPathRecord[content.hash].at(0)
+      const shelfFile = watchedFiles.at(fileIdx!)
 
-        shelfClient.AiWorker.on('message', (data) => {
-          if (data.type !== 'batch_done') {
-            return
-          }
-          resolve(true)
-        })
+      if (fileIdx === undefined || shelfFile === undefined) {
+        return
+      } else if (!canClassify(shelfFile.extension)) {
+        return
+      }
 
-        setTimeout(() => {
-          reject()
-        }, 10 * 60 * 1000)
+      shelfClient.AiWorker.postMessage({
+        type: 'new_file',
+        data: {
+          id: content.id,
+          path: shelfFile.filePath,
+        },
       })
-    }
+    })
 
     if (shelfClient.config.get('aiWorker')) {
-      console.time('Waiting for AIWORKER...')
-      await WaitForAIWork()
+      console.time('Wainting for AIWORKER')
+      await waitForAIWorker(shelfClient)
         .then(() => {
           SHELF_LOGGER.info('Batch FINISHED')
         })
         .catch(() => {
           SHELF_LOGGER.info('AIWORKER TIMED OUT')
         })
-      console.timeEnd('Waiting for AIWORKER...')
+      console.timeEnd('Wainting for AIWORKER')
     }
 
-    shelfClient.ready = true
-    onReadyCallback()
+    onReadyFinished()
   }
+}
+
+const AIWORKER_TIMEOUT = 10 * 60 * 1000 //10 minutes
+
+function waitForAIWorker(client: ShelfClient) {
+  return new Promise((resolve, reject) => {
+    client.AiWorker.postMessage({
+      type: 'emit_batch',
+      data: undefined,
+    })
+
+    const listener = (data: AiWorkerReceive) => {
+      if (data.type !== 'batch_done') {
+        return
+      }
+
+      client.AiWorker.removeListener('message', listener)
+      resolve(true)
+    }
+
+    client.AiWorker.on('message', listener)
+
+    setTimeout(() => {
+      client.AiWorker.removeListener('message', listener)
+      reject()
+    }, AIWORKER_TIMEOUT)
+  })
 }
 
 async function CleanupShelfDB(
@@ -382,13 +395,9 @@ async function CleanupShelfDB(
     //File was modified . Hash it and update DB.
     const newContentHash = await hashFileAsync(path.path)
 
-    await connection
-      .updateTable('Paths')
-      .where('id', '=', path.id)
-      .set({
-        mTimeMs: watchedFiles[shelfFileIndex].modifiedTimeMS,
-      })
-      .executeTakeFirst()
+    await UpdatePath(connection, path.id, {
+      mTimeMs: watchedFiles[shelfFileIndex].modifiedTimeMS,
+    })
 
     if (alreadyUpdatedContent.has(path.contentId)) {
       continue

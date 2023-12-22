@@ -62,7 +62,7 @@ const createShelfKyselyDB = (dbPath: string) => {
   })
 }
 
-WORKER_LOGGER.info(`META URL |${import.meta.url}|`)
+WORKER_LOGGER.info(`META URL | ${import.meta.url} |`)
 WORKER_LOGGER.info(`10% RAM: ${os.totalmem() / 1024} MB`)
 
 async function main() {

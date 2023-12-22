@@ -1,4 +1,4 @@
-import {ExpressionBuilder, sql} from 'kysely'
+import {ExpressionBuilder, UpdateObject, sql} from 'kysely'
 import type {
   ContentTags,
   Contents,
@@ -35,13 +35,15 @@ export function CreateContent(
     .executeTakeFirst()
 }
 
-export function UpdateContentWhereId(
+export function UpdateContent(
   connection: ShelfDBConnection,
   id: number,
+  values: UpdateObject<DB, 'Contents'>,
 ) {
   return connection
     .updateTable('Contents')
-    .where('id', '=', id)
+    .where('Contents.id', '=', id)
+    .set(values)
     .executeTakeFirst()
 }
 
