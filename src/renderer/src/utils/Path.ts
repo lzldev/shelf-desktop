@@ -1,5 +1,7 @@
-import {DetailedContent} from 'src/main/db/ContentControllers'
 import {Prettify} from 'src/types/utils'
+
+//@ts-ignore - TSCONFIG Scope
+import {DetailedContent} from 'src/main/db/ContentControllers'
 
 type Content = Prettify<DetailedContent>
 

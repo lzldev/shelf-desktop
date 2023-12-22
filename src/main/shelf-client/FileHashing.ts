@@ -1,6 +1,6 @@
 import {createHash} from 'crypto'
 import {createReadStream} from 'fs'
-import {FileTuple} from './FileTuple'
+import {ShelfFile} from './ShelfFile'
 
 import {Effect} from 'effect'
 
@@ -29,27 +29,27 @@ export async function hashFileAsync(filePath: string) {
   })
 }
 
-export function hashFileTuple(file: FileTuple) {
-  return hashFileAsync(file[0])
+export function hashShelfFile(shelfFile: ShelfFile) {
+  return hashFileAsync(shelfFile.filePath)
 }
 
-export async function hashFileTuples(
-  files: FileTuple[],
+export async function hashShelfFiles(
+  files: ShelfFile[],
   callback?: (fileName: string) => any,
 ) {
   const hashToPathRecord: Record<string, number[]> = {}
 
   await Effect.runPromise(
     Effect.all(
-      files.map((file, watchedFileIndex) =>
+      files.map((shelfFile, watchedFileIndex) =>
         Effect.promise(async () => {
-          const hash = await hashFileAsync(file[0]).catch((e) => {
+          const hash = await hashFileAsync(shelfFile.filePath).catch((e) => {
             console.error(e)
             throw e
           })
 
           if (callback) {
-            callback(file[0])
+            callback(shelfFile.filePath)
           }
 
           if (!hashToPathRecord[hash]) {

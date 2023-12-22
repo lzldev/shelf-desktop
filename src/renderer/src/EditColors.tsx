@@ -62,7 +62,7 @@ function EditColors({
       </div>
       <div className='flex w-full grow flex-col overflow-x-hidden'>
         <div
-          className='z-10 m-1 flex flex-row items-center rounded-full bg-slate-400 p-3 text-center text-white text-opacity-90 outline backdrop-contrast-200 transition-all hover:bg-clip-text  hover:text-transparent'
+          className='z-10 m-1 flex flex-row items-center rounded-full bg-slate-400 p-3 text-center text-white text-opacity-90 outline backdrop-contrast-200 transition-all hover:bg-clip-text hover:text-transparent'
           onClick={() => {
             setNewColorOperations((nc) => {
               nc.push({

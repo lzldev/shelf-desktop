@@ -1,9 +1,9 @@
 import {
-  FileTuple,
+  ShelfFile,
   normalizePath,
   filterDirectoryTree,
-  toFileTuple,
-} from './FileTuple'
+  toShelfDirectoryOrFile,
+} from './ShelfFile'
 import {updateProgress as sendUpdateProgressEvent} from '..'
 import {ShelfClient} from './ShelfClient'
 import {SHELF_LOGGER} from '../utils/Loggers'
@@ -22,7 +22,7 @@ import {ShelfDBConnection} from '../db/ShelfControllers'
 import {CreateDefaultTags, getDefaultTags} from '../db/TagsControllers'
 import {CreateTagContent} from '../db/TagContentControllers'
 import {CreatePaths} from '../db/PathsController'
-import {hashFileAsync, hashFileTuple, hashFileTuples} from './FileHashing'
+import {hashFileAsync, hashShelfFile, hashShelfFiles} from './FileHashing'
 
 export const addChokiEvents = (
   shelfClient: ShelfClient,
@@ -103,9 +103,9 @@ export const addChokiEvents = (
     SHELF_LOGGER.info(filePath)
 
     //FIXME:Repeating Cleanup Code
-    const fileTuple = toFileTuple(normalizePath(filePath))
+    const shelfFile = toShelfDirectoryOrFile(normalizePath(filePath))
 
-    if (fileTuple[2] === false) {
+    if (!shelfFile.extension) {
       SHELF_LOGGER.info(`File DELETE Skipped REASON:"DIR"`)
       return
     }
@@ -115,7 +115,7 @@ export const addChokiEvents = (
     const dbPath = await connection
       .selectFrom('Paths')
       .select(['id', 'contentId'])
-      .where('path', '=', fileTuple[0])
+      .where('path', '=', shelfFile.filePath)
       .executeTakeFirst()
 
     if (!dbPath) {
@@ -160,16 +160,16 @@ export const addChokiEvents = (
     }
 
     //FIXME: Repeating Add code.
-    const fileTuple = toFileTuple(filePath)
+    const shelfFile = toShelfDirectoryOrFile(filePath)
 
-    SHELF_LOGGER.info(`ADD`, fileTuple)
+    SHELF_LOGGER.info(`ADD`, shelfFile)
 
-    if (fileTuple[2] === false || typeof fileTuple[2] !== 'string') {
+    if (!shelfFile.extension) {
       SHELF_LOGGER.info(`File Skipped REASON:"DIR"`)
       return
     }
 
-    const fileHash = await hashFileTuple(fileTuple as FileTuple) // FIXME:?
+    const fileHash = await hashShelfFile(shelfFile as ShelfFile) // FIXME:?
 
     const connection = shelfClient.ShelfDB
     const found = await connection
@@ -181,8 +181,8 @@ export const addChokiEvents = (
     if (found) {
       await CreatePaths(connection, [
         {
-          path: fileTuple[0],
-          mTimeMs: fileTuple[1],
+          path: shelfFile.filePath,
+          mTimeMs: shelfFile.modifiedTimeMS,
           contentId: found.id,
         },
       ])
@@ -192,15 +192,15 @@ export const addChokiEvents = (
     const newContent = await CreateContent(connection, [
       {
         hash: fileHash,
-        extension: fileTuple[2],
+        extension: shelfFile.extension,
       },
     ])
 
     return CreatePaths(connection, [
       {
         contentId: Number(newContent?.insertId),
-        path: fileTuple[0],
-        mTimeMs: fileTuple[1],
+        path: shelfFile.filePath,
+        mTimeMs: shelfFile.modifiedTimeMS,
       },
     ])
   }
@@ -244,7 +244,7 @@ export const addChokiEvents = (
       })
     }
 
-    const hashToPathRecord = await hashFileTuples(watchedFiles, (fileName) =>
+    const hashToPathRecord = await hashShelfFiles(watchedFiles, (fileName) =>
       addToKey('SHELF', fileName),
     )
 
@@ -253,12 +253,12 @@ export const addChokiEvents = (
     const createdContents = await CreateContentWithPaths(shelfClient.ShelfDB, {
       contents: entries.map(([hash, paths]) => ({
         hash,
-        extension: watchedFiles[paths[0]][2],
+        extension: watchedFiles[paths[0]].extension,
       })),
       paths: entries.map(([_, paths]) =>
         paths.map((fileIdx) => ({
-          path: watchedFiles[fileIdx][0],
-          mTimeMs: watchedFiles[fileIdx][1],
+          path: watchedFiles[fileIdx].filePath,
+          mTimeMs: watchedFiles[fileIdx].modifiedTimeMS,
         })),
       ),
     })
@@ -271,8 +271,8 @@ export const addChokiEvents = (
       await CreateTagContent(
         shelfClient.ShelfDB,
         createdContents.map((content) => {
-          const fileTuple = hashToPathRecord[content.hash].at(0)!
-          const extension = watchedFiles[fileTuple][2]
+          const shelfConfig = hashToPathRecord[content.hash].at(0)!
+          const extension = watchedFiles[shelfConfig].extension
           const type = checkExtension(extension)
 
           return {
@@ -353,7 +353,7 @@ export const addChokiEvents = (
 
 async function CleanupShelfDB(
   connection: ShelfDBConnection,
-  watchedFiles: FileTuple[],
+  watchedFiles: ShelfFile[],
 ) {
   const dbPaths = await connection.selectFrom('Paths').selectAll().execute()
 
@@ -361,22 +361,21 @@ async function CleanupShelfDB(
   const alreadyUpdatedContent = new Set<number>()
 
   for (const path of dbPaths) {
-    const idOnTuple = watchedFiles.findIndex((fileTuple) => {
-      return fileTuple[0] === path.path
+    const shelfFileIndex = watchedFiles.findIndex((shelfFile) => {
+      return shelfFile.filePath === path.path
     })
 
-    const isPathWatched = idOnTuple !== -1
+    const isPathWatched = shelfFileIndex !== -1
 
     //File is not Watched . Just Remove it from DB later.
     if (!isPathWatched) {
-      // await path.destroy()
       deletedPaths.push(path.id)
       continue
     }
 
     //File is watched and is the same. just keep as is and skip hashing it later.
-    if (path.mTimeMs === watchedFiles[idOnTuple][1]) {
-      watchedFiles.splice(idOnTuple, 1)
+    if (path.mTimeMs === watchedFiles[shelfFileIndex].modifiedTimeMS) {
+      watchedFiles.splice(shelfFileIndex, 1)
       continue
     }
 
@@ -387,7 +386,7 @@ async function CleanupShelfDB(
       .updateTable('Paths')
       .where('id', '=', path.id)
       .set({
-        mTimeMs: watchedFiles[idOnTuple][1],
+        mTimeMs: watchedFiles[shelfFileIndex].modifiedTimeMS,
       })
       .executeTakeFirst()
 
@@ -407,7 +406,7 @@ async function CleanupShelfDB(
     alreadyUpdatedContent.add(updateContent?.id ?? -1)
 
     //Skip adding the file to the DB Later.
-    watchedFiles.splice(idOnTuple, 1)
+    watchedFiles.splice(shelfFileIndex, 1)
   }
 
   const del = await connection
