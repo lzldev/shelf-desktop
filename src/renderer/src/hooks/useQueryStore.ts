@@ -1,15 +1,17 @@
 import {create} from 'zustand'
-import {Tag} from '@models'
+
+type defaultOperations = 'exclude' | 'include' | 'like'
 
 export type ContentQuery =
   | {
-      type: 'tag'
-      tag: Tag
-      operation: 'include' | 'exclude'
+      field: 'path'
+      value: string
+      operation: defaultOperations
     }
   | {
-      type: 'path'
-      path: string
+      field: 'tag'
+      value: number
+      operation: defaultOperations
     }
 
 interface queryStore {

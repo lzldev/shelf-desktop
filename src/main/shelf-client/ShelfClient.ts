@@ -1,5 +1,5 @@
 import * as chokidar from 'chokidar'
-import {__DBEXTENSION, createShelfDB, ShelfDBModels} from '../db/ShelfDB'
+import {ShelfDBConnection} from '../db/ShelfControllers'
 import {addChokiEvents} from './ChokiEvents'
 import {FSWatcher} from 'chokidar'
 import {zJson} from '../zJson'
@@ -21,13 +21,12 @@ import type {AIWORKERTYPE as AiWorkerType} from './ai_worker/types'
 import CreateThumbWorker from './thumbworker/worker?nodeWorker'
 import {ThumbWorkerData, ThumbWorkerType} from './thumbworker/types'
 
-import * as os from 'node:os'
-import {SHELF_LOGGER} from '../utils/Loggers'
 import {SHARE_ENV} from 'worker_threads'
+import {__DBEXTENSION, createShelfKyselyDB} from '../db/ShelfKyselyDB'
 
 class ShelfClient {
   public choki: FSWatcher
-  public ShelfDB: ShelfDBModels
+  public ShelfDB: ShelfDBConnection
   public AiWorker: AiWorkerType
   public ThumbWorker: ThumbWorkerType
 
@@ -42,7 +41,7 @@ class ShelfClient {
     options: IpcMainEvents['startShelfClient']['args'][0],
     callback: () => void,
   ) {
-    const ShelfDB = await createShelfDB(options.basePath)
+    const ShelfDB = createShelfKyselyDB(options.basePath)
 
     const config = new zJson(
       join(options.basePath + CLIENT_CONFIG_FILE_NAME),
@@ -52,7 +51,7 @@ class ShelfClient {
         ignoredPaths: [],
         ignoreHidden: true,
         ignoreUnsupported: true,
-        ai_worker: false,
+        aiWorker: true,
         ...(options.config ? options.config : {}),
       },
     )
@@ -71,7 +70,7 @@ class ShelfClient {
 
     let aiWorker: AiWorkerType
 
-    if (!import.meta.env.VITEST && config.get('ai_worker')) {
+    if (!import.meta.env.VITEST && config.get('aiWorker')) {
       aiWorker = CreateAIWorker({
         env: SHARE_ENV,
         workerData: {dbPath: options.basePath},
@@ -83,20 +82,16 @@ class ShelfClient {
       } as any as AiWorkerType
     }
 
-    const max_threads = os.cpus().length
-    SHELF_LOGGER.info(`max_threads ${max_threads}`)
-
     let thumbWorker: ThumbWorkerType
 
     if (!import.meta.env.VITEST) {
       thumbWorker = CreateThumbWorker({
         env: SHARE_ENV,
         workerData: {
-          max_threads: max_threads <= 0 ? 2 : max_threads,
           thumbnailPath: SHELF_THUMB_DEFFAULT_PATH,
-        } as ThumbWorkerData,
+        } satisfies ThumbWorkerData,
       }) as ThumbWorkerType
-    }else {
+    } else {
       thumbWorker = {
         postMessage: () => {},
         on: () => {},
@@ -117,7 +112,7 @@ class ShelfClient {
     aiWorker: AiWorkerType
     thumbWorker: ThumbWorkerType
     choki: FSWatcher
-    ShelfDB: ShelfDBModels
+    ShelfDB: ShelfDBConnection
     config: zJson<typeof SHELF_CLIENT_CONFIG_SCHEMA, ShelfClientConfigValues>
     callback: () => void
   }) {
@@ -135,7 +130,7 @@ class ShelfClient {
   }
 
   async destroy() {
-    await this.ShelfDB.sequelize.close()
+    await this.ShelfDB.destroy()
     await this.choki.close()
   }
 

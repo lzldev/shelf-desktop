@@ -1,22 +1,29 @@
-import {Tag} from '@models'
 import {create} from 'zustand'
+import type {Tags} from '../../../main/db/kysely-types'
+
+export type NormalizedTags = Tags & {id: number}
 
 interface TagStore {
-  tags: Tag[]
+  tags: Map<number, NormalizedTags>
   isReady: boolean
 }
 
 const useTags = create<TagStore>(() => ({
-  tags: [],
+  tags: new Map<number, NormalizedTags>(),
   isReady: false,
 }))
 
 const updateTags = async () => {
   const newTags = await window.api.invokeOnMain('getShelfTags')
-  useTags.setState({tags: newTags})
+  const tagsMap = new Map<number, NormalizedTags>()
+
+  newTags.forEach((tag) => {
+    tagsMap.set(Number(tag.id), tag as NormalizedTags)
+  })
+
+  useTags.setState({tags: tagsMap})
 }
 
-//Initial Fetch
 updateTags().finally(() => {
   useTags.setState((state) => ({
     ...state,

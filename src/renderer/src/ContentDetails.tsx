@@ -1,16 +1,6 @@
-import {useNavigate} from 'react-router-dom'
-import {useQuery} from '@tanstack/react-query'
-import {
-  HTMLAttributes,
-  PropsWithChildren,
-  RefObject,
-  useEffect,
-  useMemo,
-  useRef,
-} from 'react'
+import {PropsWithChildren, useEffect, useMemo, useRef} from 'react'
 import {InlineTag} from './components/InlineTag'
 import {ShelfContent} from './components/ShelfContent'
-import {Content, Tag} from '@models'
 import clsx from 'clsx'
 import {useToggle} from './hooks/useToggle'
 import {InlineButton} from './components/InlineButton'
@@ -21,68 +11,57 @@ import {
   DropdownMenuItem,
   DropdownMenuProps,
 } from '@radix-ui/react-dropdown-menu'
-import {useHotkeys} from './hooks/useHotkeys'
 import {ArrowLeftIcon} from '@heroicons/react/24/solid'
-import {openInAnotherProgram, openContentDirectory} from './utils/Content'
 import {checkExtension} from './utils/Extensions'
-import { useContentQueryStore } from './hooks/useQueryStore'
+import {useContentQueryStore} from './hooks/useQueryStore'
+import {useHotkeys} from './hooks/useHotkeys'
+import {openContentDirectory, openInAnotherProgram} from './utils/Content'
+import {useQuery} from '@tanstack/react-query'
 
 const prevTitle = window.document.title
 
-function ContentDetails({
-  content: contentProp,
-  onClose,
-  ...props
-}: {
-  content?: Content
+type ContentDetailsProp = {
+  contentInfo: {id: number} | null
   onClose: (...any: any[]) => any
-} & HTMLAttributes<HTMLDivElement>): JSX.Element {
-  const {value: fullscreen, toggle: toggleFullscreen} = useToggle(false)
-  const containerClass = clsx(props.className, 'backdrop-blur-xl')
-  const navigate = useNavigate()
-  const modalRef = useRef<HTMLDivElement>(null)
+}
 
+function ContentDetails({
+  contentInfo,
+  onClose,
+}: ContentDetailsProp): JSX.Element {
   const {
     data: content,
     error,
+    isLoading,
     refetch,
-  } = useQuery(
-    ['DetailedContent'],
-    async () => {
-      if (!contentProp || !contentProp.id) return null
-
-      const id = contentProp?.id
-      const result = await window.api.invokeOnMain('getDetailedImage', id)
-
-      if (!result) {
+  } = useQuery({
+    queryKey: ['DetailedContent', contentInfo],
+    queryFn: async () => {
+      if (contentInfo === null) {
         return null
       }
 
-      return result
+      return window.api.invokeOnMain('getDetailedContent', contentInfo.id)
     },
-    {
-      initialData: contentProp,
-      cacheTime: 0,
-      staleTime: 0,
-    },
-  )
+  })
 
-  const {toggle: toggleHotkeys} = useHotkeys(
-    {
-      Escape: onClose,
-      f: toggleFullscreen,
-      o: () => {
-        openInAnotherProgram(content!)
-      },
-      d: () => {
-        openContentDirectory(content!)
-      },
+  const {value: fullscreen, toggle: toggleFullscreen} = useToggle(false)
+  const modalRef = useRef<HTMLDivElement>(null)
+
+  const {toggle: toggleHotkeys} = useHotkeys({
+    Escape: onClose,
+    f: toggleFullscreen,
+    o: () => {
+      openInAnotherProgram(content!)
     },
-    !!content,
-  )
+    d: () => {
+      openContentDirectory(content!)
+    },
+  })
 
   useEffect(() => {
     if (!content) return
+
     window.document.title = `${prevTitle} - ${
       content?.paths?.at(0)?.path ?? 'Invalid Path'
     }`
@@ -92,15 +71,29 @@ function ContentDetails({
     }
   }, [content])
 
+  const format = useMemo(
+    () => (content ? checkExtension(content.extension) : 'unrecognized'),
+    [content],
+  )
+
+  const containerClass = clsx(
+    'text-6 fixed inset-0 w-full backdrop-blur-xl bg-opacity-30 flex flex-col min-h-screen overflow-y-auto',
+  )
+
+  if (isLoading) {
+    return <div className={containerClass}></div>
+  }
+
   if (!content || error) {
     return (
-      <div className={containerClass}>
-        <h1 onClick={() => navigate({pathname: '/'})}>{'ERROR -> ' + error}</h1>
+      <div
+        className={containerClass}
+        onClick={onClose}
+      >
+        <h1 onClick={onClose}>{'ERROR -> ' + error}</h1>
       </div>
     )
   }
-
-  const format = useMemo(() => checkExtension(content!.extension), [content])
 
   if (fullscreen && format === 'image') {
     return (
@@ -119,7 +112,6 @@ function ContentDetails({
   return (
     <div
       ref={modalRef}
-      {...props}
       id={'taggerModal'}
       className={clsx(containerClass)}
     >
@@ -135,32 +127,18 @@ function ContentDetails({
           content={content}
         />
       </div>
-      <div
-        className={
-          'max-h-full min-h-full overflow-y-auto bg-gray-200 px-4 pt-4'
-        }
-      >
-        <div className={'my-2 flex flex-col'}>
-          {(content?.paths || []).map((p, idx) => {
-            return (
-              <p
-                key={idx}
-                className='trucate selectableText overflow-hidden font-mono font-medium selection:bg-fuchsia-400'
-              >
-                {p.path}
-              </p>
-            )
-          })}
-        </div>
-        <div className='flex flex-row flex-wrap'>
-          {(content?.tags || []).map((tag) => {
+      <div className={'flex flex-grow flex-col bg-gray-200'}>
+        <div className='flex flex-row flex-wrap px-2 py-4'>
+          {(typeof content.tags !== 'string' && content?.tags
+            ? content.tags
+            : null ?? []
+          ).map((tag) => {
             return (
               <InlineTagDropdown
                 key={tag.id}
                 onClose={onClose}
-                modalRef={modalRef}
-                tag={tag}
-                removeTag={async (tag: Tag) => {
+                tagId={tag.id}
+                removeTag={async () => {
                   await window.api.invokeOnMain('removeTagfromContent', {
                     contentId: content.id,
                     tagId: tag.id,
@@ -171,52 +149,72 @@ function ContentDetails({
             )
           })}
           <AddTagDropdown
-            modalRef={modalRef}
             onOpenChange={(open) => {
               toggleHotkeys(!open)
             }}
             addTag={async (tag) => {
               await window.api.invokeOnMain('addTagToContent', {
                 contentId: content.id,
-                tagId: tag.id,
+                tagId: tag,
               })
               refetch()
             }}
-          >
-            {'+ ADD'}
-          </AddTagDropdown>
+          />
+        </div>
+        <div
+          className={
+            'flex flex-col border-y-2 border-neutral-500 bg-neutral-800 px-4 py-2 font-mono text-white'
+          }
+        >
+          {(content?.paths || []).map((p, idx) => {
+            const txt = p.path.split('/').slice(1)
+
+            return (
+              <p
+                key={idx}
+                className='max-h-[2rem] truncate hover:underline'
+              >
+                {txt.map((t, pidx) => (
+                  <a
+                    className={clsx(
+                      'selectableText selection:bg-fuchsia-400',
+                      pidx === txt.length - 1 ? 'text-fuchsia-400' : '',
+                    )}
+                    key={t}
+                  >
+                    <b className='selectableText text-emerald-500'>/</b>
+                    {t}
+                  </a>
+                ))}
+              </p>
+            )
+          })}
         </div>
       </div>
     </div>
   )
 }
 
+type InlineTagDropdownProps = {
+  removeTag: (tagId: number) => any
+  onClose: (...any: any[]) => any
+  tagId: number
+} & DropdownMenuProps
+
 export const InlineTagDropdown = ({
   removeTag,
   onClose,
-  tag,
-  modalRef,
-  ...props
-}: {
-  removeTag: (tag: Tag) => any
-  onClose: (...any:any[]) => any
-  tag: Tag
-  modalRef: RefObject<HTMLDivElement>
-} & DropdownMenuProps) => {
-
+  tagId,
+}: InlineTagDropdownProps) => {
   const addQuery = useContentQueryStore((s) => s.addQuery)
 
   return (
-    <Dropdown
-      {...props}
-      triggerRender={() => <InlineTag tag={tag} />}
-      modalRef={modalRef}
-    >
+    <Dropdown triggerRender={() => <InlineTag tagId={tagId} />}>
       <DropdownMenuArrow className='fill-white' />
       <DropdownMenuItem
         className='select-none p-4 outline-none transition-colors hover:bg-gray-500 hover:text-white'
         onClick={() => {
-          addQuery({type:'tag',tag:tag,operation:'include'})
+          addQuery({field: 'tag', value: tagId, operation: 'include'})
           onClose()
         }}
       >
@@ -224,7 +222,7 @@ export const InlineTagDropdown = ({
       </DropdownMenuItem>
       <DropdownMenuItem
         className='select-none p-4 outline-none transition-colors hover:bg-gray-500 hover:text-white'
-        onClick={() => removeTag(tag)}
+        onClick={() => removeTag(tagId)}
       >
         Remove
       </DropdownMenuItem>
@@ -232,24 +230,19 @@ export const InlineTagDropdown = ({
   )
 }
 
-export const AddTagDropdown = ({
-  addTag,
-  modalRef,
-  ...props
-}: {
-  addTag: (tag: Tag) => any
-  modalRef: RefObject<HTMLDivElement>
+type AddTagDropdownProps = {
+  addTag: (tagId: number) => any
 } & PropsWithChildren &
-  DropdownMenuProps) => {
+  DropdownMenuProps
+
+export const AddTagDropdown = ({addTag}: AddTagDropdownProps) => {
   const {query, setQuery, foundTags} = useTagQuery()
 
   return (
     <Dropdown
-      {...props}
-      modalRef={modalRef}
-      contentClass={clsx('p-2')}
+      contentClass={'p-2'}
       triggerRender={() => {
-        return <InlineButton>{'+ ADD'}</InlineButton>
+        return <InlineButton>+ ADD</InlineButton>
       }}
     >
       <DropdownMenuArrow className='fill-white' />
@@ -261,8 +254,8 @@ export const AddTagDropdown = ({
         {foundTags.map((tag) => {
           return (
             <InlineTag
-              key={tag.id}
-              tag={tag}
+              key={tag}
+              tagId={tag}
               onClick={() => {
                 addTag(tag)
               }}

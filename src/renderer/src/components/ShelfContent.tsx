@@ -2,16 +2,16 @@ import {DocumentIcon} from '@heroicons/react/24/solid'
 import {checkExtension} from '../utils/Extensions'
 import clsx from 'clsx'
 import {HTMLAttributes, useMemo, useRef, useState} from 'react'
-import {Content} from '@models'
 import {useConfigStore} from '../hooks/useConfig'
-import {VideoPlayer} from './VideoPlayer'
+import {contentIntoURI} from '../utils/Content'
+import {DetailedContent} from 'src/main/db/ContentControllers'
 
 function ShelfContent({
   content,
   contentProps,
   ...props
 }: {
-  content: Content
+  content: DetailedContent
   contentProps?: HTMLAttributes<HTMLDivElement> &
     HTMLAttributes<HTMLVideoElement>
 } & HTMLAttributes<HTMLDivElement>) {
@@ -19,21 +19,14 @@ function ShelfContent({
   const format = checkExtension(content.extension)
   const [hidden, setHidden] = useState(format === 'image')
   const [error, setError] = useState<string | null>(null)
-
-  const uri = useMemo(() => {
-    const path = content?.paths?.at(0)?.path
-
-    const parsedPath = path
-      ?.replaceAll('\\', '/')
-      .split('/')
-      .map((v) => encodeURIComponent(v))
-      .join('/')
-
-    return 'file://' + (parsedPath?.at(0) === '/' ? '' : '/') + parsedPath
-  }, [])
-
   const thumbnailPath = useConfigStore((s) => s.config!.thumbnailPath)
-  const preview_uri = 'file://' + thumbnailPath + content.hash + '.jpg'
+
+  const [uri, preview_uri] = useMemo(() => {
+    const uri = contentIntoURI(content)
+    const previewUri = 'file://' + thumbnailPath + content.hash + '.jpg'
+
+    return [uri, previewUri]
+  }, [content])
 
   return (
     <div
@@ -63,7 +56,7 @@ function ShelfContent({
             }}
             className={clsx(
               hidden ? 'opacity-0' : '',
-              'mx-auto h-full object-contain transition-opacity',
+              'mx-auto h-full object-contain transition-opacity duration-200',
               contentProps?.className,
             )}
             src={uri}

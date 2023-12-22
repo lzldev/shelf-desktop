@@ -34,7 +34,7 @@ export const SearchBar = ({
 
   const {paths: pathQ, tags: tagQ} = Array.from(ContentQuery.values()).reduce(
     (previous, current) => {
-      switch (current.type) {
+      switch (current.field) {
         case 'tag':
           previous.tags.push(current)
           break
@@ -45,8 +45,8 @@ export const SearchBar = ({
       return previous
     },
     {tags: [], paths: []} as {
-      tags: Extract<ContentQuery, {type: 'tag'}>[]
-      paths: Extract<ContentQuery, {type: 'path'}>[]
+      tags: Extract<ContentQuery, {field: 'tag'}>[]
+      paths: Extract<ContentQuery, {field: 'path'}>[]
     },
   )
 
@@ -105,7 +105,7 @@ export const SearchBar = ({
               tabIndex={1}
               className='w-full select-all overflow-hidden text-ellipsis bg-gray-400 p-2 text-white transition-colors hover:bg-gray-50 hover:text-black focus:bg-gray-50 focus:text-black'
               onClick={() => {
-                addQuery({type: 'path', path: query})
+                addQuery({field: 'path', operation: 'like', value: query})
                 setQuery('')
               }}
             >
@@ -115,22 +115,22 @@ export const SearchBar = ({
               {DropDownTags.map((tag, idx) => {
                 return (
                   <InlineTag
-                    key={tag.id}
+                    key={tag}
                     tabIndex={idx + 2}
-                    tag={tag}
+                    tagId={tag}
                     onClick={() => {
                       setQuery('')
                       addQuery({
-                        type: 'tag',
-                        tag: tag,
+                        field: 'tag',
+                        value: tag,
                         operation: 'include',
                       })
                     }}
                     onSubmit={() => {
                       setQuery('')
                       addQuery({
-                        type: 'tag',
-                        tag: tag,
+                        field: 'tag',
+                        value: tag,
                         operation: 'include',
                       })
                     }}
@@ -153,14 +153,14 @@ export const SearchBar = ({
                 removeQuery(query)
               }}
             >
-              {query.path}
+              {query.value}
             </InlineButton>
           ))}
-          {tagQ.map((tag) => (
+          {tagQ.map((tagQuery) => (
             <InlineTag
-              key={tag.tag.id}
-              tag={tag.tag}
-              onClick={() => removeQuery(tag)}
+              key={tagQuery.value}
+              tagId={tagQuery.value}
+              onClick={() => removeQuery(tagQuery)}
             />
           ))}
         </div>
@@ -173,9 +173,9 @@ export const SearchBar = ({
           <InlineButton
             onClick={() => {
               const tagIds = Array.from(ContentQuery.values()).reduce(
-                (prev, v) => {
-                  if (v.type === 'tag') {
-                    prev.push(v.tag.id)
+                (prev, query) => {
+                  if (query.field === 'tag') {
+                    prev.push(query.value)
                   }
                   return prev
                 },
@@ -197,8 +197,8 @@ export const SearchBar = ({
             onClick={() => {
               const tagIds = Array.from(ContentQuery.values()).reduce(
                 (prev, v) => {
-                  if (v.type === 'tag') {
-                    prev.push(v.tag.id)
+                  if (v.field === 'tag') {
+                    prev.push(v.value)
                   }
                   return prev
                 },

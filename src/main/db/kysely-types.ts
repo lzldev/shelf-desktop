@@ -1,44 +1,31 @@
-import type {ColumnType} from 'kysely'
-export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
-  ? ColumnType<S, I | undefined, U>
-  : ColumnType<T, T | undefined, T>
+import type {ColumnType, Generated} from 'kysely'
 export type Timestamp = ColumnType<Date, Date | string, Date | string>
 
 export type Contents = {
   id: Generated<number>
-  hash: string | null
-  extension: string | null
-  createdAt: string
-  updatedAt: string
-  deletedAt: string | null
+  hash: string
+  extension: string
+  createdAt: Generated<string>
 }
 export type ContentTags = {
   contentId: number
   tagId: number
-  createdAt: Generated<string>
-  updatedAt: string
 }
 export type Paths = {
   id: Generated<number>
-  path: string | null
-  mTimeMs: number | null
-  contentId: number | null
-  createdAt: Generated<string>
-  updatedAt: string
+  path: string
+  mTimeMs: number
+  contentId: number
 }
 export type TagColors = {
   id: Generated<number>
-  name: string | null
-  color: string | null
-  createdAt: Generated<string>
-  updatedAt: string
+  name: string
+  color: string
 }
 export type Tags = {
   id: Generated<number>
-  name: string | null
-  colorId: number | null
-  createdAt: string
-  updatedAt: string
+  name: string
+  colorId: number
 }
 export type DB = {
   Contents: Contents

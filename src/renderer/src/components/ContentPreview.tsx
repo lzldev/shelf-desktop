@@ -1,13 +1,13 @@
 import {useConfigStore} from '../hooks/useConfig'
-import {Content} from '@models'
 import {checkExtension} from '../utils/Extensions'
 import clsx from 'clsx'
 import {HTMLAttributes, useEffect, useState} from 'react'
 import {DocumentIcon} from '@heroicons/react/24/solid'
 import {usePreviewListener, PREVIEW_LISTENER} from '../hooks/usePreviewStore'
+import {ListedContent} from 'src/main/db/ContentControllers'
 
 type ContentPreviewProps = {
-  content: Content
+  content: ListedContent
   contentProps?: HTMLAttributes<HTMLDivElement> &
     HTMLAttributes<HTMLVideoElement>
 } & HTMLAttributes<HTMLDivElement>
@@ -15,7 +15,7 @@ type ContentPreviewProps = {
 function ContentPreview({
   content,
   contentProps,
-  ...props
+  ...containerProps
 }: ContentPreviewProps) {
   const [error, setError] = useState<string | null>(null)
 
@@ -42,22 +42,26 @@ function ContentPreview({
       unregister(content.hash)
     }
 
-    const async = async () => {
-      const path = content?.paths?.at(0)?.path
+    const effect = async () => {
+      const path = content?.path
       if (!path || format === 'unrecognized') {
         return
       }
 
-      const response = await window.api.invokeOnMain(
-        'preview_content',
-        {
-          hash: content.hash,
-          filePath: path,
-        },
-        format,
-      )
+      const response = await window.api
+        .invokeOnMain(
+          'preview_content',
+          {
+            hash: content.hash,
+            filePath: path,
+          },
+          format,
+        )
+        .catch((error) => {
+          console.error('Error on preview_content\n', error)
+        })
 
-      if (response.instaError) {
+      if (!response || response.instaError) {
         return
       }
 
@@ -68,7 +72,7 @@ function ContentPreview({
       }
     }
 
-    async()
+    effect()
 
     return () => {}
   }, [error])
@@ -78,14 +82,14 @@ function ContentPreview({
 
   return (
     <div
-      {...props}
+      {...containerProps}
       className={clsx(
         'relative overflow-clip',
         !hidden && format === 'video' ? '' : '',
         hidden && format === 'image'
           ? 'animate-gradient_x_fast bg-gradient-to-r from-gray-400 to-gray-800 opacity-50 duration-2500'
           : '',
-        props.className,
+        containerProps.className,
       )}
     >
       {(format === 'image' || format === 'video') && !error ? (
@@ -95,7 +99,7 @@ function ContentPreview({
       ) : (
         <GenericPreview {...{content, error, uri}} />
       )}
-      {props.children}
+      {containerProps.children}
     </div>
   )
 }

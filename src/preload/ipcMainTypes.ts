@@ -1,18 +1,26 @@
-import {Content, Tag, TagColor} from '../main/db/models'
-import {TagFields} from '../main/db/models/Tag'
-import {TagColorFields} from '../main/db/models/TagColor'
-import {SomeRequired, TypeRecord} from '../types/utils'
+import {TypeRecord} from '../types/utils'
 import {
   ColorOperation,
   TagOperation,
   batchTagging as BatchTagging,
 } from '../types/Operations'
+
 import {
   ShelfClientConfig,
   ShelfConfigType as ShelfConfigType,
 } from '../main/ShelfConfig'
+
 import {OpenDialogReturnValue} from 'electron/main'
+
+//TODO: Move this off the Store
+//@ts-ignore Outside tsconfig scope
 import {ContentQuery} from '../renderer/src/hooks/useQueryStore'
+
+import {Pagination} from '../main/db/ShelfControllers'
+import {DB, TagColors, Tags} from '../main/db/kysely-types'
+
+import type {DetailedContent, ListContent} from '../main/db/ContentControllers'
+import {InsertObject} from 'kysely'
 
 type IpcMainEventShape = {
   args: unknown | unknown[]
@@ -65,21 +73,20 @@ export type IpcMainEvents = TypeRecord<
       args: [config: ShelfClientConfig]
       return: boolean
     }
-    getShelfContent: {
-      args: {
-        pagination?: {offset: number; limit: number}
-        order?: [string, 'ASC' | 'DESC']
-        query: ContentQuery[]
-      }
-      return: {content: Content[]; nextCursor?: {offset: number; limit: number}}
+    getShelfTags: {
+      args: []
+      return: Tags[]
+    }
+    editTags: {
+      args: [TagOperation[]]
+      return: boolean
+    }
+    batchTagging: {
+      args: [BatchTagging]
+      return: boolean
     }
     createTag: {
-      args:
-        | SomeRequired<TagFields, 'colorId'>
-        | (Omit<TagFields, 'colorId'> & {
-            newColor: Pick<TagColorFields, 'color' | 'name'>
-          })
-
+      args: InsertObject<DB, 'Tags'>
       return: boolean
     }
     addTagToContent: {
@@ -90,29 +97,25 @@ export type IpcMainEvents = TypeRecord<
       args: {contentId: number; tagId: number}
       return: boolean
     }
-    getDetailedImage: {
-      args: [contentId: number]
-      return: Content | null
-    }
-    getShelfTags: {
-      args: []
-      return: Tag[]
-    }
     getShelfColors: {
       args: []
-      return: TagColor[]
+      return: TagColors[]
     }
     editColors: {
       args: [ColorOperation[]]
       return: boolean
     }
-    editTags: {
-      args: [TagOperation[]]
-      return: boolean
+    getShelfContent: {
+      args: {
+        pagination: Pagination
+        order: [string, 'ASC' | 'DESC']
+        query: ContentQuery[]
+      }
+      return: ReturnType<typeof ListContent>
     }
-    batchTagging: {
-      args: [BatchTagging]
-      return: boolean
+    getDetailedContent: {
+      args: [contentId: number]
+      return: DetailedContent
     }
     preview_content: {
       args: [
@@ -136,7 +139,7 @@ export type ShelfIpcMainHandler = <
   ) => Promise<TReturn>,
 ) => void
 
-export type SherfIpcMainListener<
+export type ShelfIpcMainListener<
   TKey extends keyof IpcMainEvents,
   TArgs extends IpcMainEvents[TKey]['args'] = IpcMainEvents[TKey]['args'],
   TReturn extends IpcMainEvents[TKey]['return'] = IpcMainEvents[TKey]['return'],

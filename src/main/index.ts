@@ -44,11 +44,12 @@ const Windows = new Map<ShelfWindowID, BrowserWindow>()
 
 SHELF_LOGGER.info('Starting LOGGER')
 
-export function requestClient(): ShelfClient | null {
+export function requestClient(): ShelfClient {
   if (!Client || !Client.ready) {
     SHELF_LOGGER.error('Trying to Request a Client but client is not ready.')
-    return null
+    throw 'Client requested before being initialized'
   }
+
   return Client
 }
 
@@ -123,7 +124,6 @@ export function sendEventAfter(
   events: (keyof IpcRendererEvents)[],
   func: (...any: any[]) => any,
 ) {
-
   return (...args: any[]) => {
     const result = func.call(undefined, ...args)
     if (result instanceof Promise) {
@@ -212,12 +212,12 @@ ipcMain.handle('startShelfClient', async (_, options) => {
 
   Client = await ShelfClient.create(options, () => {
     const progressWindow = Windows.get('progress')
+
     if (progressWindow) {
       progressWindow.close()
     }
 
     setupWorkerHandlers()
-
     createWindow('main')
   })
 })

@@ -4,6 +4,7 @@
   "compilerOptions": {
     "checkJs": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "noUncheckedIndexedAccess": true
   }
 }

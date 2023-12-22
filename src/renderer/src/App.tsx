@@ -25,7 +25,16 @@ const WindowRouter = createHashRouter([
   },
 ])
 
-const ReactQueryClient = new QueryClient()
+const ReactQueryClient = new QueryClient({
+  defaultOptions: {
+    mutations: {
+      networkMode: 'always',
+    },
+    queries: {
+      networkMode: 'always',
+    },
+  },
+})
 
 const App = () => {
   return (

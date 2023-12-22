@@ -14,10 +14,5 @@
     "noImplicitAny": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
-    "paths": {
-      "@models": [
-        "src/types/db"
-      ]
-    }
   }
 }
