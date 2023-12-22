@@ -9,6 +9,8 @@ import {updateProgress as sendUpdateProgressEvent} from '..'
 import {ShelfClient} from './ShelfClient'
 import {SHELF_LOGGER} from '../utils/Loggers'
 
+//TODO: Move this off the renderer
+//@ts-ignore Outside TSCONFIG Scope
 import {canClassify, checkExtension} from '../../renderer/src/utils/Extensions'
 import {createReadStream} from 'fs'
 
@@ -23,7 +25,6 @@ import {ShelfDBConnection} from '../db/ShelfControllers'
 import {CreateDefaultTags, getDefaultTags} from '../db/TagsControllers'
 import {CreateTagContent} from '../db/TagContentControllers'
 import {CreatePaths} from '../db/PathsController'
-import {bigint} from 'zod'
 
 export const addChokiEvents = (
   shelfClient: ShelfClient,

@@ -1,4 +1,5 @@
-import type {TagColors, Tags} from '../db/kysely-types'
+import {InsertObject} from 'kysely'
+import type {DB, Tags} from '../db/kysely-types'
 
 export const defaultColors = [
   {color: '#06b6d4', name: 'Cyan'},
@@ -8,7 +9,7 @@ export const defaultColors = [
   {color: '#8b5cf6', name: 'Purple'},
   {color: '#202020', name: 'Black'},
   {color: '#A8C0F8', name: 'Light Blue'},
-] as const satisfies Readonly<Omit<TagColors, 'id'>[]>
+] satisfies Readonly<InsertObject<DB, 'TagColors'>[]>
 
 export const defaultTags = [
   {

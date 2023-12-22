@@ -4,7 +4,6 @@ import {IpcMainEvents} from '../../preload/ipcMainTypes'
 import {InsertObject} from 'kysely'
 import {DB} from '../db/kysely-types'
 import {SHELF_LOGGER} from '../utils/Loggers'
-import {ShelfClient} from './ShelfClient'
 import {CreateTagContent} from '../db/TagContentControllers'
 
 export function defaultHandler(func: (...any: any[]) => any) {

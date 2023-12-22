@@ -1,8 +1,8 @@
 import {app} from 'electron'
 import {join} from 'path'
 import {z} from 'zod'
-import {zJsonSchemaInfer, zJsonValues} from './zJson'
 import {existsSync, mkdirSync} from 'fs'
+import {zJsonSchemaInfer, zJsonValues} from './zJson'
 
 export const CLIENT_CONFIG_FILE_NAME = '/.shelfcfg'
 const APP_CONFIG_FILE_NAME = 'config.json'

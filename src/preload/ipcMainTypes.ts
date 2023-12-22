@@ -13,6 +13,7 @@ import {
 import {OpenDialogReturnValue} from 'electron/main'
 
 //TODO: Move this off the Store
+//@ts-ignore Outside tsconfig scope
 import {ContentQuery} from '../renderer/src/hooks/useQueryStore'
 
 import {Pagination} from '../main/db/ShelfControllers'
