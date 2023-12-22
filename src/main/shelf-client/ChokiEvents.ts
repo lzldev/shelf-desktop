@@ -1,20 +1,17 @@
-import {createHash} from 'crypto'
 import {
   FileTuple,
   normalizePath,
   filterDirectoryTree,
   toFileTuple,
-} from '../utils/choki'
+} from './FileTuple'
 import {updateProgress as sendUpdateProgressEvent} from '..'
 import {ShelfClient} from './ShelfClient'
 import {SHELF_LOGGER} from '../utils/Loggers'
 
-//TODO: Move this off the renderer
+//TODO: Move those functions off the renderer.
 //@ts-ignore Outside TSCONFIG Scope
 import {canClassify, checkExtension} from '../../renderer/src/utils/Extensions'
-import {createReadStream} from 'fs'
 
-import {Effect} from 'effect'
 import {CreateDefaultColors} from '../db/ColorControllers'
 import {
   CleanupContent,
@@ -25,6 +22,7 @@ import {ShelfDBConnection} from '../db/ShelfControllers'
 import {CreateDefaultTags, getDefaultTags} from '../db/TagsControllers'
 import {CreateTagContent} from '../db/TagContentControllers'
 import {CreatePaths} from '../db/PathsController'
+import {hashFileAsync, hashFileTuple, hashFileTuples} from './FileHashing'
 
 export const addChokiEvents = (
   shelfClient: ShelfClient,
@@ -32,18 +30,18 @@ export const addChokiEvents = (
 ) => {
   const choki = shelfClient.choki
 
-  choki.on('error', shelfOnError)
-
   choki.on('ready', () =>
-    shelfOnReady().catch((e) => {
-      console.error(e)
+    shelfOnReady().catch((error) => {
+      SHELF_LOGGER.error('CHOKI-ONREADY', error)
+      console.error(error)
     }),
   )
   choki.on('add', shelfOnAdd)
   choki.on('unlink', shelfOnUnlink)
   choki.on('change', shelfOnChange)
 
-  choki.on('error', (asd) => {})
+  choki.on('error', shelfOnError)
+  choki.on('error', (error) => SHELF_LOGGER.error('CHOKI-ERROR', error))
 
   async function shelfOnError(error: Error) {
     if (!('path' in error)) {
@@ -61,7 +59,9 @@ export const addChokiEvents = (
     choki.unwatch(path)
   }
 
+  //TODO: Merge this event with CleanupPaths
   async function shelfOnChange(_filePath: string) {
+    //TODO: Implement Choki On Change event.
     // if (!shelfClient.ready) {
     //   return
     // }
@@ -102,6 +102,7 @@ export const addChokiEvents = (
 
     SHELF_LOGGER.info(filePath)
 
+    //FIXME:Repeating Cleanup Code
     const fileTuple = toFileTuple(normalizePath(filePath))
 
     if (fileTuple[2] === false) {
@@ -158,21 +159,19 @@ export const addChokiEvents = (
       return
     }
 
+    //FIXME: Repeating Add code.
     const fileTuple = toFileTuple(filePath)
 
-    console.log(`FILE`, fileTuple)
-    SHELF_LOGGER.info(`FILE`, fileTuple)
+    SHELF_LOGGER.info(`ADD`, fileTuple)
 
-    if (fileTuple[2] === false) {
+    if (fileTuple[2] === false || typeof fileTuple[2] !== 'string') {
       SHELF_LOGGER.info(`File Skipped REASON:"DIR"`)
       return
     }
 
-    const connection = shelfClient.ShelfDB
-    const fileHash = await hashFileAsync(fileTuple[0]).catch((e) => {
-      throw e
-    })
+    const fileHash = await hashFileTuple(fileTuple as FileTuple) // FIXME:?
 
+    const connection = shelfClient.ShelfDB
     const found = await connection
       .selectFrom('Contents')
       .select(['Contents.hash', 'Contents.id'])
@@ -226,12 +225,10 @@ export const addChokiEvents = (
 
     console.time('DB ->')
 
-    const hashToPathRecord: Record<string, number[]> = {}
-
     if (!isDBNew) {
-      console.time('PATH CLEANUP ->')
+      console.time('PATH CLEANUP')
       await CleanupShelfDB(shelfClient.ShelfDB, watchedFiles)
-      console.timeEnd('PATH CLEANUP ->')
+      console.timeEnd('PATH CLEANUP')
     } else {
       await CreateDefaultColors(shelfClient.ShelfDB)
     }
@@ -240,34 +237,15 @@ export const addChokiEvents = (
       ? CreateDefaultTags(shelfClient.ShelfDB)
       : getDefaultTags(shelfClient.ShelfDB))
 
-    isDBNew &&
+    if (isDBNew) {
       shelfClient.AiWorker.postMessage({
         type: 'update_state',
         data: null,
       })
+    }
 
-    await Effect.runPromise(
-      Effect.all(
-        watchedFiles.map((v, watchedFileIndex) =>
-          Effect.promise(async () => {
-            const hash = await hashFileAsync(v[0]).catch((e) => {
-              console.error(e)
-              throw e
-            })
-
-            addToKey('SHELF', v[0])
-
-            if (!hashToPathRecord[hash]) {
-              hashToPathRecord[hash] = []
-            }
-            hashToPathRecord[hash].push(watchedFileIndex)
-            return
-          }),
-        ),
-        {
-          concurrency: 'unbounded',
-        },
-      ),
+    const hashToPathRecord = await hashFileTuples(watchedFiles, (fileName) =>
+      addToKey('SHELF', fileName),
     )
 
     const entries = Object.entries(hashToPathRecord)
@@ -285,8 +263,12 @@ export const addChokiEvents = (
       ),
     })
 
-    createdContents &&
-      (await CreateTagContent(
+    //if !createdContent . end early
+    //if createdContent . AI TAG , FileType TAG
+
+    //TODO: Extract into "addFileTypeTag"
+    if (createdContents) {
+      await CreateTagContent(
         shelfClient.ShelfDB,
         createdContents.map((content) => {
           const fileTuple = hashToPathRecord[content.hash].at(0)!
@@ -298,7 +280,11 @@ export const addChokiEvents = (
             tagId: defaultTags[type === 'unrecognized' ? 'document' : type],
           }
         }),
-      ))
+      )
+    }
+
+    //TODO: Part of the AI Classsification
+    //TODO: Extract Select into (Filter new from ContentHash Array)
     ;(
       await shelfClient.ShelfDB.selectFrom('Contents')
         .innerJoin('Paths', 'Contents.id', 'Paths.contentId')
@@ -323,8 +309,9 @@ export const addChokiEvents = (
         })
       })
 
+    //TODO: Move into separate function.
+    //TODO: Remove this if not needed.
     SHELF_LOGGER.info('Wainting for AI Tagging...')
-
     console.timeEnd('DB ->')
 
     const WaitForAIWork = async () => {
@@ -404,22 +391,23 @@ async function CleanupShelfDB(
       })
       .executeTakeFirst()
 
-    if (!alreadyUpdatedContent.has(path.contentId)) {
-      const updateContent = await connection
-        .updateTable('Contents')
-        .set({
-          hash: newContentHash,
-        })
-        .where('Contents.id', '=', path.contentId)
-        .returning('id')
-        .executeTakeFirst()
-
-      alreadyUpdatedContent.add(updateContent?.id ?? -1)
-
-      //Skip adding the file to the DB Later.
-      watchedFiles.splice(idOnTuple, 1)
+    if (alreadyUpdatedContent.has(path.contentId)) {
       continue
     }
+
+    const updateContent = await connection
+      .updateTable('Contents')
+      .set({
+        hash: newContentHash,
+      })
+      .where('Contents.id', '=', path.contentId)
+      .returning('id')
+      .executeTakeFirst()
+
+    alreadyUpdatedContent.add(updateContent?.id ?? -1)
+
+    //Skip adding the file to the DB Later.
+    watchedFiles.splice(idOnTuple, 1)
   }
 
   const del = await connection
@@ -491,29 +479,4 @@ function createProgressUpdater<TParts extends Record<string, number>>(
   }
 
   return {sendProgress, addToKey}
-}
-
-const HASHMAXBYTES = 10485760 - 1 //10 MB
-
-async function hashFileAsync(filePath: string) {
-  return new Promise<string>((resolve, reject) => {
-    try {
-      const stream = createReadStream(filePath, {
-        end: HASHMAXBYTES,
-      })
-      const hash = createHash('md5')
-
-      stream.on('data', (_buff) => {
-        hash.update(_buff)
-      })
-      stream.on('end', () => {
-        resolve(hash.digest('hex'))
-      })
-      stream.on('error', (err) => {
-        reject(err)
-      })
-    } catch (err) {
-      reject(err)
-    }
-  })
 }

@@ -45,6 +45,9 @@ export function UpdateContentWhereId(
     .executeTakeFirst()
 }
 
+/**
+ * Clears Orphaned Content
+ */
 export async function CleanupContent(connection: ShelfDBConnection) {
   const dels = await connection
     .deleteFrom('Contents')

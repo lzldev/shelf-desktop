@@ -2,6 +2,12 @@ import {FSWatcher} from 'chokidar'
 import {statSync} from 'fs'
 import path, {normalize} from 'path'
 
+type FileOrDirectoryTuple = [
+  filePath: string,
+  modifiedTimeMS: number,
+  extesion: string | false,
+]
+
 export type FileTuple = [
   filePath: string,
   modifiedTimeMS: number,
@@ -24,12 +30,12 @@ export function normalizePath(path: string) {
   return normalize(path)
 }
 
-export function toFileTuple(
-  p: string,
-): [filePath: string, modifiedTimeMS: number, extesion: false | string] {
-  const stats = statSync(p)
-  const normalizedPath = normalizePath(p)
-  const extesionOrDirectory = stats.isDirectory() ? false : path.parse(p).ext
+export function toFileTuple(filePath: string): FileOrDirectoryTuple {
+  const stats = statSync(filePath)
+  const normalizedPath = normalizePath(filePath)
+  const extesionOrDirectory = stats.isDirectory()
+    ? false
+    : path.parse(filePath).ext
 
   return [normalizedPath, stats.mtimeMs, extesionOrDirectory]
 }
