@@ -3,7 +3,7 @@ import {checkExtension} from '../utils/Extensions'
 import clsx from 'clsx'
 import {HTMLAttributes, useMemo, useRef, useState} from 'react'
 import {useConfigStore} from '../hooks/useConfig'
-import {contentIntoURI} from '../utils/Content'
+import {contentIntoURI} from '../utils/Path'
 import {DetailedContent} from 'src/main/db/ContentControllers'
 
 function ShelfContent({

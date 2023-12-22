@@ -15,7 +15,7 @@ import {ArrowLeftIcon} from '@heroicons/react/24/solid'
 import {checkExtension} from './utils/Extensions'
 import {useContentQueryStore} from './hooks/useQueryStore'
 import {useHotkeys} from './hooks/useHotkeys'
-import {openContentDirectory, openInAnotherProgram} from './utils/Content'
+import {openContentDirectory, openInAnotherProgram} from './utils/Path'
 import {useQuery} from '@tanstack/react-query'
 
 const prevTitle = window.document.title

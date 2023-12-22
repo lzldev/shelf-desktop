@@ -12,11 +12,7 @@ type ContentPreviewProps = {
     HTMLAttributes<HTMLVideoElement>
 } & HTMLAttributes<HTMLDivElement>
 
-function ContentPreview({
-  content,
-  contentProps,
-  ...containerProps
-}: ContentPreviewProps) {
+function ContentPreview({content, ...containerProps}: ContentPreviewProps) {
   const [error, setError] = useState<string | null>(null)
 
   const format = checkExtension(content.extension)

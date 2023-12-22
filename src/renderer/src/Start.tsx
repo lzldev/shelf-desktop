@@ -91,7 +91,6 @@ function StartingOptions(props: {base: string}) {
     ignoredPaths: [],
     ignoreHidden: false,
     ignoreUnsupported: true,
-    //TODO: Change this to true before release
     aiWorker: false,
   })
 
