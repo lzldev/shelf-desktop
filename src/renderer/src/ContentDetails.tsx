@@ -17,6 +17,7 @@ import {useContentQueryStore} from './hooks/useQueryStore'
 import {useHotkeys} from './hooks/useHotkeys'
 import {openContentDirectory, openInAnotherProgram} from './utils/Path'
 import {useQuery} from '@tanstack/react-query'
+import {ColorfulFilePath} from './components/ColorfulFilePath'
 
 const prevTitle = window.document.title
 
@@ -117,7 +118,7 @@ function ContentDetails({
     >
       <div className={clsx('flex flex-row items-center bg-gray-200 p-5')}>
         <ArrowLeftIcon
-          className='h-6 w-6 align-middle transition-colors hover:stroke-white'
+          className='w-6 h-6 align-middle transition-colors hover:stroke-white'
           onClick={onClose}
         />
       </div>
@@ -166,29 +167,12 @@ function ContentDetails({
             'flex flex-col border-y-2 border-neutral-500 bg-neutral-800 px-4 py-2 font-mono text-white'
           }
         >
-          {(content?.paths || []).map((p, idx) => {
-            const txt = p.path.split('/').slice(1)
-
-            return (
-              <p
-                key={idx}
-                className='max-h-[2rem] truncate hover:underline'
-              >
-                {txt.map((t, pidx) => (
-                  <a
-                    className={clsx(
-                      'selectableText selection:bg-fuchsia-400',
-                      pidx === txt.length - 1 ? 'text-fuchsia-400' : '',
-                    )}
-                    key={t}
-                  >
-                    <b className='selectableText text-emerald-500'>/</b>
-                    {t}
-                  </a>
-                ))}
-              </p>
-            )
-          })}
+          {(content?.paths || []).map((p, idx) => (
+            <ColorfulFilePath
+              key={p.path + idx}
+              path={p.path}
+            />
+          ))}
         </div>
       </div>
     </div>
@@ -212,7 +196,7 @@ export const InlineTagDropdown = ({
     <Dropdown triggerRender={() => <InlineTag tagId={tagId} />}>
       <DropdownMenuArrow className='fill-white' />
       <DropdownMenuItem
-        className='select-none p-4 outline-none transition-colors hover:bg-gray-500 hover:text-white'
+        className='p-4 transition-colors outline-none select-none hover:bg-gray-500 hover:text-white'
         onClick={() => {
           addQuery({field: 'tag', value: tagId, operation: 'include'})
           onClose()
@@ -221,7 +205,7 @@ export const InlineTagDropdown = ({
         Search
       </DropdownMenuItem>
       <DropdownMenuItem
-        className='select-none p-4 outline-none transition-colors hover:bg-gray-500 hover:text-white'
+        className='p-4 transition-colors outline-none select-none hover:bg-gray-500 hover:text-white'
         onClick={() => removeTag(tagId)}
       >
         Remove
@@ -265,7 +249,7 @@ export const AddTagDropdown = ({addTag}: AddTagDropdownProps) => {
       </div>
       <input
         type='text'
-        className='mt-4 w-full rounded-md p-2 outline-none ring ring-gray-300'
+        className='w-full p-2 mt-4 rounded-md outline-none ring ring-gray-300'
         value={query}
         onClick={(evt) => {
           evt.stopPropagation()
