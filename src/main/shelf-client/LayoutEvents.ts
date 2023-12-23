@@ -11,6 +11,12 @@ import {__DBFILENAME} from '../db/ShelfKyselyDB'
 ipcMain.handle('preview_content', createPreviewContentHandler())
 ipcMain.handle('getConfig', async () => AppConfig.getAll())
 ipcMain.handle('openDialog', openDirDialog)
+ipcMain.handle('checkDirectory', async (_, filePath) => {
+  return {
+    exists: existsSync(filePath),
+    isNew: checkDirectory(filePath),
+  }
+})
 
 ipcMain.handle(
   'toggleFullscreen',

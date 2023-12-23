@@ -53,6 +53,13 @@ export type IpcMainEvents = TypeRecord<
         | {canceled: true}
         | (OpenDialogReturnValue & {canceled: false; isNew: boolean})
     }
+    checkDirectory: {
+      args: string
+      return: {
+        exists: boolean
+        isNew: boolean
+      }
+    }
     getRecent: {
       args: []
       return: string[]
