@@ -9,7 +9,7 @@
     "src/preload/*/*",
     "src/preload/**/*",
     "src/types/**/*"
-  ],
+, "test/db.test.ts"  ],
   "compilerOptions": {
     "composite": true,
     "isolatedModules": false,

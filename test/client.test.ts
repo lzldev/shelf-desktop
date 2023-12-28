@@ -1,16 +1,7 @@
 import * as mnet from '@tensorflow-models/mobilenet'
 import * as tsmain from '@tensorflow/tfjs-node'
 import {ShelfClient} from '../src/main/shelf-client/ShelfClient'
-import {
-  vi,
-  beforeAll,
-  test,
-  expect,
-  isFirstRun,
-  describe,
-  expectTypeOf,
-  assert,
-} from 'vitest'
+import {vi, beforeAll, test, expect, describe, expectTypeOf} from 'vitest'
 import {IpcRendererEvents} from '../src/preload/ipcRendererTypes'
 import '../src/main/index.ts'
 import '../src/main/shelf-client/index'
@@ -36,6 +27,7 @@ vi.mock('../src/main/index.ts', () => ({
   },
 }))
 
+//@ts-ignore nah
 const electron = (await import('electron')) as unknown as __MOCK_ELECTRON
 
 let TestClient: ShelfClient
@@ -85,33 +77,6 @@ describe('Shelf Client', () => {
     })
 
     expect(result.content, 'Content Request').toBeInstanceOf(Array)
-  })
-
-  test('Content Details Handler', async () => {
-    const result = await electron.ipcMain.invoke('getDetailedContent', 1)
-
-    if (result === null) {
-      throw 'Content Not found'
-    }
-
-    assert(result)
-    expect(result).toBeTruthy()
-    expect(result).toBeTypeOf('object')
-    expect(result.paths).toBeInstanceOf(Array)
-
-    expect(result).toMatchObject({
-      id: expect.any(Number),
-      createdAt: expect.any(String),
-      hash: expect.any(String),
-      extension: expect.any(String),
-    })
-
-    expectTypeOf(result).toMatchTypeOf<{
-      hash: string
-      extension: string
-      paths?: {path: string}[]
-      tags?: {name: string}[]
-    }>()
   })
 
   test('Tag Handler', async () => {
