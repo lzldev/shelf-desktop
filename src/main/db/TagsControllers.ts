@@ -1,4 +1,4 @@
-import {type defaultTagNames, defaultTags} from '../utils/DefaultValues'
+import {defaultTagNames, defaultTags} from '../utils/DefaultValues'
 
 import type {InsertObject} from 'kysely'
 import type {ShelfDBConnection} from './ShelfControllers'
