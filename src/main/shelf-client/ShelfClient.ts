@@ -3,7 +3,7 @@ import {ShelfDBConnection} from '../db/ShelfControllers'
 import {addChokiEvents} from './ChokiEvents'
 import {FSWatcher} from 'chokidar'
 import {zJson} from '../zJson'
-import {join} from 'path'
+import {isAbsolute, join} from 'path'
 
 import {
   CLIENT_CONFIG_FILE_NAME,
@@ -41,6 +41,10 @@ class ShelfClient {
     options: IpcMainEvents['startShelfClient']['args'][0],
     callback: (client: ShelfClient) => void,
   ) {
+    if (!isAbsolute(options.basePath)) {
+      throw 'Shelf Client PATH must be absolute'
+    }
+
     const ShelfDB = createShelfKyselyDB(options.basePath)
 
     const config = new zJson(

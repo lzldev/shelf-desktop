@@ -172,7 +172,7 @@ export const addChokiEvents = (
       return
     }
 
-    const fileHash = await hashShelfFile(shelfFile as ShelfFile) // FIXME:?
+    const fileHash = await hashShelfFile(shelfFile)
 
     const connection = shelfClient.ShelfDB
     const found = await connection
