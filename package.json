@@ -16,7 +16,6 @@
     "dev": "electron-vite dev --watch -d true",
     "dev:debug": "electron-vite --inspect --sourcemap",
     "dev:experimental ": "electron-vite dev --watch --experimental-import-meta-resolve",
-    "test": "npx electron-vite --entry=./test/vitest.entry.ts",
     "build": "electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:win": "npm run build && electron-builder --win --config",
@@ -24,7 +23,9 @@
     "build:linux": "electron-vite build && electron-builder --linux --config",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "./prisma/prisma_rebuild.sh",
-    "prisma:rebuild": "npm run prisma:migrate && npm run prisma:generate"
+    "prisma:rebuild": "npm run prisma:migrate && npm run prisma:generate",
+    "vitest:electron": "ELECTRON_RUN_AS_NODE=true ./node_modules/.bin/electron ./node_modules/.bin/vitest",
+    "test": "npm run vitest:electron"
   },
   "dependencies": {
     "@egjs/react-infinitegrid": "^4.9.0",
