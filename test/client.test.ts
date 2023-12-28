@@ -92,6 +92,10 @@ describe('Start Shelf Client', () => {
     state.contentToBeRenamed['id'] = files.content.at(0)?.id
   })
 
+  test('details undefined in unknown id', async () => {
+    expect(await ContentDetails(TestClient.ShelfDB, 9999)).toBeUndefined()
+  })
+
   test('Detail the 2 Content', async () => {
     const f = await ContentDetails(TestClient.ShelfDB, 1)
 
@@ -141,7 +145,7 @@ describe('onReady rename Content', () => {
 describe('onReady rename Content', () => {
   beforeAll(createTestClient)
 
-  test('Check if content still up', async () => {
+  test(`content isn't removed after rename`, async () => {
     const f = await ContentDetails(
       TestClient.ShelfDB,
       state.contentToBeRenamed['id'],
