@@ -1,11 +1,20 @@
 import * as mnet from '@tensorflow-models/mobilenet'
 import * as tsmain from '@tensorflow/tfjs-node'
 import {ShelfClient} from '../src/main/shelf-client/ShelfClient'
-import {vi, beforeAll, test, expect, describe, expectTypeOf} from 'vitest'
+import {
+  vi,
+  beforeAll,
+  test,
+  expect,
+  describe,
+  expectTypeOf,
+  afterAll,
+} from 'vitest'
 import {IpcRendererEvents} from '../src/preload/ipcRendererTypes'
 import '../src/main/index.ts'
 import '../src/main/shelf-client/index'
 import {__MOCK_ELECTRON} from '../__mocks__/electron'
+import {clearTempDir, tempTestPath} from './utils'
 
 vi.mock('electron')
 vi.mock('@electron-toolkit/preload')
@@ -17,23 +26,20 @@ vi.mock('../src/main/index.ts', () => ({
     func: (...any: any[]) => any,
   ) => {
     return func
-    return (...args: any[]) => {
-      const result = func.call(undefined, ...args)
-      return result
-    }
   },
   requestClient: () => {
     return TestClient
   },
 }))
 
-//@ts-ignore nah
 const electron = (await import('electron')) as unknown as __MOCK_ELECTRON
 
 let TestClient: ShelfClient
 
 describe('Shelf Client', () => {
   beforeAll(async () => {
+    await clearTempDir()
+
     if (TestClient) {
       return
     }
@@ -44,17 +50,22 @@ describe('Shelf Client', () => {
     console.log(`TENSORFLOW:${tsmain.version}`)
     console.log(`MNET:${mnet.version}`)
 
-    await new Promise<void>((resolve, rej) => {
-      const test = ShelfClient.create(
+    await new Promise<void>((resolve) => {
+      ShelfClient.create(
         {
-          basePath: './examples/',
+          basePath: tempTestPath,
         },
-        () => {
-          TestClient = test as unknown as ShelfClient
+        (client: ShelfClient) => {
+          TestClient = client
           resolve()
         },
       )
     })
+  })
+
+  afterAll(async () => {
+    console.log('end')
+    clearTempDir()
   })
 
   test('Choki Watched Files', async () => {
@@ -75,6 +86,8 @@ describe('Shelf Client', () => {
       query: [],
       order: ['id', 'DESC'],
     })
+
+    console.log(result)
 
     expect(result.content, 'Content Request').toBeInstanceOf(Array)
   })

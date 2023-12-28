@@ -39,7 +39,7 @@ class ShelfClient {
 
   static async create(
     options: IpcMainEvents['startShelfClient']['args'][0],
-    callback: () => void,
+    callback: (client: ShelfClient) => void,
   ) {
     const ShelfDB = createShelfKyselyDB(options.basePath)
 
@@ -114,7 +114,7 @@ class ShelfClient {
     choki: FSWatcher
     ShelfDB: ShelfDBConnection
     config: zJson<typeof SHELF_CLIENT_CONFIG_SCHEMA, ShelfClientConfigValues>
-    callback: () => void
+    callback: (client: ShelfClient) => void
   }) {
     this.AiWorker = newInstance.aiWorker
     this.ThumbWorker = newInstance.thumbWorker
@@ -127,7 +127,7 @@ class ShelfClient {
     addChokiEvents(this, () => {
       this.ready = true
 
-      newInstance.callback()
+      newInstance.callback(this)
     })
 
     return this
