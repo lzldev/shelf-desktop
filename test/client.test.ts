@@ -12,7 +12,9 @@ import {IpcRendererEvents} from '../src/preload/ipcRendererTypes'
 import '../src/main/index.ts'
 import '../src/main/shelf-client/index'
 import {__MOCK_ELECTRON} from '../__mocks__/electron'
-import {clearTempDir, tempTestPath} from './utils'
+import {TestContent, clearTempDir, tempTestPath} from './utils'
+import {ContentDetails, ListContent} from '../src/main/db/ContentControllers'
+import {rm} from 'fs/promises'
 
 vi.mock('electron')
 vi.mock('@electron-toolkit/preload')
@@ -33,11 +35,11 @@ vi.mock('../src/main/index.ts', () => ({
 const electron = (await import('electron')) as unknown as __MOCK_ELECTRON
 
 let TestClient: ShelfClient
+let fileToBeRemoved: string
 
-describe('Shelf Client', () => {
+describe('Start Shelf Client', () => {
   beforeAll(async () => {
     await clearTempDir()
-
     if (TestClient) {
       return
     }
@@ -46,55 +48,82 @@ describe('Shelf Client', () => {
     console.log(`NODE: ${process.version}`)
     console.log(`NODE_MODULE:${process.versions.modules}`)
 
-    await new Promise<void>((resolve) => {
+    //Start Client
+    await new Promise<void>((res, rej) => {
       ShelfClient.create(
         {
           basePath: tempTestPath,
         },
         (client: ShelfClient) => {
           TestClient = client
-          resolve()
+          res()
         },
-      )
+      ).catch(rej)
     })
   })
 
-  afterAll(async () => {
-    console.log('end')
-    clearTempDir()
-  })
+  test('Write 2 Files into Temp Dir', async () => {
+    await TestContent.at(1)?.copytoTemp('image1.png')
+    await TestContent.at(1)?.copytoTemp('image2.png')
+    fileToBeRemoved = await TestContent.at(1)!.copytoTemp('image3.png')!
 
-  test('Choki Watched Files', async () => {
-    expect(TestClient.ready, 'Is Client Ready').toBe(true)
+    await TestContent.at(2)?.copytoTemp('image4.png')
 
-    expect(
-      TestClient.getWatchedFiles(),
-      'Are the Watched Files Returning',
-    ).toBeTypeOf('object')
-  })
+    //Wait for Events
+    await new Promise((res) => setTimeout(res, 100))
 
-  test('Content Handler', async () => {
-    const result = await electron.ipcMain.invoke('getShelfContent', {
+    const files = await ListContent(TestClient.ShelfDB, {
       pagination: {
-        offset: 10,
+        offset: 0,
         limit: 10,
       },
       query: [],
-      order: ['id', 'DESC'],
     })
 
-    console.log(result)
-
-    expect(result.content, 'Content Request').toBeInstanceOf(Array)
+    console.log(files.content)
+    expect(files.content).toBeInstanceOf(Array)
   })
 
-  test('Tag Handler', async () => {
-    const tags = await electron.ipcMain.invoke('getShelfTags')
+  test('Detailed 2', async () => {
+    const f = await ContentDetails(TestClient.ShelfDB, 1)
 
-    expect(tags, 'Tag Request').toBeInstanceOf(Array)
+    expect(f).toBeTypeOf('object')
+    if (!f) return
+    expect(f.paths).toBeInstanceOf(Array)
+    expect(f.paths.length).toBe(3)
+  })
+})
 
-    expectTypeOf(tags.at(0)!).toMatchTypeOf<{
-      name: string
-    }>()
+describe('OnReady cleanup 1 Path', () => {
+  test('Destroy Client', async () => {
+    await TestClient.destroy()
+  })
+
+  test('Remove one file', async () => {
+    await rm(fileToBeRemoved)
+  })
+
+  test('Restart Client', async () => {
+    await new Promise<void>((res, rej) => {
+      ShelfClient.create(
+        {
+          basePath: tempTestPath,
+        },
+        (client: ShelfClient) => {
+          TestClient = client
+          res()
+        },
+      ).catch(rej)
+    })
+  })
+
+  test('Check Paths', async () => {
+    const f = await ContentDetails(TestClient.ShelfDB, 1)
+
+    expect(f).toBeTypeOf('object')
+    if (!f) return
+
+    expect(f.paths).toBeInstanceOf(Array)
+    expect(f.paths.length).toBe(2)
   })
 })
