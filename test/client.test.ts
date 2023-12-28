@@ -1,5 +1,3 @@
-import * as mnet from '@tensorflow-models/mobilenet'
-import * as tsmain from '@tensorflow/tfjs-node'
 import {ShelfClient} from '../src/main/shelf-client/ShelfClient'
 import {
   vi,
@@ -47,8 +45,6 @@ describe('Shelf Client', () => {
     console.log(`VERSIONS`)
     console.log(`NODE: ${process.version}`)
     console.log(`NODE_MODULE:${process.versions.modules}`)
-    console.log(`TENSORFLOW:${tsmain.version}`)
-    console.log(`MNET:${mnet.version}`)
 
     await new Promise<void>((resolve) => {
       ShelfClient.create(

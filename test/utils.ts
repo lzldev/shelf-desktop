@@ -22,11 +22,11 @@ export const testContent = await (async () => {
   return await Promise.all(
     (
       await readdir(exampleContentPath)
-    ).map(async (file) => {
+    ).map(async (file, idx) => {
       const fullPath = join(exampleContentPath, file)
       const stats = await stat(fullPath)
 
-      console.log(fullPath, ' -> ', formatFileSize(stats.size))
+      console.log(idx, fullPath, formatFileSize(stats.size))
 
       return {
         fullPath,

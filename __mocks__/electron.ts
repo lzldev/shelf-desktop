@@ -63,7 +63,6 @@ const app = {
 const ipcMain = {
   handlers: {},
   handle: (event: string, handler: Function) => {
-    console.log(`${event} HANDLER REGISTRED -----------------`)
     ipcMain.handlers[event] = handler
   },
   on: (event: string, method: Function) => {
@@ -83,9 +82,9 @@ const ipcMain = {
     }
   }) as ShelfIpcRendererInvoke,
 } as {
-    handlers:any,
-    invoke:ShelfIpcRendererInvoke
-  }
+  handlers: any
+  invoke: ShelfIpcRendererInvoke
+}
 
 const nativeImage = {
   createFromPath: (path: string) => {

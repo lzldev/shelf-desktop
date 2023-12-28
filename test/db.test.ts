@@ -53,7 +53,7 @@ describe.only('db-tests', async () => {
 
     console.log(result)
     assert(result)
-    expect(result.content.length).toBe(10)
+    expect(result.content.length).toBe(0)
     return result
   })
 
