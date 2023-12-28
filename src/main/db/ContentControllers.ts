@@ -242,12 +242,18 @@ export async function ListContent(
           'in',
           eb.selectFrom('foundPaths').select(['foundPaths.id']),
         ),
-        eb(
-          'Tags.id',
-          'in',
-          eb.selectFrom('foundTags').select(['foundTags.id']),
-        ),
       ]),
+    )
+    .$if(queryTags.length > 0, (qb) =>
+      qb.where((eb) =>
+        eb.and([
+          eb(
+            'Tags.id',
+            'in',
+            eb.selectFrom('foundTags').select(['foundTags.id']),
+          ),
+        ]),
+      ),
     )
     .groupBy(['Contents.id'])
     .orderBy('Contents.id', 'desc')
