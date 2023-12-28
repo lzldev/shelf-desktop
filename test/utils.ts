@@ -2,7 +2,8 @@ import type {PathLike} from 'fs'
 import {copyFile, readdir, rm, stat} from 'fs/promises'
 import {join} from 'path'
 
-export const tempTestPath = './temp/'
+export const tempTestPath = join(process.cwd(), './temp/')
+
 const exampleContentPath = './test/content'
 
 export const clearTempDir = async () => {
@@ -18,7 +19,7 @@ export const clearTempDir = async () => {
   )
 }
 
-export const testContent = await (async () => {
+export const TestContent = await (async () => {
   return await Promise.all(
     (
       await readdir(exampleContentPath)
