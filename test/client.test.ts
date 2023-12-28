@@ -1,20 +1,13 @@
 import {ShelfClient} from '../src/main/shelf-client/ShelfClient'
-import {
-  vi,
-  beforeAll,
-  test,
-  expect,
-  describe,
-  expectTypeOf,
-  afterAll,
-} from 'vitest'
+import {vi, beforeAll, test, expect, describe} from 'vitest'
 import {IpcRendererEvents} from '../src/preload/ipcRendererTypes'
 import '../src/main/index.ts'
 import '../src/main/shelf-client/index'
 import {__MOCK_ELECTRON} from '../__mocks__/electron'
-import {TestContent, clearTempDir, tempTestPath} from './utils'
+import {TestContent, clearTempDir, fileNameOnTemp, tempTestPath} from './utils'
 import {ContentDetails, ListContent} from '../src/main/db/ContentControllers'
-import {rm} from 'fs/promises'
+
+import {rename, rm} from 'fs/promises'
 
 vi.mock('electron')
 vi.mock('@electron-toolkit/preload')
@@ -30,48 +23,61 @@ vi.mock('../src/main/index.ts', () => ({
   requestClient: () => {
     return TestClient
   },
+  updateProgress: (...any: any[]) => {},
 }))
 
 const electron = (await import('electron')) as unknown as __MOCK_ELECTRON
 
 let TestClient: ShelfClient
-let fileToBeRemoved: string
+
+const createTestClient = () => {
+  return new Promise<void>((res, rej) => {
+    ShelfClient.create(
+      {
+        basePath: tempTestPath,
+        config: {
+          aiWorker: false,
+        },
+      },
+      (client: ShelfClient) => {
+        TestClient = client
+        res()
+      },
+    ).catch(rej)
+  })
+}
+
+const state = {
+  fileToBeRemoved: undefined as string | undefined,
+  contentToBeRenamed: {} as any,
+}
 
 describe('Start Shelf Client', () => {
   beforeAll(async () => {
     await clearTempDir()
+
     if (TestClient) {
       return
     }
 
-    console.log(`VERSIONS`)
-    console.log(`NODE: ${process.version}`)
-    console.log(`NODE_MODULE:${process.versions.modules}`)
-
-    //Start Client
-    await new Promise<void>((res, rej) => {
-      ShelfClient.create(
-        {
-          basePath: tempTestPath,
-        },
-        (client: ShelfClient) => {
-          TestClient = client
-          res()
-        },
-      ).catch(rej)
-    })
+    await createTestClient()
   })
 
   test('Write 2 Files into Temp Dir', async () => {
     await TestContent.at(1)?.copytoTemp('image1.png')
     await TestContent.at(1)?.copytoTemp('image2.png')
-    fileToBeRemoved = await TestContent.at(1)!.copytoTemp('image3.png')!
 
-    await TestContent.at(2)?.copytoTemp('image4.png')
+    state.fileToBeRemoved = await TestContent.at(1)!.copytoTemp('image3.png')!
+
+    state.contentToBeRenamed['path'] = await TestContent.at(2)?.copytoTemp(
+      'image4.png',
+    )
 
     //Wait for Events
     await new Promise((res) => setTimeout(res, 100))
+  })
 
+  test('list 2 content', async () => {
     const files = await ListContent(TestClient.ShelfDB, {
       pagination: {
         offset: 0,
@@ -80,15 +86,18 @@ describe('Start Shelf Client', () => {
       query: [],
     })
 
-    console.log(files.content)
-    expect(files.content).toBeInstanceOf(Array)
+    expect(files.content.length).toBe(2)
+
+    state.contentToBeRenamed['hash'] = files.content.at(0)?.hash
+    state.contentToBeRenamed['id'] = files.content.at(0)?.id
   })
 
-  test('Detailed 2', async () => {
+  test('Detail the 2 Content', async () => {
     const f = await ContentDetails(TestClient.ShelfDB, 1)
 
     expect(f).toBeTypeOf('object')
     if (!f) return
+
     expect(f.paths).toBeInstanceOf(Array)
     expect(f.paths.length).toBe(3)
   })
@@ -100,22 +109,10 @@ describe('OnReady cleanup 1 Path', () => {
   })
 
   test('Remove one file', async () => {
-    await rm(fileToBeRemoved)
+    await rm(state.fileToBeRemoved!)
   })
 
-  test('Restart Client', async () => {
-    await new Promise<void>((res, rej) => {
-      ShelfClient.create(
-        {
-          basePath: tempTestPath,
-        },
-        (client: ShelfClient) => {
-          TestClient = client
-          res()
-        },
-      ).catch(rej)
-    })
-  })
+  test('Start Client', createTestClient)
 
   test('Check Paths', async () => {
     const f = await ContentDetails(TestClient.ShelfDB, 1)
@@ -125,5 +122,35 @@ describe('OnReady cleanup 1 Path', () => {
 
     expect(f.paths).toBeInstanceOf(Array)
     expect(f.paths.length).toBe(2)
+  })
+})
+
+describe('onReady rename Content', () => {
+  test('Destroy Client', async () => {
+    await TestClient.destroy()
+  })
+
+  test('Rename Content path', async () => {
+    await rename(
+      state.contentToBeRenamed['path'],
+      fileNameOnTemp('image_renamed.png'),
+    )
+  })
+})
+
+describe('onReady rename Content', () => {
+  beforeAll(createTestClient)
+
+  test('Check if content still up', async () => {
+    const f = await ContentDetails(
+      TestClient.ShelfDB,
+      state.contentToBeRenamed['id'],
+    )
+
+    expect(f).toBeTypeOf('object')
+    if (!f) return
+
+    expect(f.id).toBeTypeOf('number')
+    expect(f.hash).toBeTypeOf('string')
   })
 })

@@ -19,6 +19,8 @@ export const clearTempDir = async () => {
   )
 }
 
+export const fileNameOnTemp = (fileName: string) => join(tempTestPath, fileName)
+
 export const TestContent = await (async () => {
   return await Promise.all(
     (
@@ -37,7 +39,7 @@ export const TestContent = await (async () => {
          * @returns  the new file path
          */
         copytoTemp: async (tempName: string) => {
-          const newFile = join(tempTestPath, tempName)
+          const newFile = fileNameOnTemp(tempName)
           await copyFile(fullPath, newFile)
           return newFile
         },
