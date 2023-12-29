@@ -1,8 +1,8 @@
 import {
   ShelfFile,
-  normalizePath,
   filterDirectoryTree,
   toShelfDirectoryOrFile,
+  isShelfFile,
 } from './ShelfFile'
 import {updateProgress as sendUpdateProgressEvent} from '..'
 import {ShelfClient} from './ShelfClient'
@@ -39,6 +39,7 @@ export const addChokiEvents = (
       console.error(error)
     }),
   )
+
   choki.on('add', shelfOnAdd)
   choki.on('unlink', shelfOnUnlink)
   choki.on('change', shelfOnChange)
@@ -48,7 +49,7 @@ export const addChokiEvents = (
 
   async function shelfOnError(error: Error) {
     if (!('path' in error)) {
-      return
+      throw error
     }
 
     const path = error.path as string
@@ -62,8 +63,73 @@ export const addChokiEvents = (
     choki.unwatch(path)
   }
 
-  //TODO: Merge this event with CleanupPaths
-  async function shelfOnChange(_filePath: string) {
+  async function shelfOnChange(filePath: string) {
+    if (!shelfClient.ready) {
+      return
+    }
+
+    const shelfFile = toShelfDirectoryOrFile(filePath)
+
+    if (!isShelfFile(shelfFile)) {
+      SHELF_LOGGER.info(`Change Skipped ${shelfFile} REASON:"DIR"`)
+      return
+    }
+
+    SHELF_LOGGER.info(`Change ${shelfFile.filePath}`)
+
+    const connection = shelfClient.ShelfDB
+
+    const file = await connection
+      .selectFrom('Paths')
+      .select(['Paths.id', 'Paths.path', 'Paths.contentId'])
+      .where('Paths.path', '=', shelfFile.filePath)
+      .executeTakeFirst()
+
+    if (!file) {
+      SHELF_LOGGER.info(`Change ${shelfFile.filePath} | Path not Found`)
+      return
+    }
+
+    const content = await connection
+      .selectFrom('Contents')
+      .select(['Contents.id', 'Contents.hash', 'Contents.extension'])
+      .where('Contents.id', '=', file.contentId)
+      .executeTakeFirst()
+
+    if (!content) {
+      SHELF_LOGGER.info(`Change ${shelfFile.filePath} | Content not Found`)
+      return
+    }
+
+    const newHash = await hashShelfFile(shelfFile)
+
+    if (content.hash === newHash) {
+      SHELF_LOGGER.info(
+        `Change ${shelfFile.filePath} | Content hash didn't change`,
+      )
+      return
+    }
+
+    ;(async () => {
+      await connection
+        .updateTable('Paths')
+        .where('Paths.contentId', '=', file.contentId)
+        .set({
+          mTimeMs: shelfFile.modifiedTimeMS,
+        })
+        .execute()
+        .catch((e) => {
+          throw e
+        })
+
+      await connection
+        .updateTable('Contents')
+        .where('id', '=', content.id)
+        .set({hash: newHash})
+        .executeTakeFirstOrThrow()
+    })().catch(() => {
+      SHELF_LOGGER.error(`Change ${shelfFile.filePath} | Content Update Failed`)
+    })
     //TODO: Implement Choki On Change event.
     // if (!shelfClient.ready) {
     //   return
@@ -103,15 +169,14 @@ export const addChokiEvents = (
       return
     }
 
-    SHELF_LOGGER.info(filePath)
+    const shelfFile = toShelfDirectoryOrFile(filePath)
 
-    //FIXME:Repeating Cleanup Code
-    const shelfFile = toShelfDirectoryOrFile(normalizePath(filePath))
-
-    if (!shelfFile.extension) {
-      SHELF_LOGGER.info(`File DELETE Skipped REASON:"DIR"`)
+    if (!isShelfFile(shelfFile)) {
+      SHELF_LOGGER.info(`Unlink Skip  ${shelfFile.filePath} REASON:"DIR"`)
       return
     }
+
+    SHELF_LOGGER.info(`Unlink ${filePath}`)
 
     const connection = shelfClient.ShelfDB
 
@@ -162,15 +227,14 @@ export const addChokiEvents = (
       return
     }
 
-    //FIXME: Repeating Add code.
     const shelfFile = toShelfDirectoryOrFile(filePath)
 
-    SHELF_LOGGER.info(`ADD`, shelfFile)
-
-    if (!shelfFile.extension) {
-      SHELF_LOGGER.info(`File Skipped REASON:"DIR"`)
+    if (!isShelfFile(shelfFile)) {
+      SHELF_LOGGER.info(`File ${shelfFile.filePath} Skipped REASON:"DIR"`)
       return
     }
+
+    SHELF_LOGGER.info(`ADD ${shelfFile.filePath}`)
 
     const fileHash = await hashShelfFile(shelfFile)
 

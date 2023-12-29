@@ -1,6 +1,6 @@
 import {FSWatcher} from 'chokidar'
 import {statSync} from 'fs'
-import path, {normalize} from 'path'
+import {normalize, parse} from 'path'
 import {Prettify} from '../../types/utils'
 
 export function normalizePath(path: string) {
@@ -15,6 +15,16 @@ type BaseShelfFile = {
 export type ShelfDirectory = BaseShelfFile
 export type ShelfFile = BaseShelfFile & {extension: string}
 export type ShelfDirectoryOrFile = Prettify<ShelfDirectory | ShelfFile>
+
+export function isShelfFile(
+  shelfDirOrFile: ShelfDirectoryOrFile,
+): shelfDirOrFile is ShelfFile {
+  if ('extension' in shelfDirOrFile) {
+    return true
+  } else {
+    return false
+  }
+}
 
 /**
  * Choki Directory tree
@@ -31,7 +41,7 @@ export const flattenDirectoryTree = (tree: DirectoryTree): string[] => {
   return paths
 }
 
-export function toShelfDirectoryOrFile(filePath: string) {
+export function toShelfDirectoryOrFile(filePath: string): ShelfDirectoryOrFile {
   const stats = statSync(filePath)
   const normalizedPath = normalizePath(filePath)
 
@@ -45,7 +55,7 @@ export function toShelfDirectoryOrFile(filePath: string) {
   return {
     filePath: normalizedPath,
     modifiedTimeMS: stats.mtimeMs,
-    extension: path.parse(filePath).ext,
+    extension: parse(filePath).ext,
   } satisfies ShelfDirectoryOrFile
 }
 
