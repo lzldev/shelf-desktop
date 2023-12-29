@@ -1,9 +1,13 @@
-import {defineConfig} from 'vitest/config'
-import {externalizeDepsPlugin} from 'electron-vite'
+import {defineConfig, mergeConfig} from 'vitest/config'
+import viteConfig from './electron.vite.config'
 
-export default defineConfig({
-  test:{
-    isolate:false,
-  },
-  plugins: [externalizeDepsPlugin()],
-})
+export default mergeConfig(
+  //@ts-expect-error - viteConfig is not typed
+  viteConfig.main,
+  defineConfig({
+    test: {
+      isolate: false,
+      watch: false,
+    },
+  }),
+)

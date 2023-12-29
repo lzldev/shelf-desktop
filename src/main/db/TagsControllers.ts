@@ -1,7 +1,8 @@
-import {InsertObject} from 'kysely'
-import {ShelfDBConnection} from './ShelfControllers'
-import {DB} from './kysely-types'
 import {defaultTagNames, defaultTags} from '../utils/DefaultValues'
+
+import type {InsertObject} from 'kysely'
+import type {ShelfDBConnection} from './ShelfControllers'
+import type {DB} from './kysely-types'
 
 export function CreateTags(
   connection: ShelfDBConnection,

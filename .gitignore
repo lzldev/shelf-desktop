@@ -8,3 +8,5 @@ out
 examples/*
 !examples/ignored
 examples/ignored/*
+
+temp/**/*

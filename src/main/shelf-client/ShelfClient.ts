@@ -3,7 +3,7 @@ import {ShelfDBConnection} from '../db/ShelfControllers'
 import {addChokiEvents} from './ChokiEvents'
 import {FSWatcher} from 'chokidar'
 import {zJson} from '../zJson'
-import {join} from 'path'
+import {isAbsolute, join} from 'path'
 
 import {
   CLIENT_CONFIG_FILE_NAME,
@@ -39,8 +39,12 @@ class ShelfClient {
 
   static async create(
     options: IpcMainEvents['startShelfClient']['args'][0],
-    callback: () => void,
+    callback: (client: ShelfClient) => void,
   ) {
+    if (!isAbsolute(options.basePath)) {
+      throw 'Shelf Client PATH must be absolute'
+    }
+
     const ShelfDB = createShelfKyselyDB(options.basePath)
 
     const config = new zJson(
@@ -114,7 +118,7 @@ class ShelfClient {
     choki: FSWatcher
     ShelfDB: ShelfDBConnection
     config: zJson<typeof SHELF_CLIENT_CONFIG_SCHEMA, ShelfClientConfigValues>
-    callback: () => void
+    callback: (client: ShelfClient) => void
   }) {
     this.AiWorker = newInstance.aiWorker
     this.ThumbWorker = newInstance.thumbWorker
@@ -127,7 +131,7 @@ class ShelfClient {
     addChokiEvents(this, () => {
       this.ready = true
 
-      newInstance.callback()
+      newInstance.callback(this)
     })
 
     return this

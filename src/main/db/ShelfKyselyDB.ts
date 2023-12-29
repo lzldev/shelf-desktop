@@ -1,9 +1,10 @@
 import {Kysely, SqliteDialect} from 'kysely'
 import {ParseJSONResultsPlugin} from 'kysely'
-import {DB} from './kysely-types'
 import SQLite from 'better-sqlite3'
 import {existsSync} from 'fs'
 import {join} from 'path'
+
+import type {DB} from './kysely-types'
 
 //@ts-expect-error File is being loaded raw ( as a string ) so no type
 import createTableSQL from '../../../prisma/migration.sql?raw'
@@ -28,7 +29,7 @@ const createShelfKyselyDB = (dbDir: string) => {
   }
 
   return new Kysely<DB>({
-    log: ['query', 'error'],
+    log: ['error'],
     dialect: new SqliteDialect({
       database: sqliteDb,
     }),

@@ -129,6 +129,7 @@ export async function ContentDetails(
       withPathStrings(eb).as('paths'),
     ])
     .where('Contents.id', '=', contentId)
+    .groupBy('Contents.id')
     .executeTakeFirst()
 
   return content
@@ -242,12 +243,18 @@ export async function ListContent(
           'in',
           eb.selectFrom('foundPaths').select(['foundPaths.id']),
         ),
-        eb(
-          'Tags.id',
-          'in',
-          eb.selectFrom('foundTags').select(['foundTags.id']),
-        ),
       ]),
+    )
+    .$if(queryTags.length > 0, (qb) =>
+      qb.where((eb) =>
+        eb.and([
+          eb(
+            'Tags.id',
+            'in',
+            eb.selectFrom('foundTags').select(['foundTags.id']),
+          ),
+        ]),
+      ),
     )
     .groupBy(['Contents.id'])
     .orderBy('Contents.id', 'desc')
@@ -316,7 +323,11 @@ export function withTags(
         ],
       ),
     )
-    .else(sql.lit(`[]`))
+    .else(
+      sql.lit<{id: number; name: string; colorId: number}[]>(
+        `[]` as unknown as [],
+      ),
+    )
     .end()
     .as('tags')
 }
@@ -325,6 +336,4 @@ export type DetailedContent = NonNullable<
   Awaited<ReturnType<typeof ContentDetails>>
 >
 
-export type ListedContent = Awaited<
-  ReturnType<typeof ListContent>
->['content'][number]
+export type ListedContent = Awaited<ReturnType<typeof ListContent>>[][number]
