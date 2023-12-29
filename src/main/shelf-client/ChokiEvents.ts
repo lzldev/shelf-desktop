@@ -1,35 +1,50 @@
-import {parse} from 'path'
-import {createHash} from 'crypto'
-import {FileTuple, filterDirectoryTree} from '../utils/choki'
+import {
+  ShelfFile,
+  normalizePath,
+  filterDirectoryTree,
+  toShelfDirectoryOrFile,
+} from './ShelfFile'
 import {updateProgress as sendUpdateProgressEvent} from '..'
 import {ShelfClient} from './ShelfClient'
-import {Content, Path, TagColor} from '../db/models'
-import {normalize} from 'path'
-import {dialog} from 'electron'
 import {SHELF_LOGGER} from '../utils/Loggers'
 
-import {canClassify} from '../../renderer/src/utils/Extensions'
-import {createReadStream, statSync} from 'fs'
-import {defaultColors} from '../utils/DefaultColors'
+//TODO: Move those functions off the renderer.
+//@ts-ignore Outside TSCONFIG Scope
+import {canClassify, checkExtension} from '../../renderer/src/utils/Extensions'
 
-import {Effect} from 'effect'
+import {CreateDefaultColors} from '../db/ColorControllers'
+import {
+  CleanupContent,
+  CreateContent,
+  CreateContentWithPaths,
+} from '../db/ContentControllers'
+import {ShelfDBConnection} from '../db/ShelfControllers'
+import {CreateDefaultTags, getDefaultTags} from '../db/TagsControllers'
+import {CreateTagContent} from '../db/TagContentControllers'
+import {CreatePaths, UpdatePath} from '../db/PathsController'
+import {hashFileAsync, hashShelfFile, hashShelfFiles} from './FileHashing'
+import {AiWorkerReceive} from './ai_worker/types'
+import {InsertObject} from 'kysely'
+import {DB} from '../db/kysely-types'
 
 export const addChokiEvents = (
   shelfClient: ShelfClient,
-  onReadyCallback: (...args: any[]) => void,
+  onReadyFinished: (...args: any[]) => void,
 ) => {
   const choki = shelfClient.choki
 
-  choki.on('error', shelfOnError)
-
   choki.on('ready', () =>
-    shelfOnReady().catch((e) => {
-      console.error(e)
+    shelfOnReady().catch((error) => {
+      SHELF_LOGGER.error('CHOKI-ONREADY', error)
+      console.error(error)
     }),
   )
   choki.on('add', shelfOnAdd)
   choki.on('unlink', shelfOnUnlink)
   choki.on('change', shelfOnChange)
+
+  choki.on('error', shelfOnError)
+  choki.on('error', (error) => SHELF_LOGGER.error('CHOKI-ERROR', error))
 
   async function shelfOnError(error: Error) {
     if (!('path' in error)) {
@@ -47,121 +62,150 @@ export const addChokiEvents = (
     choki.unwatch(path)
   }
 
+  //TODO: Merge this event with CleanupPaths
   async function shelfOnChange(_filePath: string) {
+    //TODO: Implement Choki On Change event.
+    // if (!shelfClient.ready) {
+    //   return
+    // }
+    //
+    // try {
+    //   const filePath = normalize(_filePath)
+    //   const newHash = await hashFileAsync(filePath)
+    //
+    //   const content = await Content.findOne({
+    //     include: [
+    //       {
+    //         model: Path,
+    //         where: {
+    //           path: filePath,
+    //         },
+    //       },
+    //     ],
+    //   }).catch((e) => {
+    //     throw e
+    //   })
+    //
+    //   await content
+    //     ?.update({
+    //       hash: newHash,
+    //     })
+    //     .catch((e) => {
+    //       throw e
+    //     })
+    // } catch (e) {
+    //   dialog.showErrorBox('Error [ONCHANGE]', JSON.stringify(e))
+    // }
+  }
+
+  async function shelfOnUnlink(filePath: string) {
     if (!shelfClient.ready) {
       return
     }
 
-    try {
-      const filePath = normalize(_filePath)
-      const newHash = await hashFileAsync(filePath)
+    SHELF_LOGGER.info(filePath)
 
-      const content = await Content.findOne({
-        include: [
-          {
-            model: Path,
-            where: {
-              path: filePath,
-            },
-          },
-        ],
-      }).catch((e) => {
-        throw e
-      })
+    //FIXME:Repeating Cleanup Code
+    const shelfFile = toShelfDirectoryOrFile(normalizePath(filePath))
 
-      await content
-        ?.update({
-          hash: newHash,
-        })
-        .catch((e) => {
-          throw e
-        })
-    } catch (e) {
-      dialog.showErrorBox('Error [ONCHANGE]', JSON.stringify(e))
+    if (!shelfFile.extension) {
+      SHELF_LOGGER.info(`File DELETE Skipped REASON:"DIR"`)
+      return
+    }
+
+    const connection = shelfClient.ShelfDB
+
+    const dbPath = await connection
+      .selectFrom('Paths')
+      .select(['id', 'contentId'])
+      .where('path', '=', shelfFile.filePath)
+      .executeTakeFirst()
+
+    if (!dbPath) {
+      SHELF_LOGGER.info(`File DELETE Skipped REASON:"NOT FOUND ON DB"`)
+      return
+    }
+
+    const deletedPath = await connection
+      .deleteFrom('Paths')
+      .where('id', '=', dbPath.id)
+      .executeTakeFirst()
+
+    if (Number(deletedPath.numDeletedRows) === 0) {
+      SHELF_LOGGER.warn(`File DELETE WARNING REASON:"Couldn't delete from DB"`)
+      return
+    }
+
+    const restOfPathsForContent = await connection
+      .selectFrom('Paths')
+      .select((eb) => eb.fn.count<number>('id').as('count'))
+      .where('contentId', '=', dbPath.contentId)
+      .executeTakeFirst()
+
+    if (!restOfPathsForContent || restOfPathsForContent?.count > 0) {
+      return
+    }
+
+    const deletedContent = await connection
+      .deleteFrom('Contents')
+      .where('id', '=', dbPath.contentId)
+      .executeTakeFirst()
+
+    if (deletedContent) {
+      SHELF_LOGGER.warn(`File DELETE WARNING REASON:"Couldn't delete from DB"`)
+      return
     }
   }
 
-  async function shelfOnAdd(pathString: string) {
+  async function shelfOnAdd(filePath: string) {
     if (!shelfClient.ready) {
       return
     }
 
-    try {
-      const filePath = normalize(pathString)
-      const fileHash = await hashFileAsync(filePath).catch((e) => {
-        throw e
-      })
+    //FIXME: Repeating Add code.
+    const shelfFile = toShelfDirectoryOrFile(filePath)
 
-      const {mtimeMs} = statSync(filePath)
+    SHELF_LOGGER.info(`ADD`, shelfFile)
 
-      const [content] = await Content.findOrCreate({
-        where: {
-          hash: fileHash,
-        },
-        defaults: {
-          hash: fileHash,
-          extension: parse(filePath).ext,
-        },
-      }).catch((e) => {
-        throw e
-      })
-
-      const [newPath, created] = await Path.findOrCreate({
-        where: {
-          path: filePath,
-        },
-        defaults: {
-          path: filePath,
-          mTimeMs: mtimeMs,
-          contentId: content.id,
-        },
-      }).catch((e) => {
-        throw e
-      })
-
-      if (created) {
-        return
-      }
-
-      if (canClassify(content.extension)) {
-        shelfClient.AiWorker.postMessage({
-          type: 'new_file',
-          data: {
-            id: content.id,
-            path: filePath,
-          },
-        })
-      }
-
-      await newPath
-        .update({
-          contentId: content.id,
-        })
-        .catch((e) => {
-          throw e
-        })
-    } catch (e) {
-      dialog.showErrorBox('Error', JSON.stringify(e))
+    if (!shelfFile.extension) {
+      SHELF_LOGGER.info(`File Skipped REASON:"DIR"`)
+      return
     }
-  }
 
-  async function shelfOnUnlink(_filePath: string) {
-    try {
-      const filePath = normalize(_filePath)
-      const path = await Path.findOne({
-        where: {
-          path: filePath,
+    const fileHash = await hashShelfFile(shelfFile)
+
+    const connection = shelfClient.ShelfDB
+    const found = await connection
+      .selectFrom('Contents')
+      .select(['Contents.hash', 'Contents.id'])
+      .where('Contents.hash', '=', fileHash)
+      .executeTakeFirst()
+
+    if (found) {
+      await CreatePaths(connection, [
+        {
+          path: shelfFile.filePath,
+          mTimeMs: shelfFile.modifiedTimeMS,
+          contentId: found.id,
         },
-      }).catch((e) => {
-        throw e
-      })
-
-      await path?.destroy().catch((e) => {
-        throw e
-      })
-    } catch (e) {
-      dialog.showErrorBox('Error', JSON.stringify(e))
+      ])
+      return
     }
+
+    const newContent = await CreateContent(connection, [
+      {
+        hash: fileHash,
+        extension: shelfFile.extension,
+      },
+    ])
+
+    return CreatePaths(connection, [
+      {
+        contentId: Number(newContent?.insertId),
+        path: shelfFile.filePath,
+        mTimeMs: shelfFile.modifiedTimeMS,
+      },
+    ])
   }
 
   async function shelfOnReady() {
@@ -185,136 +229,204 @@ export const addChokiEvents = (
     console.time('DB ->')
 
     if (!isDBNew) {
-      console.time('DB CLEANUP ->')
-      await CleanupShelfDB(watchedFiles)
-      console.timeEnd('DB CLEANUP ->')
+      await CleanupShelfPaths(shelfClient.ShelfDB, watchedFiles)
     } else {
-      await TagColor.bulkCreate(defaultColors)
+      await CreateDefaultColors(shelfClient.ShelfDB)
     }
 
-    const hashToPathRecord: Record<string, number[]> = {}
+    const defaultTags = await (isDBNew
+      ? CreateDefaultTags(shelfClient.ShelfDB)
+      : getDefaultTags(shelfClient.ShelfDB))
 
-    await Effect.runPromise(
-      Effect.all(
-        watchedFiles.map((v, watchedFileIndex) =>
-          Effect.promise(async () => {
-            const hash = await hashFileAsync(v[0]).catch((e) => {
-              console.error(e)
-              throw e
-            })
+    if (isDBNew) {
+      shelfClient.AiWorker.postMessage({
+        type: 'update_state',
+        data: null,
+      })
+    }
 
-            addToKey('SHELF', v[0])
-
-            if (!hashToPathRecord[hash]) {
-              hashToPathRecord[hash] = []
-            }
-            hashToPathRecord[hash].push(watchedFileIndex)
-            return
-          }),
-        ),
-        {
-          concurrency: 'unbounded',
-        },
-      ),
+    const hashToPathRecord = await hashShelfFiles(watchedFiles, (fileName) =>
+      addToKey('SHELF', fileName),
     )
 
-    await Content.bulkCreate(
-      Object.entries(hashToPathRecord).map(([hash, paths]) => ({
-        hash: hash,
-        extension: watchedFiles[paths[0]][2],
-        paths: paths.map(
-          (fileIdx) =>
-            ({
-              path: watchedFiles[fileIdx][0],
-              mTimeMs: watchedFiles[fileIdx][1],
-            } as Path),
-        ),
-      })),
+    const contentsAndPaths = Object.entries(hashToPathRecord).reduce(
+      (previousValue, [hash, pathIds]) => {
+        previousValue.contents.push({
+          hash,
+          extension: watchedFiles[pathIds[0]].extension,
+        })
+
+        previousValue.paths.push(
+          pathIds.map((fileIdx) => ({
+            path: watchedFiles[fileIdx].filePath,
+            mTimeMs: watchedFiles[fileIdx].modifiedTimeMS,
+          })),
+        )
+        return previousValue
+      },
       {
-        include: [{model: Path, as: 'paths'}],
+        contents: [],
+        paths: [],
+      } as {
+        contents: InsertObject<DB, 'Contents'>[]
+        paths: Omit<InsertObject<DB, 'Paths'>, 'contentId'>[][]
       },
     )
-    ;(
-      await Content.findAll({
-        where: {
-          hash: Object.keys(hashToPathRecord),
-        },
-      })
+
+    const createdContents = await CreateContentWithPaths(
+      shelfClient.ShelfDB,
+      contentsAndPaths,
     )
-      .filter((content) => canClassify(content.extension))
-      .forEach((content) => {
+
+    await CleanupContent(shelfClient.ShelfDB)
+
+    if (!createdContents) {
+      onReadyFinished()
+      return
+    }
+
+    //TODO: Extract into "addFileTypeTag"
+    await CreateTagContent(
+      shelfClient.ShelfDB,
+      createdContents.map((content) => {
+        const shelfConfig = hashToPathRecord[content.hash].at(0)!
+        const extension = watchedFiles[shelfConfig].extension
+        const type = checkExtension(extension)
+
+        return {
+          contentId: content.id,
+          tagId: defaultTags[type === 'unrecognized' ? 'document' : type],
+        }
+      }),
+    )
+
+    console.timeEnd('DB ->')
+
+    if (shelfClient.config.get('aiWorker')) {
+      console.time('Waiting for AIWORKER')
+
+      createdContents.forEach((content) => {
+        const fileIdx = hashToPathRecord[content.hash].at(0)
+        const shelfFile = watchedFiles.at(fileIdx!)
+
+        if (fileIdx === undefined || shelfFile === undefined) {
+          return
+        } else if (!canClassify(shelfFile.extension)) {
+          return
+        }
+
         shelfClient.AiWorker.postMessage({
           type: 'new_file',
           data: {
             id: content.id,
-            path: watchedFiles[hashToPathRecord[content.hash][0]][0],
+            path: shelfFile.filePath,
           },
         })
       })
 
-    SHELF_LOGGER.info('Wainting for AI Tagging...')
-
-    console.timeEnd('DB ->')
-    console.time('Waiting for AIWORKER...')
-
-    const WaitForAIWork = async () => {
-      return new Promise((resolve, reject) => {
-        shelfClient.AiWorker.postMessage({
-          type: 'emit_batch',
-          data: undefined,
+      await waitForAIWorker(shelfClient)
+        .then(() => {
+          SHELF_LOGGER.info('AIWORKER FINISHED')
+        })
+        .catch(() => {
+          SHELF_LOGGER.info('AIWORKER TIMED OUT')
         })
 
-        shelfClient.AiWorker.on('message', (data) => {
-          if (data.type !== 'batch_done') {
-            return
-          }
-          resolve(true)
-        })
-
-        setTimeout(() => {
-          reject()
-        }, 10 * 60 * 1000)
-      })
+      console.timeEnd('Waiting for AIWORKER')
     }
 
-    await WaitForAIWork()
-      .then(() => {
-        SHELF_LOGGER.info('Batch FINISHED')
-      })
-      .catch(() => {
-        SHELF_LOGGER.info('AIWORKER TIMED OUT')
-      })
-
-    console.timeEnd('Waiting for AIWORKER...')
-
-    shelfClient.ready = true
-    onReadyCallback()
+    onReadyFinished()
   }
 }
 
-const HASHMAXBYTES = 10485760 - 1 //10 MB
+const AIWORKER_TIMEOUT = 10 * 60 * 1000 //10 minutes
 
-async function hashFileAsync(filePath: string) {
-  return new Promise<string>((resolve, reject) => {
-    try {
-      const stream = createReadStream(filePath, {
-        end: HASHMAXBYTES,
-      })
-      const hash = createHash('md5')
+function waitForAIWorker(client: ShelfClient) {
+  return new Promise((resolve, reject) => {
+    client.AiWorker.postMessage({
+      type: 'emit_batch',
+      data: undefined,
+    })
 
-      stream.on('data', (_buff) => {
-        hash.update(_buff)
-      })
-      stream.on('end', () => {
-        resolve(hash.digest('hex'))
-      })
-      stream.on('error', (err) => {
-        reject(err)
-      })
-    } catch (err) {
-      reject(err)
+    const listener = (data: AiWorkerReceive) => {
+      if (data.type !== 'batch_done') {
+        return
+      }
+
+      client.AiWorker.removeListener('message', listener)
+      resolve(true)
     }
+
+    client.AiWorker.on('message', listener)
+
+    setTimeout(() => {
+      client.AiWorker.removeListener('message', listener)
+      reject()
+    }, AIWORKER_TIMEOUT)
   })
+}
+
+async function CleanupShelfPaths(
+  connection: ShelfDBConnection,
+  watchedFiles: ShelfFile[],
+) {
+  const dbPaths = await connection.selectFrom('Paths').selectAll().execute()
+
+  const deletedPaths: number[] = []
+  const alreadyUpdatedContent = new Set<number>()
+
+  for (const path of dbPaths) {
+    const shelfFileIndex = watchedFiles.findIndex((shelfFile) => {
+      return shelfFile.filePath === path.path
+    })
+
+    const isPathWatched = shelfFileIndex !== -1
+
+    //File is not Watched . Just Remove it from DB later.
+    if (!isPathWatched) {
+      deletedPaths.push(path.id)
+      continue
+    }
+
+    //File is watched and is the same. just keep as is and skip hashing it later.
+    if (path.mTimeMs === watchedFiles[shelfFileIndex].modifiedTimeMS) {
+      watchedFiles.splice(shelfFileIndex, 1)
+      continue
+    }
+
+    //File was modified . Hash it and update DB.
+    const newContentHash = await hashFileAsync(path.path)
+
+    await UpdatePath(connection, path.id, {
+      mTimeMs: watchedFiles[shelfFileIndex].modifiedTimeMS,
+    })
+
+    if (alreadyUpdatedContent.has(path.contentId)) {
+      continue
+    }
+
+    const updateContent = await connection
+      .updateTable('Contents')
+      .set({
+        hash: newContentHash,
+      })
+      .where('Contents.id', '=', path.contentId)
+      .returning('id')
+      .executeTakeFirst()
+
+    alreadyUpdatedContent.add(updateContent?.id ?? -1)
+
+    //Skip adding the file to the DB Later.
+    watchedFiles.splice(shelfFileIndex, 1)
+  }
+
+  const del = await connection
+    .deleteFrom('Paths')
+    .where('Paths.id', 'in', deletedPaths)
+    .execute()
+
+  SHELF_LOGGER.info(`To be Deleted:${deletedPaths.length}`)
+  SHELF_LOGGER.info(`Deleted Paths:${del.at(0)?.numDeletedRows}`)
 }
 
 function createProgressUpdater<TParts extends Record<string, number>>(
@@ -375,73 +487,4 @@ function createProgressUpdater<TParts extends Record<string, number>>(
   }
 
   return {sendProgress, addToKey}
-}
-
-async function CleanupShelfDB(watchedFiles: FileTuple[]) {
-  const dbPaths = await Path.findAll({
-    attributes: {
-      exclude: ['updatedAt', 'createdAt'],
-    },
-    // transaction: pathTransaction,
-  })
-
-  for (const path of dbPaths) {
-    const pathValues = path.toJSON()
-    const idOnTuple = watchedFiles.findIndex((fileTuple) => {
-      return fileTuple[0] === pathValues.path
-    })
-
-    const isPathWatched = idOnTuple !== -1
-
-    if (!isPathWatched) {
-      await path.destroy()
-      continue
-    }
-
-    if (pathValues.mTimeMs === watchedFiles[idOnTuple][1]) {
-      watchedFiles.splice(idOnTuple, 1)
-    } else {
-      const newContentHash = await hashFileAsync(path.path)
-      const updatedContent = await Content.update(
-        {
-          hash: newContentHash,
-        },
-        {
-          where: {
-            id: pathValues.contentId,
-          },
-        },
-      )
-
-      SHELF_LOGGER.info(
-        `${
-          updatedContent[0] !== 0 ? 'SUCESS' : 'FAIL'
-        } ON UPDATING CONTENT ON CLEANUP | Path: ${pathValues.path}`,
-      )
-
-      await path.update({
-        mTimeMs: watchedFiles[idOnTuple][1],
-      })
-    }
-  }
-
-  const orphanedContents = await Content.findAll({
-    attributes: ['id'],
-    include: [
-      {
-        model: Path,
-        required: false,
-      },
-    ],
-    where: {
-      '$Paths.contentId$': null,
-    },
-    subQuery: false,
-  })
-
-  const cleaned = await Content.destroy({
-    where: {
-      id: orphanedContents.map((v) => v.id),
-    },
-  })
 }

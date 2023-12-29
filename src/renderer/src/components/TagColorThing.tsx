@@ -1,15 +1,18 @@
 import {useColors} from '../hooks/useColors'
 import clsx from 'clsx'
 import {HTMLAttributes} from 'react'
-import {Tag} from '@models'
+import {useConfigStore} from '../hooks/useConfig'
+import {ListedContent} from 'src/main/db/ContentControllers'
 
-function TagColorThing({
-  tags,
-  ...props
-}: {tags: Tag[]} & HTMLAttributes<HTMLDivElement>) {
-  const {colors} = useColors()
+type TagColorThingProps = {
+  tags: ListedContent['tags']
+} & HTMLAttributes<HTMLDivElement>
 
-  if (tags.length === 0) {
+function TagColorThing({tags, ...props}: TagColorThingProps) {
+  const colors = useColors((s) => s.colors)
+  const defaultColor = useConfigStore((s) => s.config!.defaultColor)
+
+  if (!tags || tags.length === 0) {
     return <></>
   }
 
@@ -23,7 +26,7 @@ function TagColorThing({
           className='flex h-full w-full'
           key={tag.id}
           style={{
-            backgroundColor: colors.get(tag.colorId!)?.color || '#000',
+            backgroundColor: colors.get(tag.colorId)?.color || defaultColor,
           }}
         />
       ))}

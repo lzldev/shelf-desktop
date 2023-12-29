@@ -17,7 +17,22 @@ import {createWorkerLogger} from '../../utils/Loggers'
 import sharp from 'sharp'
 import {handleWorkerMessage} from '../../utils/Worker'
 
-const workerData = AIWorkerDataParser.parse(_workerData)
+import {z} from 'zod'
+import {__DBFILENAME} from '../../db/ShelfKyselyDB'
+import {CreateTagContent} from '../../db/TagContentControllers'
+
+const wd = AIWorkerDataParser.safeParse(_workerData)
+let workerData: z.infer<typeof AIWorkerDataParser>
+
+if (wd.success) {
+  workerData = wd.data
+} else if (import.meta.env.VITEST) {
+  workerData = {
+    dbPath: './examples/',
+  }
+} else {
+  throw wd.error
+}
 
 if (isMainThread) {
   throw new Error('Worker called in main thread')
@@ -28,8 +43,9 @@ if (isMainThread) {
 const port = parentPort!
 
 const WORKER_LOGGER = createWorkerLogger(threadId)
-export const __DBEXTENSION = '.shelf'
-export const __DBFILENAME = `.shelfdb${__DBEXTENSION}`
+
+sharp.cache(false)
+
 const createDbPath = (dbPath: string) => `${dbPath}/${__DBFILENAME}`
 const createShelfKyselyDB = (dbPath: string) => {
   return new Kysely<DB>({
@@ -46,7 +62,7 @@ const createShelfKyselyDB = (dbPath: string) => {
   })
 }
 
-WORKER_LOGGER.info(`META URL |${import.meta.url}|`)
+WORKER_LOGGER.info(`META URL | ${import.meta.url} |`)
 WORKER_LOGGER.info(`10% RAM: ${os.totalmem() / 1024} MB`)
 
 async function main() {
@@ -64,14 +80,35 @@ async function main() {
   WORKER_LOGGER.info('DB Started')
 
   const TagToIDMap = new Map<string, number>()
-  await (async () => {
-    const tags = await db.selectFrom('Tags').select(['id', 'name']).execute()
 
+  const workerState: {
+    tagToIdMap: Map<string, number>
+    colorIds: Array<number>
+  } = {
+    tagToIdMap: new Map(),
+    colorIds: [],
+  }
+
+  const updateTags = async () => {
+    workerState.tagToIdMap = new Map()
+    const tags = await db.selectFrom('Tags').select(['id', 'name']).execute()
     for (const tag of tags) {
       WORKER_LOGGER.info(`OLD Tag : [${tag.id}]${tag.name}`)
-      TagToIDMap.set(tag.name!, tag.id)
+      workerState.tagToIdMap.set(tag.name!, tag.id)
     }
-  })()
+  }
+  const updateColors = async () => {
+    workerState.colorIds = (
+      await db.selectFrom('TagColors').select(['id']).execute()
+    ).map((v) => v.id)
+  }
+
+  const updateState = async () => {
+    await updateTags()
+    await updateColors()
+  }
+
+  await updateColors()
 
   port.postMessage({
     type: 'ready',
@@ -117,6 +154,9 @@ async function main() {
 
       asyncQueue.onClearOnce(listener)
     },
+    update_state: async () => {
+      await updateState()
+    },
   })
 
   type ClassifyInput = Extract<AiWorkerInvoke, {type: 'new_file'}>['data']
@@ -158,8 +198,10 @@ async function main() {
           .insertInto('Tags')
           .values({
             name: normalized,
-            updatedAt: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
+            colorId:
+              workerState.colorIds[
+                Math.floor(Math.random() * workerState.colorIds.length)
+              ],
           })
           .returning(['id', 'name'])
           .execute()
@@ -172,15 +214,10 @@ async function main() {
         TagToIDMap.set(normalized, id)
       }
 
-      await db
-        .insertInto('ContentTags')
-        .values({
-          tagId: id,
-          contentId: classifyData.id,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        })
-        .execute()
+      await CreateTagContent(db, {
+        tagId: id,
+        contentId: classifyData.id,
+      })
 
       WORKER_LOGGER.info(
         `TAG ${normalized} | Confidence : ${classification.probability}`,

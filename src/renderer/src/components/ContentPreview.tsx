@@ -1,22 +1,18 @@
 import {useConfigStore} from '../hooks/useConfig'
-import {Content} from '@models'
 import {checkExtension} from '../utils/Extensions'
 import clsx from 'clsx'
-import {HTMLAttributes, useEffect,  useState} from 'react'
+import {HTMLAttributes, useEffect, useState} from 'react'
 import {DocumentIcon} from '@heroicons/react/24/solid'
 import {usePreviewListener, PREVIEW_LISTENER} from '../hooks/usePreviewStore'
+import {ListedContent} from 'src/main/db/ContentControllers'
 
 type ContentPreviewProps = {
-  content: Content
+  content: ListedContent
   contentProps?: HTMLAttributes<HTMLDivElement> &
     HTMLAttributes<HTMLVideoElement>
 } & HTMLAttributes<HTMLDivElement>
 
-function ContentPreview({
-  content,
-  contentProps,
-  ...props
-}: ContentPreviewProps) {
+function ContentPreview({content, ...containerProps}: ContentPreviewProps) {
   const [error, setError] = useState<string | null>(null)
 
   const format = checkExtension(content.extension)
@@ -42,18 +38,26 @@ function ContentPreview({
       unregister(content.hash)
     }
 
-    const async = async () => {
-      const path = content?.paths?.at(0)?.path
+    const effect = async () => {
+      const path = content?.path
       if (!path || format === 'unrecognized') {
         return
       }
 
-      const response = await window.api.invokeOnMain('preview_content', {
-        hash: content.hash,
-        filePath: path,
-      },format)
+      const response = await window.api
+        .invokeOnMain(
+          'preview_content',
+          {
+            hash: content.hash,
+            filePath: path,
+          },
+          format,
+        )
+        .catch((error) => {
+          console.error('Error on preview_content\n', error)
+        })
 
-      if (response.instaError) {
+      if (!response || response.instaError) {
         return
       }
 
@@ -64,25 +68,24 @@ function ContentPreview({
       }
     }
 
-    async()
+    effect()
 
     return () => {}
   }, [error])
 
   const thumbnailPath = useConfigStore((s) => s.config!.thumbnailPath)
-
   const uri = 'file://' + thumbnailPath + content.hash + '.jpg'
 
   return (
     <div
-      {...props}
+      {...containerProps}
       className={clsx(
         'relative overflow-clip',
         !hidden && format === 'video' ? '' : '',
         hidden && format === 'image'
           ? 'animate-gradient_x_fast bg-gradient-to-r from-gray-400 to-gray-800 opacity-50 duration-2500'
           : '',
-        props.className,
+        containerProps.className,
       )}
     >
       {(format === 'image' || format === 'video') && !error ? (
@@ -92,7 +95,7 @@ function ContentPreview({
       ) : (
         <GenericPreview {...{content, error, uri}} />
       )}
-      {props.children}
+      {containerProps.children}
     </div>
   )
 }
@@ -114,16 +117,11 @@ function ContentThumbnail({
   return (
     <>
       <img
-        className={
-          'absolute inset-0 -z-10 h-full w-full scale-150 object-contain opacity-25 blur-2xl saturate-200'
-        }
-        src={uri}
-      />
-      <img
         {...props}
         src={uri}
         hidden={hidden}
-        className={clsx('mx-auto h-full object-contain ', props?.className)}
+        height={300}
+        className={'absolute inset-0 h-full w-full object-contain'}
         onLoad={() => {
           setHidden(false)
         }}
@@ -131,6 +129,13 @@ function ContentThumbnail({
           setError(`ERROR LOADING PREVIEW ${evt.type} Loading Image`)
           setHidden(false)
         }}
+      />
+      <img
+        className={
+          'pointer-events-none absolute inset-0 -z-10 max-w-none scale-150 transform-gpu blur-3xl'
+        }
+        height={300}
+        src={uri}
       />
     </>
   )

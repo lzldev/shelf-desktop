@@ -1,16 +1,16 @@
-import {type HTMLAttributes, useRef, useMemo} from 'react'
+import {type HTMLAttributes, useRef, useMemo, CSSProperties} from 'react'
 
 import clsx from 'clsx'
 import {InlineButton} from './components/InlineButton'
 import {Updater, useImmer} from 'use-immer'
 import {CREATETagOP, TagOperation, UpdateTagOP} from 'src/types/Operations'
-import {Tag} from '@models'
 import {useColors} from './hooks/useColors'
 import {useTagQuery} from './hooks/useTagQuery'
 import {useHotkeys} from './hooks/useHotkeys'
 import {SidePanelModal} from './components/SidebarPanelModal'
-import {TagCreation} from '@models'
 import {PencilSquareIcon, PlusIcon} from '@heroicons/react/24/solid'
+import {NormalizedTags, useTags} from './hooks/useTags'
+import {useConfigStore} from './hooks/useConfig'
 
 const TagColorBody = clsx(
   'relative text-white z-10 m-1 flex group flex-row items-center justify-between rounded-full bg-[--bgColor] py-3 px-6 outline ring-2 ring-inset ring-white ring-opacity-50',
@@ -118,9 +118,9 @@ function EditTags({
         {tags.map((tag, idx) => (
           <EditTagItem
             key={idx}
-            tag={tag}
+            tagId={tag}
             options={ColorOptions}
-            operation={operations.get(tag.id)}
+            operation={operations.get(tag)}
             setOperations={setOperations}
           />
         ))}
@@ -132,40 +132,41 @@ function EditTags({
 export {EditTags}
 
 const EditTagItem = ({
-  tag,
+  tagId,
   operation,
   options,
   setOperations,
 }: {
-  tag: Tag
+  tagId: number
   operation?: TagOperation
   options: JSX.Element[]
   setOperations: Updater<Map<number, TagOperation>>
 } & HTMLAttributes<HTMLDivElement>) => {
-  const {colors} = useColors()
+  const defaultColor = useConfigStore((s) => s.config!.defaultColor)
+  const tag = useTags((s) => s.tags.get(tagId)!)
 
-  const body = useMemo(
-    () =>
-      !operation ? (
-        NoOperation(tag, setOperations)
-      ) : operation.operation === 'UPDATE' ? (
-        UpdateOperation(operation, setOperations, tag, options)
-      ) : operation.operation === 'DELETE' ? (
-        DeleteOperation(setOperations, tag)
-      ) : (
-        <></>
-      ),
-    [operation],
+  const color = useColors(
+    (s) =>
+      s.colors.get(
+        operation && 'colorId' in operation ? operation.colorId : tag?.colorId,
+      )?.color ?? defaultColor,
   )
 
-  const bgColor =
-    colors.get(operation?.colorId || tag.colorId)?.color || '#ffffff'
+  const body = !operation ? (
+    NoOperation(tag, setOperations)
+  ) : operation.operation === 'UPDATE' ? (
+    UpdateOperation(operation, setOperations, tag, options)
+  ) : operation.operation === 'DELETE' ? (
+    DeleteOperation(setOperations, tag)
+  ) : (
+    <></>
+  )
 
   return (
     <div
       style={
         {
-          '--bgColor': bgColor,
+          '--bgColor': color,
         } as React.CSSProperties
       }
       className={clsx(TagColorBody)}
@@ -175,31 +176,29 @@ const EditTagItem = ({
   )
 }
 
+type NewTagItemProps = {
+  idx: number
+  newTag: CREATETagOP
+  setNewTagOperations: Updater<CREATETagOP[]>
+  ColorOptions: JSX.Element[]
+}
+
 function NewTagItem({
   ColorOptions,
   idx,
   newTag,
   setNewTagOperations,
-}: {
-  idx: number
-  newTag: {
-    operation: 'CREATE'
-    colorId: number
-    name: string
-  }
-  setNewTagOperations: Updater<
-    {operation: 'CREATE'; colorId: number; name: string}[]
-  >
-  ColorOptions: JSX.Element[]
-}): JSX.Element {
-  const {colors} = useColors()
-  const bgColor = colors.get(newTag.colorId)?.color || '#f0f0f0'
+}: NewTagItemProps): JSX.Element {
+  const color = useColors(
+    (s) => s.colors.get(newTag?.colorId)?.color ?? '#f0f0f0',
+  )
+
   return (
     <div
       key={idx}
       style={
         {
-          '--bgColor': bgColor,
+          '--bgColor': color,
         } as React.CSSProperties
       }
       className={clsx(TagColorBody)}
@@ -210,7 +209,7 @@ function NewTagItem({
             type='text'
             spellCheck={false}
             className='ml-2.5 flex grow bg-transparent'
-            value={newTag.name}
+            value={newTag.name as string}
             onChange={(evt) => {
               setNewTagOperations((nc) => {
                 nc[idx].name = evt.target.value || ''
@@ -248,7 +247,7 @@ function NewTagItem({
 
 function DeleteOperation(
   setOperations: Updater<Map<number, TagOperation>>,
-  tag: Tag,
+  tag: NormalizedTags,
 ) {
   return (
     <span
@@ -265,13 +264,9 @@ function DeleteOperation(
 }
 
 function UpdateOperation(
-  operation: {
-    operation: 'UPDATE'
-    id: number
-    colorId: number
-  } & TagCreation,
+  operation: UpdateTagOP,
   setOperations: Updater<Map<number, TagOperation>>,
-  tag: Tag,
+  tag: NormalizedTags,
   options: JSX.Element[],
 ) {
   return (
@@ -327,20 +322,27 @@ function UpdateOperation(
 }
 
 function NoOperation(
-  tag: Tag,
+  tag: NormalizedTags,
   setOperations: Updater<Map<number, TagOperation>>,
 ) {
   return (
     <>
-      <div className='flex grow overflow-hidden text-ellipsis'>{tag.name}</div>
+      <div
+        className='flex grow overflow-hidden text-ellipsis'
+        style={
+          {
+            '--bgColor': 'red',
+          } as CSSProperties
+        }
+      >
+        {tag.name}
+      </div>
       <div className='flex flex-row'>
         <InlineButton
           onClick={() => {
             setOperations((operations) => {
               operations.set(tag.id, {
                 operation: 'UPDATE',
-                id: tag.id,
-                colorId: tag.colorId || -1,
                 ...tag,
               })
             })
@@ -351,9 +353,9 @@ function NoOperation(
         <InlineButton
           onClick={() => {
             setOperations((operations) => {
-              operations.set(tag.id, {
+              operations.set(Number(tag.id), {
                 operation: 'DELETE',
-                id: tag.id,
+                id: Number(tag.id),
               })
             })
           }}

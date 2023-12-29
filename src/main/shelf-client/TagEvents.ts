@@ -1,13 +1,10 @@
 import {ipcMain} from 'electron'
-import {Tag} from '../db/models/Tag'
-import {requestClient} from '../'
+import {requestClient, sendEventAfter} from '../'
 import {IpcMainEvents} from '../../preload/ipcMainTypes'
-import {ContentTag} from '../db/models'
-import {ShelfClient} from './ShelfClient'
-import {Op} from 'sequelize'
-import {ContentTagFields} from '../db/models/ContentTag'
-import {sendEventAfter} from '.'
-import {dialog} from 'electron'
+import {InsertObject} from 'kysely'
+import {DB} from '../db/kysely-types'
+import {SHELF_LOGGER} from '../utils/Loggers'
+import {CreateTagContent} from '../db/TagContentControllers'
 
 export function defaultHandler(func: (...any: any[]) => any) {
   return async (_: Electron.IpcMainInvokeEvent, ...args: any[]) => {
@@ -16,6 +13,7 @@ export function defaultHandler(func: (...any: any[]) => any) {
     if (!client || !client.ready) {
       throw 'Client not Ready'
     }
+
     return await JSON.parse(JSON.stringify(await func(...args)))
   }
 }
@@ -30,25 +28,30 @@ ipcMain.handle(
 ipcMain.handle('batchTagging', defaultHandler(batchTagging))
 
 async function getAllTags() {
-  const result = await Tag.findAll({
-    attributes: ['id', 'name', 'colorId'],
-  })
-  return result
+  const client = requestClient()
+
+  return await client.ShelfDB.selectFrom('Tags')
+    .select(['id', 'name', 'colorId'])
+    .execute()
 }
 
 async function removeTagFromContent(
   options: IpcMainEvents['removeTagfromContent']['args'],
 ) {
-  const newRelation = await ContentTag.findOne({
-    where: {
-      contentId: options.contentId,
-      tagId: options.tagId,
-    },
-  })
-  try {
-    await newRelation?.destroy()
+  const client = requestClient()
+
+  const del = await client.ShelfDB.deleteFrom('ContentTags')
+    .where((eb) =>
+      eb.and([
+        eb('contentId', '=', options.contentId),
+        eb('tagId', '=', options.tagId),
+      ]),
+    )
+    .executeTakeFirst()
+
+  if (Number(del.numDeletedRows) === 1) {
     return true
-  } catch (e) {
+  } else {
     return false
   }
 }
@@ -56,67 +59,51 @@ async function removeTagFromContent(
 async function addTagToContent(
   options: IpcMainEvents['addTagToContent']['args'],
 ) {
-  const newRelation = await ContentTag.build({
-    contentId: options.contentId,
-    tagId: options.tagId,
-  })
-  try {
-    await newRelation.save()
+  const client = requestClient()
+
+  const result = await CreateTagContent(client.ShelfDB, options)
+
+  if (Number(result.numInsertedOrUpdatedRows) === 1) {
     return true
-  } catch (e) {
+  } else {
     return false
   }
 }
 
 async function editTags(operations: IpcMainEvents['editTags']['args'][0]) {
-  const client = requestClient() as ShelfClient
-  const editTagsTransaction = await client.ShelfDB.sequelize.transaction()
+  const client = requestClient()
 
-  try {
-    for (const op of operations) {
-      switch (op.operation) {
-        case 'CREATE': {
-          await Tag.build({...op})
-            .save({
-              transaction: editTagsTransaction,
-            })
-            .catch((err) => {
-              throw err
-            })
-          continue
-        }
-        case 'UPDATE': {
-          const {id: toBeUpdatedId, operation, ...values} = op
-          await Tag.update(
-            {...values},
-            {where: {id: toBeUpdatedId}, transaction: editTagsTransaction},
-          ).catch((err) => {
-            throw err
+  await client.ShelfDB.transaction()
+    .execute(async (trx) => {
+      const toBeAdded: InsertObject<DB, 'Tags'>[] = []
+
+      for (const op of operations) {
+        if (op.operation === 'CREATE') {
+          toBeAdded.push({
+            colorId: op.colorId,
+            name: op.name,
           })
           continue
-        }
-        case 'DELETE': {
-          await Tag.destroy({
-            where: {
-              id: op.id,
-            },
-            transaction: editTagsTransaction,
-          }).catch((err) => {
-            throw err
-          })
+        } else if (op.operation === 'UPDATE') {
+          await trx
+            .updateTable('Tags')
+            .where('id', '=', op.id)
+            .set({colorId: op.colorId, name: op.name})
+            .execute()
+          continue
+        } else if (op.operation === 'DELETE') {
+          await trx.deleteFrom('Tags').where('id', '=', op.id).execute()
           continue
         }
-        default:
-          throw 'UNEXPECTED OPERATION'
       }
-    }
-  } catch (err) {
-    await editTagsTransaction.rollback()
-    dialog.showErrorBox('Error', JSON.stringify(err))
-    return false
-  }
 
-  await editTagsTransaction.commit()
+      await trx.insertInto('Tags').values(toBeAdded).execute()
+    })
+    .catch(() => {
+      SHELF_LOGGER.error('Failed to EDIT tags')
+      return false
+    })
+
   return true
 }
 
@@ -124,44 +111,33 @@ async function batchTagging(
   operations: IpcMainEvents['batchTagging']['args'][0],
 ) {
   if (operations.operation === 'ADD') {
-    const ids: ContentTagFields[] = []
-
-    for (const tagId of operations.tagIds) {
-      for (const contentId of operations.contentIds) {
-        ids.push({
-          tagId,
-          contentId,
-        })
-      }
-    }
-
-    await ContentTag.bulkCreate(ids, {
-      ignoreDuplicates: true,
-    })
+    await requestClient()
+      .ShelfDB.insertInto('ContentTags')
+      .values(
+        operations.tagIds.flatMap((tagid) => {
+          return operations.contentIds.map((contentid) => {
+            return {
+              contentId: contentid,
+              tagId: tagid,
+            }
+          })
+        }),
+      )
+      .execute()
 
     return true
   }
 
   if (operations.operation === 'REMOVE') {
-    const bulkDestroyTransaction = await (
-      requestClient() as ShelfClient
-    ).ShelfDB.sequelize.transaction()
-
-    await ContentTag.destroy({
-      where: [
-        {
-          tagId: {
-            [Op.or]: operations.tagIds,
-          },
-          contentId: {
-            [Op.or]: operations.contentIds,
-          },
-        },
-      ],
-      transaction: bulkDestroyTransaction,
-    })
-
-    await bulkDestroyTransaction.commit()
+    await requestClient()
+      .ShelfDB.deleteFrom('ContentTags')
+      .where((eb) =>
+        eb.and([
+          eb('contentId', 'in', operations.contentIds),
+          eb('tagId', 'in', operations.tagIds),
+        ]),
+      )
+      .execute()
 
     return true
   }

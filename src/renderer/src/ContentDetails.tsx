@@ -1,15 +1,6 @@
-import {useNavigate} from 'react-router-dom'
-import {useQuery} from '@tanstack/react-query'
-import {
-  HTMLAttributes,
-  PropsWithChildren,
-  RefObject,
-  useEffect,
-  useRef,
-} from 'react'
+import {PropsWithChildren, useEffect, useMemo, useRef} from 'react'
 import {InlineTag} from './components/InlineTag'
 import {ShelfContent} from './components/ShelfContent'
-import {Content, Tag} from '@models'
 import clsx from 'clsx'
 import {useToggle} from './hooks/useToggle'
 import {InlineButton} from './components/InlineButton'
@@ -20,65 +11,58 @@ import {
   DropdownMenuItem,
   DropdownMenuProps,
 } from '@radix-ui/react-dropdown-menu'
-import {useHotkeys} from './hooks/useHotkeys'
 import {ArrowLeftIcon} from '@heroicons/react/24/solid'
-import {openInAnotherProgram, openContentDirectory} from './utils/Content'
+import {checkExtension} from './utils/Extensions'
+import {useContentQueryStore} from './hooks/useQueryStore'
+import {useHotkeys} from './hooks/useHotkeys'
+import {openContentDirectory, openInAnotherProgram} from './utils/Path'
+import {useQuery} from '@tanstack/react-query'
+import {ColorfulFilePath} from './components/ColorfulFilePath'
 
 const prevTitle = window.document.title
 
-function ContentDetails({
-  content: contentProp,
-  onClose,
-  ...props
-}: {
-  content?: Content
+type ContentDetailsProp = {
+  contentInfo: {id: number} | null
   onClose: (...any: any[]) => any
-} & HTMLAttributes<HTMLDivElement>): JSX.Element {
-  const {value: fullscreen, toggle: toggleFullscreen} = useToggle(false)
-  const containerClass = clsx(props.className, 'backdrop-blur-xl')
-  const navigate = useNavigate()
-  const modalRef = useRef<HTMLDivElement>(null)
+}
 
+function ContentDetails({
+  contentInfo,
+  onClose,
+}: ContentDetailsProp): JSX.Element {
   const {
     data: content,
     error,
+    isLoading,
     refetch,
-  } = useQuery(
-    ['DetailedContent'],
-    async () => {
-      if (!contentProp || !contentProp.id) return null
-
-      const id = contentProp?.id
-      const result = await window.api.invokeOnMain('getDetailedImage', id)
-
-      if (!result) {
+  } = useQuery({
+    queryKey: ['DetailedContent', contentInfo],
+    queryFn: async () => {
+      if (contentInfo === null) {
         return null
       }
-      return result
-    },
-    {
-      initialData: contentProp,
-      cacheTime: 0,
-      staleTime: 0,
-    },
-  )
 
-  const {toggle: toggleHotkeys} = useHotkeys(
-    {
-      Escape: onClose,
-      f: toggleFullscreen,
-      o: () => {
-        openInAnotherProgram(content!)
-      },
-      d: () => {
-        openContentDirectory(content!)
-      },
+      return window.api.invokeOnMain('getDetailedContent', contentInfo.id)
     },
-    !!content,
-  )
+  })
+
+  const {value: fullscreen, toggle: toggleFullscreen} = useToggle(false)
+  const modalRef = useRef<HTMLDivElement>(null)
+
+  const {toggle: toggleHotkeys} = useHotkeys({
+    Escape: onClose,
+    f: toggleFullscreen,
+    o: () => {
+      openInAnotherProgram(content!)
+    },
+    d: () => {
+      openContentDirectory(content!)
+    },
+  })
 
   useEffect(() => {
     if (!content) return
+
     window.document.title = `${prevTitle} - ${
       content?.paths?.at(0)?.path ?? 'Invalid Path'
     }`
@@ -88,19 +72,34 @@ function ContentDetails({
     }
   }, [content])
 
+  const format = useMemo(
+    () => (content ? checkExtension(content.extension) : 'unrecognized'),
+    [content],
+  )
+
+  const containerClass = clsx(
+    'text-6 fixed inset-0 w-full backdrop-blur-xl bg-opacity-30 flex flex-col min-h-screen overflow-y-auto',
+  )
+
+  if (isLoading) {
+    return <div className={containerClass}></div>
+  }
+
   if (!content || error) {
     return (
-      <div className={containerClass}>
-        <h1 onClick={() => navigate({pathname: '/'})}>{'ERROR -> ' + error}</h1>
+      <div
+        className={containerClass}
+        onClick={onClose}
+      >
+        <h1 onClick={onClose}>{'ERROR -> ' + error}</h1>
       </div>
     )
   }
 
-  if (fullscreen) {
+  if (fullscreen && format === 'image') {
     return (
       <div className={clsx(containerClass, 'bg-black bg-opacity-50')}>
         <ShelfContent
-          controls
           className={'h-full w-full bg-black bg-opacity-50 backdrop-blur-xl'}
           content={content}
           onClick={() => {
@@ -114,48 +113,33 @@ function ContentDetails({
   return (
     <div
       ref={modalRef}
-      {...props}
       id={'taggerModal'}
       className={clsx(containerClass)}
     >
       <div className={clsx('flex flex-row items-center bg-gray-200 p-5')}>
         <ArrowLeftIcon
-          className='h-6 w-6 align-middle transition-colors hover:stroke-white'
+          className='w-6 h-6 align-middle transition-colors hover:stroke-white'
           onClick={onClose}
         />
       </div>
       <div onClick={() => toggleFullscreen()}>
         <ShelfContent
-          controls
           className={clsx('h-[60vh] bg-black bg-opacity-50')}
           content={content}
         />
       </div>
-      <div
-        className={
-          'max-h-full min-h-full overflow-y-auto bg-gray-200 px-4 pt-4'
-        }
-      >
-        <div className={'my-2 flex flex-col'}>
-          {(content?.paths || []).map((p, idx) => {
-            return (
-              <p
-                key={idx}
-                className='trucate selectableText overflow-hidden font-mono font-medium selection:bg-fuchsia-400'
-              >
-                {p.path}
-              </p>
-            )
-          })}
-        </div>
-        <div className='flex flex-row flex-wrap'>
-          {(content?.tags || []).map((tag) => {
+      <div className={'flex flex-grow flex-col bg-gray-200'}>
+        <div className='flex flex-row flex-wrap px-2 py-4'>
+          {(typeof content.tags !== 'string' && content?.tags
+            ? content.tags
+            : null ?? []
+          ).map((tag) => {
             return (
               <InlineTagDropdown
                 key={tag.id}
-                modalRef={modalRef}
-                tag={tag}
-                removeTag={async (tag: Tag) => {
+                onClose={onClose}
+                tagId={tag.id}
+                removeTag={async () => {
                   await window.api.invokeOnMain('removeTagfromContent', {
                     contentId: content.id,
                     tagId: tag.id,
@@ -166,46 +150,63 @@ function ContentDetails({
             )
           })}
           <AddTagDropdown
-            modalRef={modalRef}
             onOpenChange={(open) => {
               toggleHotkeys(!open)
             }}
             addTag={async (tag) => {
               await window.api.invokeOnMain('addTagToContent', {
                 contentId: content.id,
-                tagId: tag.id,
+                tagId: tag,
               })
               refetch()
             }}
-          >
-            {'+ ADD'}
-          </AddTagDropdown>
+          />
+        </div>
+        <div
+          className={
+            'flex flex-col border-y-2 border-neutral-500 bg-neutral-800 px-4 py-2 font-mono text-white'
+          }
+        >
+          {(content?.paths || []).map((p, idx) => (
+            <ColorfulFilePath
+              key={p.path + idx}
+              path={p.path}
+            />
+          ))}
         </div>
       </div>
     </div>
   )
 }
 
+type InlineTagDropdownProps = {
+  removeTag: (tagId: number) => any
+  onClose: (...any: any[]) => any
+  tagId: number
+} & DropdownMenuProps
+
 export const InlineTagDropdown = ({
   removeTag,
-  tag,
-  modalRef,
-  ...props
-}: {
-  removeTag: (tag: Tag) => any
-  tag: Tag
-  modalRef: RefObject<HTMLDivElement>
-} & DropdownMenuProps) => {
+  onClose,
+  tagId,
+}: InlineTagDropdownProps) => {
+  const addQuery = useContentQueryStore((s) => s.addQuery)
+
   return (
-    <Dropdown
-      {...props}
-      triggerRender={() => <InlineTag tag={tag} />}
-      modalRef={modalRef}
-    >
+    <Dropdown triggerRender={() => <InlineTag tagId={tagId} />}>
       <DropdownMenuArrow className='fill-white' />
       <DropdownMenuItem
-        className='select-none p-4 outline-none transition-colors hover:bg-gray-500 hover:text-white'
-        onClick={() => removeTag(tag)}
+        className='p-4 transition-colors outline-none select-none hover:bg-gray-500 hover:text-white'
+        onClick={() => {
+          addQuery({field: 'tag', value: tagId, operation: 'include'})
+          onClose()
+        }}
+      >
+        Search
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        className='p-4 transition-colors outline-none select-none hover:bg-gray-500 hover:text-white'
+        onClick={() => removeTag(tagId)}
       >
         Remove
       </DropdownMenuItem>
@@ -213,24 +214,19 @@ export const InlineTagDropdown = ({
   )
 }
 
-export const AddTagDropdown = ({
-  addTag,
-  modalRef,
-  ...props
-}: {
-  addTag: (tag: Tag) => any
-  modalRef: RefObject<HTMLDivElement>
+type AddTagDropdownProps = {
+  addTag: (tagId: number) => any
 } & PropsWithChildren &
-  DropdownMenuProps) => {
+  DropdownMenuProps
+
+export const AddTagDropdown = ({addTag}: AddTagDropdownProps) => {
   const {query, setQuery, foundTags} = useTagQuery()
 
   return (
     <Dropdown
-      {...props}
-      modalRef={modalRef}
-      contentClass={clsx('p-2')}
+      contentClass={'p-2'}
       triggerRender={() => {
-        return <InlineButton>{'+ ADD'}</InlineButton>
+        return <InlineButton>+ ADD</InlineButton>
       }}
     >
       <DropdownMenuArrow className='fill-white' />
@@ -242,8 +238,8 @@ export const AddTagDropdown = ({
         {foundTags.map((tag) => {
           return (
             <InlineTag
-              key={tag.id}
-              tag={tag}
+              key={tag}
+              tagId={tag}
               onClick={() => {
                 addTag(tag)
               }}
@@ -253,7 +249,7 @@ export const AddTagDropdown = ({
       </div>
       <input
         type='text'
-        className='mt-4 w-full rounded-md p-2 outline-none ring ring-gray-300'
+        className='w-full p-2 mt-4 rounded-md outline-none ring ring-gray-300'
         value={query}
         onClick={(evt) => {
           evt.stopPropagation()

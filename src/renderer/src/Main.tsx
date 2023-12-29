@@ -10,7 +10,6 @@ import {
 } from 'react'
 
 import {useTags} from './hooks/useTags'
-import {Content, Tag} from '@models'
 import {useInfiniteQuery} from '@tanstack/react-query'
 import {createPortal} from 'react-dom'
 import {ContentDetails} from './ContentDetails'
@@ -20,7 +19,7 @@ import {Dropdown} from './components/Dropdown'
 import {useConfigStore} from './hooks/useConfig'
 import {TagColorThing} from './components/TagColorThing'
 import {EditColors} from './EditColors'
-import {pathQuery, SearchBar} from './components/SearchBar'
+import {SearchBar} from './components/SearchBar'
 import {EditTags} from './EditTags'
 import {useImmer} from 'use-immer'
 import {useHotkeysRef} from './hooks/useHotkeys'
@@ -29,17 +28,23 @@ import {OptionsModal} from './OptionsModal'
 import {ArrowPathIcon, Cog8ToothIcon} from '@heroicons/react/24/solid'
 import {MarkContent} from './utils/Main'
 import {ContentPreview} from './components/ContentPreview'
+import {useContentQueryStore} from './hooks/useQueryStore'
+import {ListedContent} from 'src/main/db/ContentControllers'
 
 function Main(): JSX.Element {
-  const {config} = useConfigStore()
+  const config = useConfigStore((s) => s.config)
   const {tags} = useTags()
-  const [modalContent, setModalContent] = useState<Content | undefined>()
-  const [selectedTags, setSelectedTags] = useImmer<Set<Tag>>(new Set())
-  const [pathQueries, setPathQueries] = useImmer<Set<pathQuery>>(new Set())
+
+  const contentQuery = useContentQueryStore((s) => s.query)
+
+  const [modalContent, setModalContent] = useState<ListedContent | null>(null)
+
   const [markedContent, setMarkedContent] = useImmer<Set<number>>(new Set())
+
   const {orderDirection, orderField, toggleDirection} = useOrderStore()
-  const contentList = useRef<HTMLDivElement & MasonryInfiniteGrid>(null)
+  const contentContainer = useRef<HTMLDivElement & MasonryInfiniteGrid>(null)
   const markerIdx = useRef<[pageNumber: number, contentNumber: number]>()
+
   const {keys} = useHotkeysRef({
     Shift: {
       down: () => {},
@@ -50,57 +55,55 @@ function Main(): JSX.Element {
   })
 
   const {
-    data: contentQuery,
+    data: contentList,
     error,
     isLoading,
     isFetching,
     refetch,
     hasNextPage,
     fetchNextPage,
-  } = useInfiniteQuery(
-    ['content'],
-    async (context) => {
+  } = useInfiniteQuery({
+    queryKey: ['content'],
+    structuralSharing: false,
+    queryFn: async (context) => {
       const {orderDirection, orderField} = useOrderStore.getState()
+
       const {
         pageParam = {
           offset: 0,
           limit: config!.pageSize,
         },
       } = context
-      const pagination = pageParam || {
+
+      const pagination = pageParam ?? {
         offset: 0,
         limit: config!.pageSize,
       }
-      const tags =
-        selectedTags.size > 0 ? Array.from(selectedTags.values()) : undefined
+
+      const query = Array.from(contentQuery.values())
 
       const files = await window.api.invokeOnMain('getShelfContent', {
-        pagination: {
-          offset: pagination.offset,
-          limit: pagination.limit,
-        },
-        paths: Array.from(pathQueries),
+        query: query,
+        pagination,
         order: [orderField, orderDirection],
-        tags,
       })
 
       return files
     },
-    {
-      getNextPageParam: (lastPage) => lastPage.nextCursor,
-    },
-  )
+    initialPageParam: {offset: 0, limit: config!.pageSize},
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+  })
 
   useEffect(() => {
-    if (!contentList.current) return
+    if (!contentContainer.current) return
 
     const onScroll = () => {
-      if (!contentList.current) return
+      if (!contentContainer.current) return
       const threshold = 100
 
       if (
         window.scrollY + window.innerHeight >=
-          contentList.current.scrollHeight - threshold &&
+          contentContainer.current.clientHeight - threshold &&
         hasNextPage &&
         !isFetching
       ) {
@@ -108,11 +111,13 @@ function Main(): JSX.Element {
       }
     }
 
+    window.addEventListener('resize', onScroll)
     window.addEventListener('scroll', onScroll)
     return () => {
       window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
     }
-  }, [hasNextPage, contentList])
+  }, [hasNextPage, contentContainer])
 
   const {
     value: showContentModal,
@@ -120,11 +125,11 @@ function Main(): JSX.Element {
     turnOff: closeContentModal,
   } = useToggle(
     false,
-    (content: Content) => {
+    (content: ListedContent) => {
       setModalContent(content)
     },
     () => {
-      setModalContent(undefined)
+      setModalContent(null)
     },
   )
 
@@ -146,7 +151,7 @@ function Main(): JSX.Element {
     turnOff: closeOptionsModal,
   } = useToggle(false)
 
-  if (error || !contentQuery?.pages) {
+  if (error || !contentList?.pages) {
     return <>{error}</>
   }
   if (isLoading) {
@@ -154,12 +159,15 @@ function Main(): JSX.Element {
   }
 
   return (
-    <div className={clsx('max-h-fit min-h-screen w-full bg-background p-10')}>
+    <div
+      className={clsx(
+        'isolate max-h-fit min-h-screen w-full overflow-clip bg-background',
+      )}
+    >
       {showContentModal &&
         createPortal(
           <ContentDetails
-            className={'text-6 fixed inset-0 z-50 max-h-screen w-full'}
-            content={modalContent}
+            contentInfo={modalContent}
             onClose={() => closeContentModal()}
           />,
           document.body,
@@ -183,67 +191,14 @@ function Main(): JSX.Element {
           document.body,
         )}
       <SearchBar
-        selected={selectedTags}
         markedContent={markedContent}
-        onBatchAdd={() => {
-          const tagIds: number[] = []
-          selectedTags.forEach((tag) => {
-            tagIds.push(tag.id)
-          })
-
-          const contentIds: number[] = Array.from(markedContent.values())
-
-          window.api.invokeOnMain('batchTagging', {
-            operation: 'ADD',
-            contentIds,
-            tagIds,
-          })
-        }}
-        onBatchRemove={() => {
-          const tagIds: number[] = []
-          selectedTags.forEach((tag) => {
-            tagIds.push(tag.id)
-          })
-
-          const contentIds: number[] = Array.from(markedContent.values())
-
-          window.api.invokeOnMain('batchTagging', {
-            operation: 'REMOVE',
-            contentIds,
-            tagIds,
-          })
-        }}
         onQuery={() => {
           refetch()
-        }}
-        addPathQuery={(query) => {
-          setPathQueries((queries) => {
-            queries.add(query)
-          })
-        }}
-        removePathQuery={(query) => {
-          setPathQueries((queries) => {
-            queries.delete(query)
-          })
-        }}
-        pathQueries={pathQueries}
-        addSelected={(tag) => {
-          setSelectedTags((tags) => {
-            tags.add(tag)
-          })
-        }}
-        removeSelected={(tag: Tag) => {
-          setSelectedTags((tags) => {
-            tags.delete(tag)
-          })
-        }}
-        onClear={() => {
-          setMarkedContent(new Set())
         }}
       />
       <div
         className={
-          'mt-12 flex h-full w-full flex-row-reverse space-x-2 text-end'
+          'static mt-24 flex h-full w-full flex-row-reverse space-x-2 px-5 text-end'
         }
       >
         <OptionsDropdown
@@ -263,11 +218,11 @@ function Main(): JSX.Element {
         </a>
         <a className='text-end font-mono text-gray-400'>
           TAGS:
-          {tags.length}
+          {tags.size}
         </a>
         <a className='text-end font-mono text-gray-400'>
           SHOWING:
-          {contentQuery
+          {contentList
             .pages!.map((page) => {
               return page.content.length
             })
@@ -280,12 +235,15 @@ function Main(): JSX.Element {
           </a>
         )}
       </div>
-      <div ref={contentList}>
+      <div
+        ref={contentContainer}
+        className='relative isolate -z-10'
+      >
         <ContentGrid
-          ref={contentList}
+          ref={contentContainer}
           error={error}
         >
-          {contentQuery?.pages?.map((page, pageIdx) => {
+          {contentList?.pages?.map((page, pageIdx) => {
             if (Array.isArray(page)) {
               return
             }
@@ -295,9 +253,12 @@ function Main(): JSX.Element {
                 data-grid-groupkey={pageIdx}
                 key={content.id}
                 className={clsx(
-                  'group/content bg-black bg-opacity-10',
+                  'group/content',
                   config?.layoutMode === 'masonry' ? 'w-[16.6%]' : '',
-                  config?.layoutMode === 'grid' ? 'h-[10rem]' : '',
+                  config?.layoutMode === 'grid' ||
+                    config?.layoutMode === 'experimental'
+                    ? 'h-[10rem]'
+                    : '',
                 )}
                 onClick={() => {
                   openContentModal(content)
@@ -308,7 +269,7 @@ function Main(): JSX.Element {
                 }}
               >
                 <TagColorThing
-                  className='absolute inset-x-0 top-0 flex h-1 w-full flex-row overflow-hidden transition-all duration-50 group-hover/content:h-1.5'
+                  className='absolute inset-x-0 top-0 flex h-1 w-full flex-row group-hover/content:h-1.5'
                   tags={content.tags!}
                 />
                 <input
@@ -327,7 +288,7 @@ function Main(): JSX.Element {
                       markerIdx.current,
                       pageIdx,
                       contentIdx,
-                      contentQuery,
+                      contentList,
                     )
 
                     setMarkedContent((marked) => {
@@ -386,37 +347,39 @@ const ContentGrid = forwardRef(function Body(
         {...props}
         ref={ref}
       >
-        <h1 className='text-6xl'>{error.toString()}</h1>
+        <h1 className='text-6xl'>{JSON.stringify(error)}</h1>
       </div>
     )
   }
 
   switch (config?.layoutMode) {
-    case 'experimental':
-      return (
-        <div
-          {...props}
-          ref={ref}
-          className='grid grid-cols-6 gap-2'
-          style={{
-            gridRow: 'masonry',
-          }}
-        >
-          {children}
-        </div>
-      )
-      break
     case 'grid':
       return (
         <div
           {...props}
           ref={ref}
-          className='grid grid-flow-dense grid-cols-6 gap-2'
+          className={clsx(
+            'grid grid-flow-dense grid-cols-6 gap-2',
+            props.className,
+          )}
         >
           {children}
         </div>
       )
-      break
+    case 'experimental':
+      return (
+        <div
+          {...props}
+          ref={ref}
+          className='grid'
+          style={{
+            gridTemplateRows: 'repeat(auto-fill,minmax(10rem,2fr))',
+            gridTemplateColumns: 'repeat(auto-fill,minmax(10rem,2fr))',
+          }}
+        >
+          {children}
+        </div>
+      )
     case 'masonry':
       return (
         <MasonryInfiniteGrid
@@ -430,7 +393,6 @@ const ContentGrid = forwardRef(function Body(
           {children}
         </MasonryInfiniteGrid>
       )
-      break
     default:
       return <></>
   }

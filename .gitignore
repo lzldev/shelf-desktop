@@ -3,10 +3,10 @@ node_modules
 dist
 out
 *.log*
+.env.development
 
 examples/*
 !examples/ignored
 examples/ignored/*
 
-.env.development
-!.env.example
+temp/**/*

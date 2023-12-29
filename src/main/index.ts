@@ -9,9 +9,6 @@ import {
   Menu,
 } from 'electron'
 import '../preload/ipcTypes'
-
-import sharp from 'sharp'
-
 import {electronApp, optimizer, is} from '@electron-toolkit/utils'
 import {ShelfClient} from './shelf-client/ShelfClient'
 import {zJson} from './zJson'
@@ -20,13 +17,12 @@ import {
   ShelfWebContentsSend,
 } from '../preload/ipcRendererTypes'
 
+import './shelf-client'
 import {
   SHELF_CONFIG_PATH,
   SHELF_CONFIG_SCHEMA,
   SHELF_THUMB_DEFFAULT_PATH,
 } from './ShelfConfig'
-
-import './shelf-client'
 
 import {SHELF_LOGGER} from './utils/Loggers'
 import {setupWorkerHandlers} from './shelf-client/WorkerEvents'
@@ -48,11 +44,12 @@ const Windows = new Map<ShelfWindowID, BrowserWindow>()
 
 SHELF_LOGGER.info('Starting LOGGER')
 
-export function requestClient(): ShelfClient | null {
+export function requestClient(): ShelfClient {
   if (!Client || !Client.ready) {
     SHELF_LOGGER.error('Trying to Request a Client but client is not ready.')
-    return null
+    throw 'Client requested before being initialized'
   }
+
   return Client
 }
 
@@ -121,6 +118,29 @@ function createWindow(windowId: ShelfWindowID): void {
   })
 
   Windows.set(windowId, newWindow)
+}
+
+export function sendEventAfter(
+  events: (keyof IpcRendererEvents)[],
+  func: (...any: any[]) => any,
+) {
+  return (...args: any[]) => {
+    const result = func.call(undefined, ...args)
+    if (result instanceof Promise) {
+      return result.then((result) => {
+        events.forEach((event) => {
+          sendEventToAllWindows(event)
+        })
+        return result
+      })
+    }
+
+    events.forEach((event) => {
+      sendEventToAllWindows(event)
+    })
+
+    return result
+  }
 }
 
 export const sendEventToAllWindows: ShelfWebContentsSend = (evt, ...args) => {
@@ -192,12 +212,12 @@ ipcMain.handle('startShelfClient', async (_, options) => {
 
   Client = await ShelfClient.create(options, () => {
     const progressWindow = Windows.get('progress')
+
     if (progressWindow) {
       progressWindow.close()
     }
 
     setupWorkerHandlers()
-
     createWindow('main')
   })
 })

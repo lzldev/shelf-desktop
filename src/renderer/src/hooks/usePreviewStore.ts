@@ -16,12 +16,9 @@ interface previewListenerStore {
 const listeners = new Map<string, PREVIEW_LISTENER>()
 
 window.api.ipcRendererHandle('preview_response', (_, data) => {
-  console.log(`handling preview current_listeners:${listeners.size}`)
-
   const listener = listeners.get(data.hash)
 
   if (!listener) {
-    console.log(`noone is listening to ${data.hash}`)
     return
   }
 

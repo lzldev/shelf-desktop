@@ -1,13 +1,15 @@
 import {z} from 'zod'
 import {CustomWorker} from '../../../types/Workers'
 
-export type ThumbWorkerInvoke = {
-  type: 'resize_image'
-  data: {filePath: string; hash: string}
-} | {
-  type: 'resize_video'
-  data: {filePath: string; hash: string}
-}
+export type ThumbWorkerInvoke =
+  | {
+      type: 'resize_image'
+      data: {filePath: string; hash: string}
+    }
+  | {
+      type: 'resize_video'
+      data: {filePath: string; hash: string}
+    }
 
 export type ThumbWorkerReceive =
   | {
@@ -20,7 +22,6 @@ export type ThumbWorkerReceive =
     }
 
 export const ThumbWorkerDataParser = z.object({
-  max_threads: z.number(),
   thumbnailPath: z.string({
     description: 'Path to previews folder',
   }),

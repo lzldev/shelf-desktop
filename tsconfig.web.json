@@ -5,7 +5,7 @@
     "src/renderer/*/*",
     "src/renderer/**/*",
     "src/preload/*.d.ts",
-    "src/types/**/*",
+    "src/types/**/*"
   ],
   "compilerOptions": {
     "composite": true,
@@ -14,10 +14,5 @@
     "noImplicitAny": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
-    "paths": {
-      "@models": [
-        "src/types/db"
-      ]
-    }
   }
 }

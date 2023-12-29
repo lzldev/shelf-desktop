@@ -6,6 +6,7 @@ interface ImportMetaEnv {
   readonly MAIN_VITE_MAIN_LOGGING: string
   readonly MAIN_VITE_NO_UI: string
   readonly MAIN_VITE_NO_UI_PATH: string
+  readonly VITEST: boolean
 }
 
 interface ImportMeta {

@@ -1,11 +1,11 @@
+import {Contents} from 'src/main/db/kysely-types'
 import {create} from 'zustand'
-import type {Content} from '@models'
 
-type sequelizeDirections = 'ASC' | 'DESC'
+type orderParam = 'ASC' | 'DESC'
 
 interface orderStore {
-  orderField: keyof Content
-  orderDirection: sequelizeDirections
+  orderField: keyof Contents
+  orderDirection: orderParam
   toggleDirection: () => void
 }
 

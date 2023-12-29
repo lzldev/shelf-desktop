@@ -19,7 +19,19 @@ import ffmpegStatic from 'ffmpeg-static'
 import {exec} from 'node:child_process'
 import {join} from 'node:path'
 
-const workerData = ThumbWorkerDataParser.parse(_workerData)
+import {z} from 'zod'
+const wd = ThumbWorkerDataParser.safeParse(_workerData)
+let workerData: z.infer<typeof ThumbWorkerDataParser>
+
+if (wd.success) {
+  workerData = wd.data
+} else if (import.meta.env.VITEST) {
+  workerData = {
+    thumbnailPath: './examples/app/',
+  }
+} else {
+  throw wd.error
+}
 
 if (isMainThread) {
   throw new Error('Worker called in main thread')
@@ -35,14 +47,16 @@ const port = parentPort!
 const postMessage = createPortWrapper<ThumbWorkerReceive>(port)
 const LOGGER = createWorkerLogger(threadId, 'THUMBWORKER', 5)
 
+//Turning off sharp cache for smaller ram usage
+
+sharp.cache(false)
+
 LOGGER.info('Starting')
 LOGGER.info(`ffmpeg: ${ffmpegStatic}`)
 
 async function main() {
   handleWorkerMessage<ThumbWorkerInvoke>(port, {
     resize_video: async ({data}) => {
-      LOGGER.info('Video preview')
-
       const video_preview = await videoPreviewExec(
         data.filePath,
         data.hash,
@@ -63,8 +77,6 @@ async function main() {
         return
       }
 
-      LOGGER.info(`Video preview success ${video_preview}`)
-
       postMessage('preview_ready', {
         type: 'preview_ready',
         data: {
@@ -83,8 +95,6 @@ async function main() {
           },
         })
       })
-
-      // LOGGER.info(`Image preview ${out}`)
 
       if (!out) {
         return
@@ -148,4 +158,3 @@ async function videoPreviewExec(inputFilePath: string, outputHash: string) {
     }
   })
 }
-

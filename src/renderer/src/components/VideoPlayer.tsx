@@ -18,6 +18,14 @@ export function VideoPlayer({
   const videoRef = useRef<HTMLVideoElement>(null)
   const [headPos, setHeadPos] = useState(0)
 
+  const togglePlayState = () => {
+    if (videoRef.current!.paused) {
+      videoRef.current!.play()
+    } else {
+      videoRef.current!.pause()
+    }
+  }
+
   return (
     <div
       className={clsx(
@@ -30,7 +38,6 @@ export function VideoPlayer({
         className='h-full w-full object-contain'
         src={uri}
         ref={videoRef}
-        muted={true}
         onTimeUpdate={(evt) => {
           setProg(evt.currentTarget.currentTime)
         }}
@@ -53,16 +60,35 @@ export function VideoPlayer({
           evt.stopPropagation()
         }}
       >
+        <div className='absolute inset-x-0 bottom-full flex translate-y-full items-center justify-center text-6xl group-hover/player:translate-y-0'>
+          <span
+            className='w-fit hover:font-bold'
+            onClick={togglePlayState}
+          >
+            {'▶'}
+          </span>
+          <span className='group relative hover:bg-white'>
+            {'🔊'}
+            <input
+              className={
+                'slider invisible absolute inset-x-0 bottom-full h-[3rem] in-range:border-green-500 group-hover:visible'
+              }
+              style={{
+                appearance: 'slider-vertical',
+              }}
+              type='range'
+              min={0}
+              max={1}
+              step={0.01}
+              onChange={(evt) => {
+                videoRef.current.volume = evt.currentTarget.value
+              }}
+            />
+          </span>
+        </div>
         <span
           className='pointer-events-auto flex items-center px-2 align-middle font-mono transition-colors hover:bg-red-500'
-          onClick={(evt) => {
-            evt.stopPropagation()
-            if (videoRef.current!.paused) {
-              videoRef.current!.play()
-            } else {
-              videoRef.current!.pause()
-            }
-          }}
+          onClick={togglePlayState}
         >
           Play
         </span>
@@ -105,10 +131,6 @@ export function VideoPlayer({
           ⬜
         </span>
       </div>
-
-      <span className='absolute inset-1/2 z-20 font-mono text-white text-opacity-100'>
-        P:{prog}
-      </span>
     </div>
   )
 }

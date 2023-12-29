@@ -11,6 +11,10 @@ export type AiWorkerInvoke =
       type: 'emit_batch'
       data: void
     }
+  | {
+      type: 'update_state'
+      data: null
+    }
 
 export type AiWorkerReceive =
   | {
