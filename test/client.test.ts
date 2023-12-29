@@ -15,7 +15,7 @@ vi.mock('@electron-toolkit/utils')
 
 vi.mock('../src/main/index.ts', () => ({
   sendEventAfter: (
-    events: (keyof IpcRendererEvents)[],
+    _events: (keyof IpcRendererEvents)[],
     func: (...any: any[]) => any,
   ) => {
     return func
@@ -156,5 +156,22 @@ describe('onReady rename Content', () => {
 
     expect(f.id).toBeTypeOf('number')
     expect(f.hash).toBeTypeOf('string')
+  })
+})
+
+describe('Add another path into id-1', async () => {
+  test('copy content', async () => {
+    await TestContent.at(1)?.copytoTemp('image64.png')
+    await new Promise((res) => setTimeout(res, 1000))
+  })
+
+  test('Check content', async () => {
+    const f = await ContentDetails(TestClient.ShelfDB, 1)
+
+    expect(f).toBeTypeOf('object')
+    if (!f) return
+
+    expect(f.paths).instanceOf(Array)
+    expect(f.paths.length).toBe(3)
   })
 })

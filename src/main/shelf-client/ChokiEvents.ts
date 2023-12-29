@@ -229,9 +229,7 @@ export const addChokiEvents = (
     console.time('DB ->')
 
     if (!isDBNew) {
-      console.time('PATH CLEANUP')
-      await CleanupShelfDB(shelfClient.ShelfDB, watchedFiles)
-      console.timeEnd('PATH CLEANUP')
+      await CleanupShelfPaths(shelfClient.ShelfDB, watchedFiles)
     } else {
       await CreateDefaultColors(shelfClient.ShelfDB)
     }
@@ -280,6 +278,8 @@ export const addChokiEvents = (
       contentsAndPaths,
     )
 
+    await CleanupContent(shelfClient.ShelfDB)
+
     if (!createdContents) {
       onReadyFinished()
       return
@@ -302,35 +302,37 @@ export const addChokiEvents = (
 
     console.timeEnd('DB ->')
 
-    createdContents.forEach((content) => {
-      const fileIdx = hashToPathRecord[content.hash].at(0)
-      const shelfFile = watchedFiles.at(fileIdx!)
-
-      if (fileIdx === undefined || shelfFile === undefined) {
-        return
-      } else if (!canClassify(shelfFile.extension)) {
-        return
-      }
-
-      shelfClient.AiWorker.postMessage({
-        type: 'new_file',
-        data: {
-          id: content.id,
-          path: shelfFile.filePath,
-        },
-      })
-    })
-
     if (shelfClient.config.get('aiWorker')) {
-      console.time('Wainting for AIWORKER')
+      console.time('Waiting for AIWORKER')
+
+      createdContents.forEach((content) => {
+        const fileIdx = hashToPathRecord[content.hash].at(0)
+        const shelfFile = watchedFiles.at(fileIdx!)
+
+        if (fileIdx === undefined || shelfFile === undefined) {
+          return
+        } else if (!canClassify(shelfFile.extension)) {
+          return
+        }
+
+        shelfClient.AiWorker.postMessage({
+          type: 'new_file',
+          data: {
+            id: content.id,
+            path: shelfFile.filePath,
+          },
+        })
+      })
+
       await waitForAIWorker(shelfClient)
         .then(() => {
-          SHELF_LOGGER.info('Batch FINISHED')
+          SHELF_LOGGER.info('AIWORKER FINISHED')
         })
         .catch(() => {
           SHELF_LOGGER.info('AIWORKER TIMED OUT')
         })
-      console.timeEnd('Wainting for AIWORKER')
+
+      console.timeEnd('Waiting for AIWORKER')
     }
 
     onReadyFinished()
@@ -364,7 +366,7 @@ function waitForAIWorker(client: ShelfClient) {
   })
 }
 
-async function CleanupShelfDB(
+async function CleanupShelfPaths(
   connection: ShelfDBConnection,
   watchedFiles: ShelfFile[],
 ) {
@@ -422,8 +424,6 @@ async function CleanupShelfDB(
     .deleteFrom('Paths')
     .where('Paths.id', 'in', deletedPaths)
     .execute()
-
-  await CleanupContent(connection)
 
   SHELF_LOGGER.info(`To be Deleted:${deletedPaths.length}`)
   SHELF_LOGGER.info(`Deleted Paths:${del.at(0)?.numDeletedRows}`)
